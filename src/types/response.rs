@@ -34,7 +34,7 @@ pub struct QueryResponsePayload {
 }
 
 #[derive(Deserialize)]
-pub struct ServerInformation { }
+pub struct ServerInformation {}
 
 // KMIP spec 1.2 section 4.26 Discover Versions
 // See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
@@ -197,10 +197,9 @@ pub struct BatchItem {
     pub operation: Option<Operation>,
 
     // pub unique_batch_item_id: Option<...> // we don't have this field yet because (a) per the spec we don't need it
-                                             // because we don't send it in the request, and (b) because it uses the
-                                             // TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
-                                             // yet.
-
+    // because we don't send it in the request, and (b) because it uses the
+    // TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
+    // yet.
     #[serde(rename = "0x42007F")]
     pub result_status: ResultStatus,
 
@@ -212,12 +211,11 @@ pub struct BatchItem {
 
     // #[serde(rename = "0x420006")]
     // pub asynchronous_correlation_value: Option<??>,
-
     #[serde(rename = "0x42007C")]
     pub payload: Option<ResponsePayload>,
 
     #[serde(rename = "0x420051")]
-    pub message_extension: Option<MessageExtension>
+    pub message_extension: Option<MessageExtension>,
 }
 
 #[derive(Deserialize)]
@@ -233,10 +231,9 @@ pub enum ResponsePayload {
     // KMIP spec 1.1 operations
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(DiscoverVersionsResponsePayload),
-    
+
     // KMIP spec 1.2 operations
     #[serde(rename = "if 0x42005C==0x00000021")]
     Sign(SignResponsePayload),
-
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }

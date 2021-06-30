@@ -2,10 +2,17 @@
 
 use krill_kmip_ttlv::ser::to_vec;
 
-use crate::{response::from_slice, types::{common::Operation, request::{
+use crate::{
+    response::from_slice,
+    types::{
+        common::Operation,
+        request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
             ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
-        }, response::{ResponseMessage, ResultReason, ResultStatus}}};
+        },
+        response::{ResponseMessage, ResultReason, ResultStatus},
+    },
+};
 
 #[test]
 fn query_operations_objects_max_response_size_256() {
@@ -39,8 +46,16 @@ fn query_operation_failed_response_too_large() {
     assert_eq!(res.header.timestamp, 0x000000004B7918AA);
     assert_eq!(res.header.batch_count, 1);
     assert_eq!(res.batch_items.len(), 1);
-    assert!(matches!(res.batch_items[0].result_status, ResultStatus::OperationFailed));
-    assert!(matches!(res.batch_items[0].result_reason, Some(ResultReason::ResponseTooLarge)));
-    assert_eq!(res.batch_items[0].result_message, Some("Response size: 568, Maximum Response Size indicated in request: 256".to_string()));
+    assert!(matches!(
+        res.batch_items[0].result_status,
+        ResultStatus::OperationFailed
+    ));
+    assert!(matches!(
+        res.batch_items[0].result_reason,
+        Some(ResultReason::ResponseTooLarge)
+    ));
+    assert_eq!(
+        res.batch_items[0].result_message,
+        Some("Response size: 568, Maximum Response Size indicated in request: 256".to_string())
+    );
 }
- 
