@@ -7,10 +7,10 @@ use super::common::{ObjectType, Operation, UniqueIdentifier};
 #[derive(Deserialize)]
 pub struct CreateResponsePayload {
     #[serde(rename = "0x420057")]
-    object_type: ObjectType,
+    pub object_type: ObjectType,
 
     #[serde(rename = "0x420094")]
-    unique_id: String,
+    pub unique_id: String,
 }
 
 // KMIP spec 1.2 section 4.26 Discover Versions
@@ -18,7 +18,7 @@ pub struct CreateResponsePayload {
 #[derive(Deserialize)]
 pub struct DiscoverVersionsResponsePayload {
     #[serde(rename = "0x420069")]
-    supported_versions: Vec<ProtocolVersion>,
+    pub supported_versions: Vec<ProtocolVersion>,
 }
 
 // KMIP spec 1.2 section 4.31 Sign
@@ -26,10 +26,10 @@ pub struct DiscoverVersionsResponsePayload {
 #[derive(Deserialize)]
 pub struct SignResponsePayload {
     #[serde(rename = "0x420094")]
-    unique_identifier: UniqueIdentifier,
+    pub unique_identifier: UniqueIdentifier,
 
     #[serde(rename = "0x420094")]
-    signature_data: SignatureData,
+    pub signature_data: SignatureData,
 }
 
 #[derive(Deserialize)]
@@ -40,10 +40,10 @@ pub struct SignatureData(Vec<u8>);
 #[derive(Deserialize)]
 pub struct ProtocolVersion {
     #[serde(rename = "0x42006A")]
-    major: i32,
+    pub major: i32,
 
     #[serde(rename = "0x42006B")]
-    minor: i32,
+    pub minor: i32,
 }
 
 // KMIP spec 1.0 section 6.9 Result Status
@@ -52,17 +52,103 @@ pub struct ProtocolVersion {
 pub enum ResultStatus {
     #[serde(rename = "0x00000000")]
     Success,
+
+    #[serde(rename = "0x00000001")]
+    OperationFailed,
+
+    #[serde(rename = "0x00000002")]
+    OperationPending,
+
+    #[serde(rename = "0x00000003")]
+    OperationUndone,
 }
+
+// KMIP spec 1.0 section 6.10 Result Reason
+// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248
+#[derive(Deserialize)]
+pub enum ResultReason {
+    #[serde(rename = "0x00000001")]
+    ItemNotFound,
+
+    #[serde(rename = "0x00000002")]
+    ResponseTooLarge,
+
+    #[serde(rename = "0x00000003")]
+    AuthenticationNotSuccessful,
+
+    #[serde(rename = "0x00000004")]
+    InvalidMessage,
+
+    #[serde(rename = "0x00000005")]
+    OperationNotSupported,
+
+    #[serde(rename = "0x00000006")]
+    MissingData,
+
+    #[serde(rename = "0x00000007")]
+    InvalidField,
+
+    #[serde(rename = "0x00000008")]
+    FeatureNotSupported,
+
+    #[serde(rename = "0x00000009")]
+    OperationCanceledByRequester,
+
+    #[serde(rename = "0x0000000A")]
+    CryptographicFailure,
+
+    #[serde(rename = "0x0000000B")]
+    IllegalOperation,
+
+    #[serde(rename = "0x0000000C")]
+    PermissionDenied,
+
+    #[serde(rename = "0x0000000D")]
+    ObjectArchived,
+
+    #[serde(rename = "0x0000000E")]
+    IndexOutOfBounds,
+
+    #[serde(rename = "0x0000000F")]
+    ApplicationNamespaceNotSupported,
+
+    #[serde(rename = "0x00000010")]
+    KeyFormatTypeNotSupported,
+
+    #[serde(rename = "0x00000011")]
+    KeyCompressionTypeNotSupported,
+
+    #[serde(rename = "0x00000100")]
+    GeneralFailure,
+}
+
+// KMIP spec 1.0 section 6.16 Message Extension
+// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254
+#[derive(Deserialize)]
+pub struct MessageExtension {
+    #[serde(rename = "0x42007A")]
+    pub vendor_identification: String,
+
+    #[serde(rename = "0x42009D")]
+    pub criticality_indicator: bool,
+
+    #[serde(rename = "0x42009C")]
+    pub vendor_extension: VendorExtension,
+}
+
+#[derive(Deserialize)]
+pub struct VendorExtension;
 
 // KMIP spec 1.0 section 7.1 Message Format
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256
 #[derive(Deserialize)]
+#[serde(rename = "0x42007B")]
 pub struct ResponseMessage {
     #[serde(rename = "0x42007A")]
-    header: ResponseHeader,
+    pub header: ResponseHeader,
 
     #[serde(rename = "0x42000F")]
-    items: Vec<BatchItem>,
+    pub batch_items: Vec<BatchItem>,
 }
 
 // KMIP spec 1.0 section 7.2 Operations
@@ -70,25 +156,43 @@ pub struct ResponseMessage {
 #[derive(Deserialize)]
 pub struct ResponseHeader {
     #[serde(rename = "0x420069")]
-    ver: ProtocolVersion,
+    pub protocol_version: ProtocolVersion,
 
     #[serde(rename = "0x420092")]
-    timestamp: i64,
+    pub timestamp: i64,
 
     #[serde(rename = "0x42000D")]
-    item_count: i32,
+    pub batch_count: i32,
 }
 
 #[derive(Deserialize)]
 pub struct BatchItem {
     #[serde(rename = "0x42005C")]
-    operation: Operation,
+    #[serde(default)]
+    pub operation: Option<Operation>,
+
+    // pub unique_batch_item_id: Option<...> // we don't have this field yet because (a) per the spec we don't need it
+                                             // because we don't send it in the request, and (b) because it uses the
+                                             // TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
+                                             // yet.
 
     #[serde(rename = "0x42007F")]
-    status: ResultStatus,
+    pub result_status: ResultStatus,
+
+    #[serde(rename = "0x42007E")]
+    pub result_reason: Option<ResultReason>,
+
+    #[serde(rename = "0x42007D")]
+    pub result_message: Option<String>,
+
+    // #[serde(rename = "0x420006")]
+    // pub asynchronous_correlation_value: Option<??>,
 
     #[serde(rename = "0x42007C")]
-    payload: ResponsePayload,
+    pub payload: Option<ResponsePayload>,
+
+    #[serde(rename = "0x420051")]
+    pub message_extension: Option<MessageExtension>
 }
 
 #[derive(Deserialize)]
