@@ -1,6 +1,12 @@
 use krill_kmip_ttlv::ser::to_vec;
 
-use crate::types::{common::Operation, request::{Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersion, ProtocolVersionMajor, ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload}};
+use crate::types::{
+    common::Operation,
+    request::{
+        Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersion, ProtocolVersionMajor,
+        ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
+    },
+};
 
 // See: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822082
 
@@ -15,10 +21,7 @@ fn query_operations_objects_max_response_size_256() {
         ),
         vec![BatchItem(
             Operation::Query,
-            RequestPayload::Query(vec![
-                QueryFunction::QueryOperations,
-                QueryFunction::QueryObjects,
-            ]),
+            RequestPayload::Query(vec![QueryFunction::QueryOperations, QueryFunction::QueryObjects]),
         )],
     );
 
