@@ -21,7 +21,7 @@ dependencies = [
 [[package]]
 name = "krill-kmip-ttlv"
 version = "0.1.0-dev"
-source = "git+https://github.com/NLnetLabs/krill-kmip-ttlv.git?branch=main#5a4e90dc6764bd60174ec6302288520a36cab88c"
+source = "git+https://github.com/NLnetLabs/krill-kmip-ttlv.git?branch=main#7c4b1cbad8c6a35fe790acb49f090f46ce2f4321"
 dependencies = [
  "hex",
  "serde",
