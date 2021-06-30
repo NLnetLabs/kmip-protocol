@@ -3,17 +3,17 @@ use serde_derive::Deserialize;
 use enum_display_derive::Display;
 use std::fmt::Display;
 
-use super::common::{ObjectType, Operation, UniqueIdentifier};
+use super::common::{Operation, UniqueIdentifier};
 
-// KMIP spec 1.0 section 4.1 Create
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+// KMIP spec 1.0 section 4.2 Create Key Pair
+// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
 #[derive(Deserialize)]
-pub struct CreateResponsePayload {
-    #[serde(rename = "0x420057")]
-    pub object_type: ObjectType,
+pub struct CreateKeyPairResponsePayload {
+    #[serde(rename = "0x420066")]
+    pub private_key_unique_identifier: String,
 
-    #[serde(rename = "0x420094")]
-    pub unique_id: String,
+    #[serde(rename = "0x42006F")]
+    pub public_key_unique_identifier: String,
 }
 
 // KMIP spec 1.2 section 4.26 Discover Versions
@@ -204,13 +204,16 @@ pub struct BatchItem {
 #[non_exhaustive]
 pub enum ResponsePayload {
     // KMIP spec 1.0 operations
-    #[serde(rename = "if 0x42005C==0x00000001")]
-    Create(CreateResponsePayload),
+    #[serde(rename = "if 0x42005C==0x00000002")]
+    CreateKeyPair(CreateKeyPairResponsePayload),
 
-    // KMIP spec 1.2 operations
+    // KMIP spec 1.1 operations
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(DiscoverVersionsResponsePayload),
-
+    
+    // KMIP spec 1.2 operations
     #[serde(rename = "if 0x42005C==0x00000021")]
     Sign(SignResponsePayload),
+
+    // Note: This set of enum variants is deliberately limited to those that we currently support.
 }
