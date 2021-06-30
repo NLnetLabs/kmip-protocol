@@ -1,5 +1,8 @@
 use serde_derive::Deserialize;
 
+use enum_display_derive::Display;
+use std::fmt::Display;
+
 use super::common::{ObjectType, Operation, UniqueIdentifier};
 
 // KMIP spec 1.0 section 4.1 Create
@@ -48,7 +51,7 @@ pub struct ProtocolVersion {
 
 // KMIP spec 1.0 section 6.9 Result Status
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247
-#[derive(Deserialize)]
+#[derive(Deserialize, Display)]
 #[non_exhaustive]
 pub enum ResultStatus {
     #[serde(rename = "0x00000000")]
@@ -66,7 +69,7 @@ pub enum ResultStatus {
 
 // KMIP spec 1.0 section 6.10 Result Reason
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248
-#[derive(Deserialize)]
+#[derive(Deserialize, Display)]
 #[non_exhaustive]
 pub enum ResultReason {
     #[serde(rename = "0x00000001")]

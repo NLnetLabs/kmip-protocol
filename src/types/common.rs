@@ -1,6 +1,9 @@
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
+use enum_display_derive::Display;
+use std::fmt::Display;
+
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Serialize)]
@@ -15,7 +18,7 @@ pub struct AttributeName(&'static str);
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Serialize)]
+#[derive(Serialize, Display)]
 #[serde(rename = "0x42000B")]
 #[non_exhaustive]
 pub enum AttributeValue {
@@ -37,7 +40,7 @@ pub struct UniqueIdentifier(String);
 
 // KMIP spec 1.0 section 3.3 Object Type
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Display)]
 #[serde(rename = "0x420057")]
 #[non_exhaustive]
 pub enum ObjectType {
@@ -47,7 +50,7 @@ pub enum ObjectType {
 
 // KMIP spec 1.0 section 3.4 Cryptographic Algorithm
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Display)]
 #[serde(rename = "0x420028")]
 #[non_exhaustive]
 pub enum CryptographicAlgorithm {
@@ -62,7 +65,7 @@ pub struct CryptographicParameters(CryptographicAlgorithm);
 
 // KMIP spec 1.0 section 6.2 Operation
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581240
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Display)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
 pub enum Operation {
@@ -191,4 +194,17 @@ pub enum Operation {
 
     #[serde(rename = "0x00000029")]
     JoinSplitKey,
+}
+
+#[cfg(test)]
+mod test {
+    use super::Operation;
+
+    #[test]
+    fn test_operation_display() {
+        assert_ne!("WrongName", &format!("{}", Operation::Create));
+        assert_eq!("Create", &format!("{}", Operation::Create));
+        assert_eq!("CreateKeyPair", &format!("{}", Operation::CreateKeyPair));
+        assert_eq!("Register", &format!("{}", Operation::Register));
+    }
 }
