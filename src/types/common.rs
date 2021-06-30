@@ -60,6 +60,7 @@ pub struct CryptographicParameters(CryptographicAlgorithm);
 // KMIP spec 1.0 section 6.2 Operation
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581240
 #[derive(Deserialize, Serialize)]
+#[serde(rename = "0x42005C")]
 pub enum Operation {
     // KMIP spec 1.0 operations
     #[serde(rename = "0x00000001")]
