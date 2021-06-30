@@ -82,7 +82,9 @@ pub struct RequestMessage(pub RequestHeader, pub Vec<BatchItem>);
 #[serde(rename = "0x420077")]
 pub struct RequestHeader(
     pub ProtocolVersion,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub Option<MaximumResponseSize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub Option<Authentication>,
     pub BatchCount,
 );
@@ -127,4 +129,8 @@ pub struct DiscoverVersionsRequestPayload();
 // KMIP spec 1.2 section 4.31 Sign
 // See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
 #[derive(Serialize)]
-pub struct SignRequestPayload(pub Option<UniqueIdentifier>, pub Option<CryptographicParameters>);
+pub struct SignRequestPayload(
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub Option<UniqueIdentifier>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub Option<CryptographicParameters>);
