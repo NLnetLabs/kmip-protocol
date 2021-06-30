@@ -10,6 +10,7 @@ pub struct Credential(pub CredentialType, pub CredentialValue);
 
 #[derive(Serialize)]
 #[serde(rename = "0x420024")]
+#[non_exhaustive]
 pub enum CredentialType {
     #[serde(rename = "0x00000001")]
     UsernameAndPassword,
@@ -17,6 +18,7 @@ pub enum CredentialType {
 
 #[derive(Serialize)]
 #[serde(rename = "0x420025")]
+#[non_exhaustive]
 pub enum CredentialValue {
     UsernameAndPassword(UsernameAndPasswordCredential),
 }
@@ -89,6 +91,7 @@ pub struct RequestHeader(
 
 #[derive(Serialize)]
 #[serde(rename = "0x420079")]
+#[non_exhaustive]
 pub enum RequestPayload {
     Create(CreateRequestPayload),
     Query(Vec<QueryFunction>),
@@ -105,6 +108,7 @@ pub struct CreateRequestPayload(pub ObjectType, pub TemplateAttribute);
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554
 #[derive(Serialize)]
 #[serde(rename = "0x420074")]
+#[non_exhaustive]
 pub enum QueryFunction {
     #[serde(rename = "0x00000001")]
     QueryOperations,

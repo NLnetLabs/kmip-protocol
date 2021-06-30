@@ -49,6 +49,7 @@ pub struct ProtocolVersion {
 // KMIP spec 1.0 section 6.9 Result Status
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247
 #[derive(Deserialize)]
+#[non_exhaustive]
 pub enum ResultStatus {
     #[serde(rename = "0x00000000")]
     Success,
@@ -66,6 +67,7 @@ pub enum ResultStatus {
 // KMIP spec 1.0 section 6.10 Result Reason
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248
 #[derive(Deserialize)]
+#[non_exhaustive]
 pub enum ResultReason {
     #[serde(rename = "0x00000001")]
     ItemNotFound,
@@ -196,6 +198,7 @@ pub struct BatchItem {
 }
 
 #[derive(Deserialize)]
+#[non_exhaustive]
 pub enum ResponsePayload {
     // KMIP spec 1.0 operations
     #[serde(rename = "if 0x42005C==0x00000001")]

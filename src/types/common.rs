@@ -17,6 +17,7 @@ pub struct AttributeName(&'static str);
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Serialize)]
 #[serde(rename = "0x42000B")]
+#[non_exhaustive]
 pub enum AttributeValue {
     Integer(i32),
     Enumeration(u32),
@@ -38,6 +39,7 @@ pub struct UniqueIdentifier(String);
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
 #[derive(Deserialize, Serialize)]
 #[serde(rename = "0x420057")]
+#[non_exhaustive]
 pub enum ObjectType {
     #[serde(rename = "0x00000002")]
     SymmetricKey,
@@ -47,6 +49,7 @@ pub enum ObjectType {
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176
 #[derive(Deserialize, Serialize)]
 #[serde(rename = "0x420028")]
+#[non_exhaustive]
 pub enum CryptographicAlgorithm {
     AES = 0x00000003,
 }
@@ -61,6 +64,7 @@ pub struct CryptographicParameters(CryptographicAlgorithm);
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581240
 #[derive(Deserialize, Serialize)]
 #[serde(rename = "0x42005C")]
+#[non_exhaustive]
 pub enum Operation {
     // KMIP spec 1.0 operations
     #[serde(rename = "0x00000001")]
