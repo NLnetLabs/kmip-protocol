@@ -44,8 +44,34 @@ pub struct UniqueIdentifier(String);
 #[serde(rename = "0x420057")]
 #[non_exhaustive]
 pub enum ObjectType {
+    // KMIP spec 1.0 and 1.1 variants
+    #[serde(rename = "0x00000001")]
+    Certificate,
+
     #[serde(rename = "0x00000002")]
     SymmetricKey,
+
+    #[serde(rename = "0x00000003")]
+    PublicKey,
+
+    #[serde(rename = "0x00000004")]
+    PrivateKey,
+
+    #[serde(rename = "0x00000005")]
+    SplitKey,
+
+    #[serde(rename = "0x00000006")]
+    Template,
+
+    #[serde(rename = "0x00000007")]
+    SecretData,
+
+    #[serde(rename = "0x00000008")]
+    OpaqueObject,
+
+    // KMIP spec 1.2 variants
+    #[serde(rename = "0x00000009")]
+    PGPKey,
 }
 
 // KMIP spec 1.0 section 3.4 Cryptographic Algorithm

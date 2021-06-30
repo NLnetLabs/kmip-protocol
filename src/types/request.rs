@@ -119,8 +119,8 @@ pub enum QueryFunction {
     #[serde(rename = "0x00000003")]
     QueryServerInformation,
 
-    #[serde(rename = "0x00000004")]
-    QueryApplicationNamespaces,
+    // Note: This set of enum variants is deliberately incomplete as supporting additional QueryFunction variants also
+    // requires supporting the corresponding additional data and types that come back in the Query response
 }
 
 // KMIP spec 1.2 section 4.26 Discover Versions
