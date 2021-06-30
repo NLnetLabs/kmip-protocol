@@ -91,7 +91,7 @@ pub struct RequestHeader(
 #[serde(rename = "0x420079")]
 pub enum RequestPayload {
     Create(CreateRequestPayload),
-    Query(QueryPayload),
+    Query(Vec<QueryFunction>),
     DiscoverVersions(DiscoverVersionsRequestPayload),
     Sign(SignRequestPayload),
 }
@@ -100,12 +100,6 @@ pub enum RequestPayload {
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
 #[derive(Serialize)]
 pub struct CreateRequestPayload(pub ObjectType, pub TemplateAttribute);
-
-// KMIP spec 1.0 section 4.24 Query
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
-#[derive(Serialize)]
-#[serde(rename = "0x420079")]
-pub struct QueryPayload(pub Vec<QueryFunction>);
 
 // KMIP spec 1.0 section 9.1.3.2.23 Query Function Enumeration
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554
