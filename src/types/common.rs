@@ -70,13 +70,125 @@ pub enum Operation {
     #[serde(rename = "0x00000001")]
     Create,
 
+    #[serde(rename = "0x00000002")]
+    CreateKeyPair,
+
+    #[serde(rename = "0x00000003")]
+    Register,
+
+    #[serde(rename = "0x00000004")]
+    Rekey,
+
+    #[serde(rename = "0x00000005")]
+    DeriveKey,
+
+    #[serde(rename = "0x00000006")]
+    Certify,
+
+    #[serde(rename = "0x00000007")]
+    Recertify,
+
+    #[serde(rename = "0x00000008")]
+    Locate,
+
+    #[serde(rename = "0x00000009")]
+    Check,
+
+    #[serde(rename = "0x0000000A")]
+    Get,
+
+    #[serde(rename = "0x0000000B")]
+    GetAttributes,
+
+    #[serde(rename = "0x0000000C")]
+    GetAttributeList,
+
+    #[serde(rename = "0x0000000D")]
+    AddAttribute,
+
+    #[serde(rename = "0x0000000E")]
+    ModifyAttribute,
+
+    #[serde(rename = "0x0000000F")]
+    DeleteAttribute,
+
+    #[serde(rename = "0x00000010")]
+    ObtainLease,
+
+    #[serde(rename = "0x00000011")]
+    GetUsageAllocation,
+
+    #[serde(rename = "0x00000012")]
+    Activate,
+
+    #[serde(rename = "0x00000013")]
+    Revoke,
+
+    #[serde(rename = "0x00000014")]
+    Destroy,
+
+    #[serde(rename = "0x00000015")]
+    Archive,
+
+    #[serde(rename = "0x00000016")]
+    Recover,
+
+    #[serde(rename = "0x00000017")]
+    Validate,
+
     #[serde(rename = "0x00000018")]
     Query,
 
-    // KMIP spec 1.2 operations
+    #[serde(rename = "0x00000019")]
+    Cancel,
+
+    #[serde(rename = "0x0000001A")]
+    Poll,
+
+    #[serde(rename = "0x0000001B")]
+    Notify,
+
+    #[serde(rename = "0x0000001C")]
+    Put,
+
+    // KMIP spec 1.1 operations
+    #[serde(rename = "0x0000001D")]
+    RekeyKeyPair,
+
     #[serde(rename = "0x0000001E")]
     DiscoverVersions,
 
+    // KMIP spec 1.2 operations
+    #[serde(rename = "0x0000001F")]
+    Encrypt,
+
+    #[serde(rename = "0x00000020")]
+    Decrypt,
+
     #[serde(rename = "0x00000021")]
     Sign,
+
+    #[serde(rename = "0x00000022")]
+    SignatureVerify,
+
+    #[serde(rename = "0x00000023")]
+    MAC,
+
+    #[serde(rename = "0x00000024")]
+    MACVerify,
+
+    #[serde(rename = "0x00000025")]
+    RNGRetrieve,
+
+    #[serde(rename = "0x00000026")]
+    RNGSeed,
+
+    #[serde(rename = "0x00000027")]
+    Hash,
+
+    #[serde(rename = "0x00000028")]
+    CreateSplitKey,
+
+    #[serde(rename = "0x00000029")]
+    JoinSplitKey,
 }
