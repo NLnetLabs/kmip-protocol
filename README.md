@@ -1,3 +1,5 @@
+[![CI](https://github.com/NLnetLabs/krill-kmip-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/krill-kmip-protocol/actions/workflows/ci.yml)
+
 # krill-kmip-protocol - A library for (de)serializing KMIP protocol messages
 
 [Krill](https://nlnetlabs.nl/projects/rpki/krill/):
