@@ -3,7 +3,7 @@ use serde_derive::Deserialize;
 use enum_display_derive::Display;
 use std::fmt::Display;
 
-use super::common::{Operation, UniqueIdentifier};
+use super::common::{ObjectType, Operation, UniqueIdentifier};
 
 // KMIP spec 1.0 section 4.2 Create Key Pair
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
@@ -15,6 +15,26 @@ pub struct CreateKeyPairResponsePayload {
     #[serde(rename = "0x42006F")]
     pub public_key_unique_identifier: String,
 }
+
+// KMIP spec 1.0 section 4.24 Query
+// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+#[derive(Deserialize)]
+pub struct QueryResponsePayload {
+    #[serde(rename = "0x42005C")]
+    pub operations: Vec<Operation>,
+
+    #[serde(rename = "0x420057")]
+    pub object_types: Vec<ObjectType>,
+
+    #[serde(rename = "0x42009D")]
+    pub vendor_identification: Option<String>,
+
+    #[serde(rename = "0x420088")]
+    pub server_information: Option<ServerInformation>,
+}
+
+#[derive(Deserialize)]
+pub struct ServerInformation { }
 
 // KMIP spec 1.2 section 4.26 Discover Versions
 // See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
@@ -206,6 +226,9 @@ pub enum ResponsePayload {
     // KMIP spec 1.0 operations
     #[serde(rename = "if 0x42005C==0x00000002")]
     CreateKeyPair(CreateKeyPairResponsePayload),
+
+    #[serde(rename = "if 0x42005C==0x000000018")]
+    Query(QueryResponsePayload),
 
     // KMIP spec 1.1 operations
     #[serde(rename = "if 0x42005C==0x0000001E")]
