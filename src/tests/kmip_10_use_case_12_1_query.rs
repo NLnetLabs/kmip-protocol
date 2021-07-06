@@ -46,16 +46,12 @@ fn query_operation_failed_response_too_large() {
     assert_eq!(res.header.timestamp, 0x000000004B7918AA);
     assert_eq!(res.header.batch_count, 1);
     assert_eq!(res.batch_items.len(), 1);
-    assert!(matches!(
-        res.batch_items[0].result_status,
-        ResultStatus::OperationFailed
-    ));
-    assert!(matches!(
-        res.batch_items[0].result_reason,
-        Some(ResultReason::ResponseTooLarge)
-    ));
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::OperationFailed));
+    assert!(matches!(item.result_reason, Some(ResultReason::ResponseTooLarge)));
     assert_eq!(
-        res.batch_items[0].result_message,
+        item.result_message,
         Some("Response size: 568, Maximum Response Size indicated in request: 256".to_string())
     );
 }
