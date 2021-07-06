@@ -8,6 +8,7 @@ use super::common::{ObjectType, Operation, UniqueIdentifier};
 // KMIP spec 1.0 section 4.2 Create Key Pair
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
 #[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
 pub struct CreateKeyPairResponsePayload {
     #[serde(rename = "0x420066")]
     pub private_key_unique_identifier: String,
@@ -19,6 +20,7 @@ pub struct CreateKeyPairResponsePayload {
 // KMIP spec 1.0 section 4.24 Query
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
 #[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
 pub struct QueryResponsePayload {
     #[serde(rename = "0x42005C")]
     pub operations: Vec<Operation>,
@@ -39,6 +41,7 @@ pub struct ServerInformation {}
 // KMIP spec 1.2 section 4.26 Discover Versions
 // See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
 #[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
 pub struct DiscoverVersionsResponsePayload {
     #[serde(rename = "0x420069")]
     pub supported_versions: Vec<ProtocolVersion>,
@@ -47,6 +50,7 @@ pub struct DiscoverVersionsResponsePayload {
 // KMIP spec 1.2 section 4.31 Sign
 // See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
 #[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
 pub struct SignResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -61,6 +65,7 @@ pub struct SignatureData(Vec<u8>);
 // KMIP spec 1.0 section 6.1 Protocol Version
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
 #[derive(Deserialize)]
+#[serde(rename = "0x420069")]
 pub struct ProtocolVersion {
     #[serde(rename = "0x42006A")]
     pub major: i32,
@@ -179,6 +184,7 @@ pub struct ResponseMessage {
 // KMIP spec 1.0 section 7.2 Operations
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257
 #[derive(Deserialize)]
+#[serde(rename = "0x42007A")]
 pub struct ResponseHeader {
     #[serde(rename = "0x420069")]
     pub protocol_version: ProtocolVersion,
@@ -191,15 +197,16 @@ pub struct ResponseHeader {
 }
 
 #[derive(Deserialize)]
+#[serde(rename = "0x42000F")]
 pub struct BatchItem {
     #[serde(rename = "0x42005C")]
     #[serde(default)]
     pub operation: Option<Operation>,
 
     // pub unique_batch_item_id: Option<...> // we don't have this field yet because (a) per the spec we don't need it
-    // because we don't send it in the request, and (b) because it uses the
-    // TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
-    // yet.
+    //                                          because we don't send it in the request, and (b) because it uses the
+    //                                          TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
+    //                                          yet.
     #[serde(rename = "0x42007F")]
     pub result_status: ResultStatus,
 
@@ -225,7 +232,7 @@ pub enum ResponsePayload {
     #[serde(rename = "if 0x42005C==0x00000002")]
     CreateKeyPair(CreateKeyPairResponsePayload),
 
-    #[serde(rename = "if 0x42005C==0x000000018")]
+    #[serde(rename = "if 0x42005C==0x00000018")]
     Query(QueryResponsePayload),
 
     // KMIP spec 1.1 operations

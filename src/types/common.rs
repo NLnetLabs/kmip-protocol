@@ -40,7 +40,7 @@ pub struct UniqueIdentifier(String);
 
 // KMIP spec 1.0 section 3.3 Object Type
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
-#[derive(Deserialize, Serialize, Display)]
+#[derive(Deserialize, Serialize, Display, PartialEq)]
 #[serde(rename = "0x420057")]
 #[non_exhaustive]
 pub enum ObjectType {
@@ -76,7 +76,7 @@ pub enum ObjectType {
 
 // KMIP spec 1.0 section 3.4 Cryptographic Algorithm
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176
-#[derive(Deserialize, Serialize, Display)]
+#[derive(Deserialize, Serialize, Display, PartialEq)]
 #[serde(rename = "0x420028")]
 #[non_exhaustive]
 pub enum CryptographicAlgorithm {
@@ -91,7 +91,7 @@ pub struct CryptographicParameters(CryptographicAlgorithm);
 
 // KMIP spec 1.0 section 6.2 Operation
 // See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581240
-#[derive(Deserialize, Serialize, Display)]
+#[derive(Deserialize, Serialize, Display, PartialEq)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
 pub enum Operation {
