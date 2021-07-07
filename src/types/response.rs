@@ -6,7 +6,7 @@ use std::fmt::Display;
 use super::common::{ObjectType, Operation, UniqueIdentifier};
 
 // KMIP spec 1.0 section 4.2 Create Key Pair
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct CreateKeyPairResponsePayload {
@@ -18,7 +18,7 @@ pub struct CreateKeyPairResponsePayload {
 }
 
 // KMIP spec 1.0 section 4.24 Query
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct QueryResponsePayload {
@@ -31,15 +31,15 @@ pub struct QueryResponsePayload {
     #[serde(rename = "0x42009D")]
     pub vendor_identification: Option<String>,
 
-    #[serde(rename = "0x420088")]
     pub server_information: Option<ServerInformation>,
 }
 
 #[derive(Deserialize)]
+#[serde(rename = "0x420088")]
 pub struct ServerInformation {}
 
 // KMIP spec 1.2 section 4.26 Discover Versions
-// See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct DiscoverVersionsResponsePayload {
@@ -48,7 +48,7 @@ pub struct DiscoverVersionsResponsePayload {
 }
 
 // KMIP spec 1.2 section 4.31 Sign
-// See: http://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct SignResponsePayload {
@@ -63,7 +63,7 @@ pub struct SignResponsePayload {
 pub struct SignatureData(Vec<u8>);
 
 // KMIP spec 1.0 section 6.1 Protocol Version
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
 #[derive(Deserialize)]
 #[serde(rename = "0x420069")]
 pub struct ProtocolVersion {
@@ -75,7 +75,7 @@ pub struct ProtocolVersion {
 }
 
 // KMIP spec 1.0 section 6.9 Result Status
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247
 #[derive(Deserialize, Display)]
 #[non_exhaustive]
 pub enum ResultStatus {
@@ -93,7 +93,7 @@ pub enum ResultStatus {
 }
 
 // KMIP spec 1.0 section 6.10 Result Reason
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248
 #[derive(Deserialize, Display)]
 #[non_exhaustive]
 pub enum ResultReason {
@@ -153,7 +153,7 @@ pub enum ResultReason {
 }
 
 // KMIP spec 1.0 section 6.16 Message Extension
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254
 #[derive(Deserialize)]
 pub struct MessageExtension {
     #[serde(rename = "0x42007A")]
@@ -170,7 +170,7 @@ pub struct MessageExtension {
 pub struct VendorExtension;
 
 // KMIP spec 1.0 section 7.1 Message Format
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256
 #[derive(Deserialize)]
 #[serde(rename = "0x42007B")]
 pub struct ResponseMessage {
@@ -182,7 +182,7 @@ pub struct ResponseMessage {
 }
 
 // KMIP spec 1.0 section 7.2 Operations
-// See: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257
 #[derive(Deserialize)]
 #[serde(rename = "0x42007A")]
 pub struct ResponseHeader {

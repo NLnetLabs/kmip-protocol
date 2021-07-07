@@ -14,6 +14,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumflags2"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8672257d642ffdd235f6e9c723c2326ac1253c8f3c022e7cfd2e57da55b1131"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33526f770a27828ce7c2792fdb7cb240220237e0ff12933ed6c23957fc5dd7cf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -24,6 +44,7 @@ name = "krill-kmip-protocol"
 version = "0.1.0-dev"
 dependencies = [
  "enum-display-derive",
+ "enumflags2",
  "hex",
  "krill-kmip-ttlv",
  "serde",
@@ -33,7 +54,7 @@ dependencies = [
 [[package]]
 name = "krill-kmip-ttlv"
 version = "0.1.0-dev"
-source = "git+https://github.com/NLnetLabs/krill-kmip-ttlv.git?branch=main#e5afbcf45537fef3a5d864f3e67bf04d6059a712"
+source = "git+https://github.com/NLnetLabs/krill-kmip-ttlv.git?branch=main#50f8e832a76b651cf3c00989ea77ed7b52fce14a"
 dependencies = [
  "hex",
  "serde",

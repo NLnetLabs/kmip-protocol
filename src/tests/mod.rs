@@ -1,1 +1,2 @@
 mod kmip_10_use_case_12_1_query;
+mod kmip_10_use_case_8_1_create_key_pair;

@@ -5,7 +5,7 @@
 [Krill](https://nlnetlabs.nl/projects/rpki/krill/):
 > A free, open source RPKI Certificate Authority that lets you run delegated RPKI under one or multiple Regional Internet Registries (RIRs).
 
-[KMIP](http://docs.oasis-open.org/kmip/spec/v1.0/kmip-spec-1.0.html):
+[KMIP](https://docs.oasis-open.org/kmip/spec/v1.0/kmip-spec-1.0.html):
 > The OASIS Key Management Interoperability Protocol specifications which define message formats for the manipulation of cryptographic material on a key management server.
 
 ### Welcome
@@ -26,7 +26,7 @@ Each KMIP specification document is accompanied by a separate document that defi
 
 The subset of the TTLV/hex format test cases that this crate [demonstrates compliance with](https://github.com/NLnetLabs/krill-kmip-protocol/tree/main/src/tests) are represented below by ticked boxes:
 
-**[KMIP Use Cases v1.0](http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html):**
+**[KMIP Use Cases v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html):**
 
 - 3 Centralized Management
   - 3.1 Basic Functionality
@@ -61,7 +61,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 12 Query, Maximum Response Size
   - [x] 12.1 Use-case: Query, Maximum Response Size
 
-**[KMIP Test Cases v1.1](http://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
+**[KMIP Test Cases v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
 
 - 3       Centralized Management
   - 3.1     Basic Functionality
