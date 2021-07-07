@@ -1,1 +1,1 @@
-mod kmip_10_query_use_case_12_1;
+mod kmip_10_use_case_12_1_query;
