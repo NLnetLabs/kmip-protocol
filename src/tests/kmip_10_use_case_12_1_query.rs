@@ -16,24 +16,37 @@ use crate::{
 
 #[test]
 fn query_request_operations_objects_max_response_size_256() {
-    let use_case_request = RequestMessage(
-        RequestHeader(
-            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
-            Some(MaximumResponseSize(256)),
-            Option::<Authentication>::None,
-            BatchCount(1),
-        ),
-        vec![BatchItem(
-            Operation::Query,
-            RequestPayload::Query(vec![QueryFunction::QueryOperations, QueryFunction::QueryObjects]),
-        )],
-    );
+    #[rustfmt::skip]
+    let use_case_request = 
+        RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
+            RequestHeader(                          //   Tag: 0x420077, Type: 0x01 (Structure)
+                request::ProtocolVersion(           //     Tag: 0x420069, Type: 0x01 (Structure)
+                    ProtocolVersionMajor(1),        //       Tag: 0x42006A, Type: 0x02 (Integer), Data: 0x00000001 (1)
+                    ProtocolVersionMinor(0)         //       Tag: 0x42006B, Type: 0x02 (Integer), Data: 0x00000000 (0)
+                ),                                  //
+                Some(MaximumResponseSize(256)),     //     Tag: 0x420050, Type: 0x02 (Integer), Data: 0x00000100 (256)
+                Option::<Authentication>::None,     //
+                BatchCount(1),                      //     Tag: 0x42000D, Type: 0x02 (Integer), Data: 0x00000001 (1)
+            ),                                      //
+            vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
+                Operation::Query,                   //     Tag: 0x42005C, Type: 0x05 (Enumeration). Data: 0x00000018
+                RequestPayload::Query(vec![         //     Tag: 0x420079, Type: 0x01 (Structure)
+                    QueryFunction::QueryOperations, //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000001
+                    QueryFunction::QueryObjects     //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000002
+                ]),
+            )],
+        );
 
+    #[rustfmt::skip]
     let use_case_request_hex = concat!(
         "42007801000000904200770100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+    //   ^RequestMessage ^RequestHeader  ^ProtocolVersion^ProtocolVersionMajor           ^ProtocolVersionMinor
         "0000000000000004200500200000004000001000000000042000D0200000004000000010000000042000F010000003842",
+    //                  ^MaximumResponseSize            ^BatchCount                     ^BatchItem      ^O
         "005C050000000400000018000000004200790100000020420074050000000400000001000000004200740500000004000",
-        "0000200000000");
+    //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
+        "0000200000000"
+    );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
     assert_eq!(use_case_request_hex, actual_request_hex);
@@ -46,7 +59,8 @@ fn query_response_operation_failed_response_too_large() {
         "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F010000007042",
         "007F0500000004000000010000000042007E0500000004000000020000000042007D0700000043526573706F6E7365207",
         "3697A653A203536382C204D6178696D756D20526573706F6E73652053697A6520696E6469636174656420696E20726571",
-        "756573743A203235360000000000");
+        "756573743A203235360000000000"
+    );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
     let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
 
@@ -67,24 +81,37 @@ fn query_response_operation_failed_response_too_large() {
 
 #[test]
 fn query_request_operations_objects_max_response_size_2048() {
-    let use_case_request = RequestMessage(
-        RequestHeader(
-            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
-            Some(MaximumResponseSize(2048)),
-            Option::<Authentication>::None,
-            BatchCount(1),
-        ),
-        vec![BatchItem(
-            Operation::Query,
-            RequestPayload::Query(vec![QueryFunction::QueryOperations, QueryFunction::QueryObjects]),
-        )],
-    );
+    #[rustfmt::skip]
+    let use_case_request = 
+        RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
+            RequestHeader(                          //   Tag: 0x420077, Type: 0x01 (Structure)
+                request::ProtocolVersion(           //     Tag: 0x420069, Type: 0x01 (Structure)
+                    ProtocolVersionMajor(1),        //       Tag: 0x42006A, Type: 0x02 (Integer), Data: 0x00000001 (1)
+                    ProtocolVersionMinor(0)         //       Tag: 0x42006B, Type: 0x02 (Integer), Data: 0x00000000 (0)
+                ),                                  //
+                Some(MaximumResponseSize(2048)),    //     Tag: 0x420050, Type: 0x02 (Integer), Data: 0x00000800 (2048)
+                Option::<Authentication>::None,     //
+                BatchCount(1),                      //     Tag: 0x42000D, Type: 0x02 (Integer), Data: 0x00000001 (1)
+            ),                                      //
+            vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
+                Operation::Query,                   //     Tag: 0x42005C, Type: 0x05 (Enumeration). Data: 0x00000018
+                RequestPayload::Query(vec![         //     Tag: 0x420079, Type: 0x01 (Structure)
+                    QueryFunction::QueryOperations, //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000001
+                    QueryFunction::QueryObjects     //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000002
+                ]),
+            )],
+        );
 
+    #[rustfmt::skip]
     let use_case_request_hex = concat!(
         "42007801000000904200770100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+    //   ^RequestMessage ^RequestHeader  ^ProtocolVersion^ProtocolVersionMajor           ^ProtocolVersionMinor
         "0000000000000004200500200000004000008000000000042000D0200000004000000010000000042000F010000003842",
+    //                  ^MaximumResponseSize            ^BatchCount                     ^BatchItem      ^O
         "005C050000000400000018000000004200790100000020420074050000000400000001000000004200740500000004000",
-        "0000200000000");
+    //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
+        "0000200000000"
+    );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
     assert_eq!(use_case_request_hex, actual_request_hex);
@@ -104,7 +131,8 @@ fn query_response_operation_succeeded() {
         "0000000042005C0500000004000000140000000042005C0500000004000000150000000042005C0500000004000000160",
         "000000042005C0500000004000000180000000042005C0500000004000000190000000042005C05000000040000001A00",
         "0000004200570500000004000000010000000042005705000000040000000200000000420057050000000400000003000",
-        "000004200570500000004000000040000000042005705000000040000000600000000");
+        "000004200570500000004000000040000000042005705000000040000000600000000"
+    );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
     let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
 
