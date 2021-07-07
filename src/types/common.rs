@@ -25,6 +25,7 @@ pub struct AttributeName(pub &'static str);
 pub enum AttributeValue {
     CryptographicAlgorithm(CryptographicAlgorithm),
     Integer(i32),
+    Link(LinkType, LinkedObjectIdentifier),
     Name(NameValue, NameType),
     ObjectType(ObjectType),
     TextString(String),
@@ -90,6 +91,15 @@ impl Attribute {
             AttributeValue::Integer(value as i32),
         )
     }
+
+    /// KMIP spec 1.0 Section 3.29 Link
+    #[allow(non_snake_case)]
+    pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
+        Attribute(
+            AttributeName("Link"),
+            AttributeValue::Link(link_type, linked_object_identifier),
+        )
+    }
 }
 
 macro_rules! impl_template_attribute_flavour {
@@ -124,6 +134,12 @@ impl_template_attribute_flavour!(PrivateKeyTemplateAttribute, "0x420065");
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
 impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
+// KMIP spec 1.0 section 3.1 Unique Identifier
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "0x420094")]
+pub struct UniqueIdentifier(pub String);
+
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
 #[derive(Serialize)]
@@ -140,20 +156,13 @@ impl std::fmt::Display for Name {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
 #[derive(Serialize)]
 #[serde(rename = "0x420055")]
-pub struct NameValue(String);
+pub struct NameValue(pub String);
 
 impl std::fmt::Display for NameValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
 }
-
-// KMIP spec 1.0 section 3.1 Unique Identifier
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
-#[derive(Deserialize, Serialize)]
-#[serde(rename = "0x420094")]
-pub struct UniqueIdentifier(String);
-
 // KMIP spec 1.0 section 3.3 Object Type
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
 #[derive(Deserialize, Serialize, Display, PartialEq)]
@@ -246,6 +255,12 @@ pub enum CryptographicUsageMask {
     TranslateUnwrap                 = 0x00080000,
 }
 
+// KMIP spec 1.0 section 3.29 Linked Object Identifier
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203
+#[derive(Serialize)]
+#[serde(rename = "0x42004C")]
+pub struct LinkedObjectIdentifier(pub String);
+
 // KMIP spec 1.0 section 9.1.3.2.10 Name Type Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060
 #[derive(Serialize)]
@@ -256,6 +271,33 @@ pub enum NameType {
 
     #[serde(rename = "0x00000002")]
     URI,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.19 Link Type Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069
+#[derive(Serialize)]
+#[serde(rename = "0x42004B")]
+pub enum LinkType {
+    #[serde(rename = "0x00000101")]
+    CertificateLink,
+
+    #[serde(rename = "0x00000102")]
+    PublicKeyLink,
+
+    #[serde(rename = "0x00000103")]
+    PrivateKeyLink,
+
+    #[serde(rename = "0x00000104")]
+    DerivationBaseObjectLink,
+
+    #[serde(rename = "0x00000105")]
+    DerivedKeyLink,
+
+    #[serde(rename = "0x00000106")]
+    ReplacementObjectLink,
+
+    #[serde(rename = "0x00000107")]
+    ReplacedObjectLink,
 }
 
 // KMIP spec 1.0 section 9.1.3.2.26 Operation Enumeration

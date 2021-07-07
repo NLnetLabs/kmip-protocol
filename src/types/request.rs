@@ -1,7 +1,7 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    CommonTemplateAttribute, CryptographicParameters, ObjectType, Operation, PrivateKeyTemplateAttribute,
+    Attribute, CommonTemplateAttribute, CryptographicParameters, ObjectType, Operation, PrivateKeyTemplateAttribute,
     PublicKeyTemplateAttribute, TemplateAttribute, UniqueIdentifier,
 };
 
@@ -111,6 +111,8 @@ pub enum RequestPayload {
     Query(Vec<QueryFunction>),
 
     DiscoverVersions,
+
+    Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
     Sign,
 }

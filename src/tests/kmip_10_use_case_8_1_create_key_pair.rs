@@ -6,8 +6,8 @@ use crate::{
     response::from_slice,
     types::{
         common::{
-            Attribute, CommonTemplateAttribute, CryptographicAlgorithm, CryptographicUsageMask, Operation,
-            PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
+            Attribute, CommonTemplateAttribute, CryptographicAlgorithm, CryptographicUsageMask, LinkType,
+            LinkedObjectIdentifier, ObjectType, Operation, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
         },
         request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
@@ -97,4 +97,38 @@ fn create_key_pair_response() {
     } else {
         panic!("Wrong payload");
     }
+}
+
+#[test]
+fn locate_request_public_key() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Locate,
+            RequestPayload::Locate(vec![
+                Attribute::ObjectType(ObjectType::PublicKey),
+                Attribute::Link(
+                    LinkType::PrivateKeyLink,
+                    LinkedObjectIdentifier("a242fca4-ebf0-4398-ac65-879bab490259".into()),
+                ),
+            ]),
+        )],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000000F04200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F01000000A842005C0500000004000000080000000042",
+        "00790100000090420008010000002842000A070000000B4F626A6563742054797065000000000042000B0500000004000",
+        "0000300000000420008010000005842000A07000000044C696E6B0000000042000B010000004042004B05000000040000",
+        "01030000000042004C070000002461323432666361342D656266302D343339382D616336352D383739626162343930323",
+        "53900000000"
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
 }
