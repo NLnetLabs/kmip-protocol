@@ -11,10 +11,19 @@ use super::common::{ObjectType, Operation, UniqueIdentifier};
 #[serde(rename = "0x42007C")]
 pub struct CreateKeyPairResponsePayload {
     #[serde(rename = "0x420066")]
-    pub private_key_unique_identifier: String,
+    pub private_key_unique_identifier: UniqueIdentifier,
 
     #[serde(rename = "0x42006F")]
-    pub public_key_unique_identifier: String,
+    pub public_key_unique_identifier: UniqueIdentifier,
+}
+
+// KMIP spec 1.0 section 4.8 Locate
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct LocateResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifiers: Vec<UniqueIdentifier>,
 }
 
 // KMIP spec 1.0 section 4.24 Query
@@ -231,6 +240,9 @@ pub enum ResponsePayload {
     // KMIP spec 1.0 operations
     #[serde(rename = "if 0x42005C==0x00000002")]
     CreateKeyPair(CreateKeyPairResponsePayload),
+
+    #[serde(rename = "if 0x42005C==0x00000008")]
+    Locate(LocateResponsePayload),
 
     #[serde(rename = "if 0x42005C==0x00000018")]
     Query(QueryResponsePayload),

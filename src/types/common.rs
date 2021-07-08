@@ -136,9 +136,23 @@ impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
 // KMIP spec 1.0 section 3.1 Unique Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename = "0x420094")]
 pub struct UniqueIdentifier(pub String);
+
+impl std::ops::Deref for UniqueIdentifier {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::cmp::PartialEq<str> for UniqueIdentifier {
+    fn eq(&self, other: &str) -> bool {
+        self.0 == other
+    }
+}
 
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
