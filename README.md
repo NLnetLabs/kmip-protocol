@@ -95,7 +95,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
   - [ ] 11.1 Test Case: Credential, Operation Policy, Destroy Date
   - [ ] 11.2 Test Case: Device Credential, Operation Policy, Destroy Date
 - 12     Query, Maximum Response Size
-  - [ ] 12.1 Test Case: Query, Maximum Response Size
+  - [x] 12.1 Test Case: Query, Maximum Response Size
   - [ ] 12.2 Test Case: Query Vendor Extensions
 - 13     Asymmetric Keys and Certificates
   - [ ] 13.1 Test Case: Register an Asymmetric Key Pair in PKCS#1 Format
