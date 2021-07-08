@@ -15,6 +15,9 @@ pub struct CreateKeyPairResponsePayload {
 
     #[serde(rename = "0x42006F")]
     pub public_key_unique_identifier: UniqueIdentifier,
+    // TODO: Add the optional response field that lists attributes for the private key
+
+    // TODO: Add the optional response field that lists attributes for the public key
 }
 
 // KMIP spec 1.0 section 4.8 Locate
