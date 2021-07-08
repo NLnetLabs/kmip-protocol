@@ -56,8 +56,8 @@ pub struct QueryResponsePayload {
 #[serde(rename = "0x420088")]
 pub struct ServerInformation {}
 
-// KMIP spec 1.2 section 4.26 Discover Versions
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+// KMIP spec 1.1 section 4.26 Discover Versions
+// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct DiscoverVersionsResponsePayload {
@@ -266,8 +266,8 @@ pub enum ResponsePayload {
     #[serde(rename = "if 0x42005C==0x00000018")]
     Query(QueryResponsePayload),
 
-    // KMIP spec 1.2 section 4.26 Discover Versions
-    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+    // KMIP spec 1.1 section 4.26 Discover Versions
+    // See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(DiscoverVersionsResponsePayload),
 

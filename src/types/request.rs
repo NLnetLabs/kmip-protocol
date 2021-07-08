@@ -120,8 +120,8 @@ pub enum RequestPayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
     Query(Vec<QueryFunction>),
 
-    // KMIP spec 1.2 section 4.26 Discover Versions
-    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+    // KMIP spec 1.1 section 4.26 Discover Versions
+    // See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
     DiscoverVersions,
 
     // KMIP spec 1.2 section 4.31 Sign
@@ -151,8 +151,8 @@ pub enum QueryFunction {
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }
 
-// KMIP spec 1.2 section 4.26 Discover Versions
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+// KMIP spec 1.1 section 4.26 Discover Versions
+// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
 #[derive(Serialize)]
 pub struct DiscoverVersionsRequestPayload();
 
