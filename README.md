@@ -46,7 +46,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
   - [ ] 7.1 Use-case: Unrecognized Message Extension with Criticality Indicator false
   - [ ] 7.2 Use-case: Unrecognized Message Extension with Criticality Indicator true
 - 8 Asymmetric keys
-  - [ ] 8.1 Use-case: Create a Key Pair
+  - [x] 8.1 Use-case: Create a Key Pair
   - [ ] 8.2 Use-case: Register Both Halves of a Key Pair
 - 9 Key Roll-over
   - [ ] 9.1 Use-case: Create a Key, Re-key

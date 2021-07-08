@@ -108,12 +108,24 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<PublicKeyTemplateAttribute>,
     ),
 
-    Query(Vec<QueryFunction>),
-
-    DiscoverVersions,
-
+    // KMIP spec 1.0 section 4.8 Locate
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
+    // KMIP spec 1.0 section 4.20 Destroy
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
+    Destroy(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
+
+    // KMIP spec 1.0 section 4.24 Query
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+    Query(Vec<QueryFunction>),
+
+    // KMIP spec 1.2 section 4.26 Discover Versions
+    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613553
+    DiscoverVersions,
+
+    // KMIP spec 1.2 section 4.31 Sign
+    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     Sign,
 }
 

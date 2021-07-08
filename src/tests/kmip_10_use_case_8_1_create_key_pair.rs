@@ -8,6 +8,7 @@ use crate::{
         common::{
             Attribute, CommonTemplateAttribute, CryptographicAlgorithm, CryptographicUsageMask, LinkType,
             LinkedObjectIdentifier, ObjectType, Operation, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
+            UniqueIdentifier,
         },
         request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
@@ -227,6 +228,116 @@ fn locate_response_private_key() {
 
         let identifier = &payload.unique_identifiers[0];
         assert_eq!(identifier, "a242fca4-ebf0-4398-ac65-879bab490259");
+    } else {
+        panic!("Wrong payload");
+    }
+}
+
+#[test]
+fn destroy_request_private_key() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Destroy,
+            RequestPayload::Destroy(Some(UniqueIdentifier("a242fca4-ebf0-4398-ac65-879bab490259".into()))),
+        )],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000004842005C0500000004000000140000000042",
+        "00790100000030420094070000002461323432666361342D656266302D343339382D616336352D3837396261623439303",
+        "2353900000000"
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn destroy_response_private_key() {
+    let use_case_response_hex = concat!(
+        "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",
+        "005C0500000004000000140000000042007F0500000004000000000000000042007C01000000304200940700000024613",
+        "23432666361342D656266302D343339382D616336352D38373962616234393032353900000000"
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004B73C13B);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Destroy)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Destroy(_))));
+
+    if let Some(ResponsePayload::Destroy(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, "a242fca4-ebf0-4398-ac65-879bab490259");
+    } else {
+        panic!("Wrong payload");
+    }
+}
+
+#[test]
+fn destroy_request_public_key() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Destroy,
+            RequestPayload::Destroy(Some(UniqueIdentifier("895f72c2-b20a-49d8-9504-6dc2115cc042".into()))),
+        )],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000004842005C0500000004000000140000000042",
+        "00790100000030420094070000002438393566373263322D623230612D343964382D393530342D3664633231313563633",
+        "0343200000000"
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn destroy_response_public_key() {
+    let use_case_response_hex = concat!(
+        "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",
+        "005C0500000004000000140000000042007F0500000004000000000000000042007C01000000304200940700000024383",
+        "93566373263322D623230612D343964382D393530342D36646332313135636330343200000000",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004B73C13B);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Destroy)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Destroy(_))));
+
+    if let Some(ResponsePayload::Destroy(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, "895f72c2-b20a-49d8-9504-6dc2115cc042");
     } else {
         panic!("Wrong payload");
     }
