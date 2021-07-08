@@ -10,7 +10,6 @@ license = "BSD-3-Clause"
 enum-display-derive = "0.1.1"
 enumflags2 = "0.7.1"
 krill-kmip-ttlv = { version = "0.1.0-dev", git = "https://github.com/NLnetLabs/krill-kmip-ttlv.git", branch = "main" }
-# krill-kmip-ttlv = { version = "0.1.0-dev", path = "../krill-kmip-ttlv" }
 serde = "1.0.126"
 serde_derive = "1.0.126"
 
