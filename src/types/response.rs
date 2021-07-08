@@ -52,6 +52,7 @@ pub struct QueryResponsePayload {
     #[serde(rename = "0x42009D")]
     pub vendor_identification: Option<String>,
 
+    #[serde(rename = "0x420088")]
     pub server_information: Option<ServerInformation>,
 }
 
