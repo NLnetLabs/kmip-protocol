@@ -86,7 +86,7 @@ pub struct SignatureData(Vec<u8>);
 
 // KMIP spec 1.0 section 6.1 Protocol Version
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Debug)]
 #[serde(rename = "0x420069")]
 pub struct ProtocolVersion {
     #[serde(rename = "0x42006A")]
