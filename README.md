@@ -110,7 +110,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
   - [ ] 15.2 Test Case: Client-side Group Management
   - [ ] 15.3 Test Case: Default Object Group Member
 - 16     Discover Versions
-  - [ ] 16.1 Test Case: Discover Versions
+  - [x] 16.1 Test Case: Discover Versions
 - 17     Attribute Handling
   - [ ] 17.1 Test Case: Handling of Attributes and Attribute Index Values
 - 18     Digest
