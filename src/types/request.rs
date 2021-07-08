@@ -1,8 +1,8 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    Attribute, CommonTemplateAttribute, CryptographicParameters, ObjectType, Operation, PrivateKeyTemplateAttribute,
-    PublicKeyTemplateAttribute, TemplateAttribute, UniqueIdentifier,
+    Attribute, CommonTemplateAttribute, ObjectType, Operation, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
+    TemplateAttribute, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.2 Credential
@@ -122,17 +122,12 @@ pub enum RequestPayload {
 
     // KMIP spec 1.1 section 4.26 Discover Versions
     // See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
-    DiscoverVersions,
+    DiscoverVersions(Vec<ProtocolVersion>),
 
     // KMIP spec 1.2 section 4.31 Sign
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     Sign,
 }
-
-// KMIP spec 1.0 section 4.1 Create
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
-#[derive(Serialize)]
-pub struct CreateRequestPayload(pub ObjectType, pub TemplateAttribute);
 
 // KMIP spec 1.0 section 9.1.3.2.23 Query Function Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554
@@ -150,16 +145,3 @@ pub enum QueryFunction {
     QueryServerInformation,
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }
-
-// KMIP spec 1.1 section 4.26 Discover Versions
-// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
-#[derive(Serialize)]
-pub struct DiscoverVersionsRequestPayload();
-
-// KMIP spec 1.2 section 4.31 Sign
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
-#[derive(Serialize)]
-pub struct SignRequestPayload(
-    #[serde(skip_serializing_if = "Option::is_none")] pub Option<UniqueIdentifier>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicParameters>,
-);

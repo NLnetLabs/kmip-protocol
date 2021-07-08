@@ -66,7 +66,7 @@ pub struct ServerInformation {}
 #[serde(rename = "0x42007C")]
 pub struct DiscoverVersionsResponsePayload {
     #[serde(rename = "0x420069")]
-    pub supported_versions: Vec<ProtocolVersion>,
+    pub supported_versions: Option<Vec<ProtocolVersion>>,
 }
 
 // KMIP spec 1.2 section 4.31 Sign

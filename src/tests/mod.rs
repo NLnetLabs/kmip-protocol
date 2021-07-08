@@ -1,4 +1,5 @@
 mod kmip_10_use_case_12_1_query;
 mod kmip_10_use_case_8_1_create_key_pair;
-mod locate_key_by_name_and_type;
 mod kmip_11_test_case_12_1_query;
+mod kmip_11_test_case_16_1_discover_versions;
+mod locate_key_by_name_and_type;
