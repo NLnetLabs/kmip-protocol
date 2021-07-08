@@ -1,5 +1,8 @@
 //! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822082
 
+#[allow(unused_imports)]
+use pretty_assertions::{assert_eq, assert_ne};
+
 use krill_kmip_ttlv::ser::to_vec;
 
 use crate::{
