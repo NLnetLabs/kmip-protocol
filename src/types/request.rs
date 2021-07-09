@@ -1,8 +1,8 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    Attribute, CommonTemplateAttribute, ObjectType, Operation, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
-    TemplateAttribute, UniqueIdentifier,
+    Attribute, CommonTemplateAttribute, DataLength, ObjectType, Operation, PrivateKeyTemplateAttribute,
+    PublicKeyTemplateAttribute, TemplateAttribute, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.2 Credential
@@ -127,6 +127,10 @@ pub enum RequestPayload {
     // KMIP spec 1.2 section 4.31 Sign
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     Sign,
+
+    // KMIP spec 1.2 section 4.35 RNG Retrieve
+    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
+    RNGRetrieve(DataLength),
 }
 
 // KMIP spec 1.0 section 9.1.3.2.23 Query Function Enumeration

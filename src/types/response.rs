@@ -3,7 +3,7 @@ use serde_derive::Deserialize;
 use enum_display_derive::Display;
 use std::fmt::Display;
 
-use super::common::{ObjectType, Operation, UniqueIdentifier};
+use super::common::{Data, ObjectType, Operation, UniqueIdentifier};
 
 // KMIP spec 1.0 section 4.2 Create Key Pair
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
@@ -54,6 +54,20 @@ pub struct QueryResponsePayload {
 
     #[serde(rename = "0x420088")]
     pub server_information: Option<ServerInformation>,
+}
+
+// KMIP spec 1.0 section 4.24 Query
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct RNGRetrieveResponsePayload {
+    pub data: Data,
+}
+
+impl RNGRetrieveResponsePayload {
+    pub fn new(data: Data) -> Self {
+        Self { data }
+    }
 }
 
 #[derive(Deserialize)]
@@ -279,5 +293,10 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     #[serde(rename = "if 0x42005C==0x00000021")]
     Sign(SignResponsePayload),
+
+    // KMIP spec 1.2 section 4.35 RNG Retrieve
+    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
+    #[serde(rename = "if 0x42005C==0x00000025")]
+    RNGRetrieve(RNGRetrieveResponsePayload),
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }

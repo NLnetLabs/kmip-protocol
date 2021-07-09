@@ -31,6 +31,18 @@ pub enum AttributeValue {
     TextString(String),
 }
 
+// KMIP spec 1.2 section 2.1.10 Data
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391
+#[derive(Deserialize)]
+#[serde(rename = "0x4200C2")]
+pub struct Data(pub Vec<u8>);
+
+// KMIP spec 1.2 section 2.1.11 Data Length
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467
+#[derive(Serialize)]
+#[serde(rename = "0x4200C4")]
+pub struct DataLength(pub i32);
+
 /// Helper functions to simplifying including KMIP TemplateAttributes in requests.
 ///
 /// The set of possible attributes and their textual names are specified by the KMIP 1.0 spec in Section 3 Attributes.
