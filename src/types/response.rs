@@ -3,7 +3,17 @@ use serde_derive::Deserialize;
 use enum_display_derive::Display;
 use std::fmt::Display;
 
-use super::common::{Data, ObjectType, Operation, UniqueIdentifier};
+use super::common::{AttributeName, AttributeValue, Data, ObjectType, Operation, UniqueIdentifier};
+
+// KMIP spec 1.0 section 4.1 Create
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct CreateResponsePayload {
+    pub object_type: ObjectType,
+    pub unique_identifier: UniqueIdentifier,
+    pub object_attributes: Option<Vec<Attribute>>,
+}
 
 // KMIP spec 1.0 section 4.2 Create Key Pair
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
@@ -27,6 +37,18 @@ pub struct CreateKeyPairResponsePayload {
 pub struct LocateResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifiers: Vec<UniqueIdentifier>,
+}
+
+// KMIP spec 1.0 section 4.11 Get Attributes
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct GetAttributesResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x420008")]
+    pub attributes: Option<Vec<Attribute>>,
 }
 
 // KMIP spec 1.0 section 4.8 Locate
@@ -264,6 +286,11 @@ pub struct BatchItem {
 #[derive(Deserialize)]
 #[non_exhaustive]
 pub enum ResponsePayload {
+    // KMIP spec 1.0 section 4.1 Create
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+    #[serde(rename = "if 0x42005C==0x00000001")]
+    Create(CreateResponsePayload),
+
     // KMIP spec 1.0 section 4.2 Create Key Pair
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
     #[serde(rename = "if 0x42005C==0x00000002")]
@@ -273,6 +300,11 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     #[serde(rename = "if 0x42005C==0x00000008")]
     Locate(LocateResponsePayload),
+
+    // KMIP spec 1.0 section 4.11 Get Attributes
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+    #[serde(rename = "if 0x42005C==0x0000000B")]
+    GetAttributes(GetAttributesResponsePayload),
 
     // KMIP spec 1.0 section 4.20 Destroy
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
@@ -299,4 +331,16 @@ pub enum ResponsePayload {
     #[serde(rename = "if 0x42005C==0x00000025")]
     RNGRetrieve(RNGRetrieveResponsePayload),
     // Note: This set of enum variants is deliberately limited to those that we currently support.
+}
+
+// KMIP spec 1.0 section 2.1.1 Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+#[derive(Deserialize, Debug)]
+#[serde(rename = "0x420008")]
+pub struct Attribute {
+    #[serde(rename = "0x42000A")]
+    pub name: AttributeName,
+
+    #[serde(rename = "0x42000B")]
+    pub value: AttributeValue,
 }

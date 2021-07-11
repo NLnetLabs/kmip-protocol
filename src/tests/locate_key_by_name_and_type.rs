@@ -3,10 +3,10 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use krill_kmip_ttlv::ser::to_vec;
 
-use crate::types::common::{Attribute, ObjectType, Operation};
+use crate::types::common::{ObjectType, Operation};
 use crate::types::request::{
-    self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-    RequestHeader, RequestMessage, RequestPayload,
+    self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
+    ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
 };
 
 #[test]

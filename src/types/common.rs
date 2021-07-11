@@ -7,27 +7,38 @@ use std::fmt::Display;
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Serialize)]
-#[serde(rename = "0x420008")]
-pub struct Attribute(pub AttributeName, pub AttributeValue);
-
-// KMIP spec 1.0 section 2.1.1 Attribute
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename = "0x42000A")]
-pub struct AttributeName(pub &'static str);
+pub struct AttributeName(pub String);
+
+impl std::cmp::PartialEq<str> for AttributeName {
+    fn eq(&self, other: &str) -> bool {
+        self.0 == other
+    }
+}
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x42000B")]
 #[non_exhaustive]
 pub enum AttributeValue {
+    #[serde(rename = "if 0x42000A==Cryptographic Algorithm")]
     CryptographicAlgorithm(CryptographicAlgorithm),
-    Integer(i32),
+    
+    #[serde(rename = "if 0x42000A==Linked Object Identifier")]
     Link(LinkType, LinkedObjectIdentifier),
+    
+    #[serde(rename = "if 0x42000A==Name")]
     Name(NameValue, NameType),
+    
+    #[serde(rename = "if 0x42000A==Object Type")]
     ObjectType(ObjectType),
+    
+    #[serde(rename = "if 0x42000A==State")]
+    State(State),
+    
+    Integer(i32),
     TextString(String),
 }
 
@@ -42,109 +53,6 @@ pub struct Data(pub Vec<u8>);
 #[derive(Serialize)]
 #[serde(rename = "0x4200C4")]
 pub struct DataLength(pub i32);
-
-/// Helper functions to simplifying including KMIP TemplateAttributes in requests.
-///
-/// The set of possible attributes and their textual names are specified by the KMIP 1.0 spec in Section 3 Attributes.
-/// We offer various Attribute constructor functions that avoid the need for the caller to couple the right
-/// AttributeName and AttributeValue pairs together and to use the correct AttributeName text value and instead just Do
-/// The Right Thing for them.
-impl Attribute {
-    /// KMIP spec 1.0 Section 3.1 Unique Identifier
-    #[allow(non_snake_case)]
-    pub fn UniqueIdentifier(value: String) -> Self {
-        Attribute(AttributeName("Unique Identifier"), AttributeValue::TextString(value))
-    }
-
-    /// KMIP spec 1.0 Section 3.2 Name
-    #[allow(non_snake_case)]
-    pub fn Name(value: String) -> Self {
-        Attribute(
-            AttributeName("Name"),
-            AttributeValue::Name(NameValue(value), NameType::UninterpretedTextString),
-        )
-    }
-
-    /// KMIP spec 1.0 Section 3.2 Name
-    #[allow(non_snake_case)]
-    pub fn URI(value: String) -> Self {
-        Attribute(
-            AttributeName("Name"),
-            AttributeValue::Name(NameValue(value), NameType::URI),
-        )
-    }
-
-    /// KMIP spec 1.0 Section 3.3 Object Type
-    #[allow(non_snake_case)]
-    pub fn ObjectType(value: ObjectType) -> Self {
-        Attribute(AttributeName("Object Type"), AttributeValue::ObjectType(value))
-    }
-
-    /// KMIP spec 1.0 Section 3.4 Cryptographic Algorithm
-    #[allow(non_snake_case)]
-    pub fn CryptographicAlgorithm(value: CryptographicAlgorithm) -> Self {
-        Attribute(
-            AttributeName("Cryptographic Algorithm"),
-            AttributeValue::CryptographicAlgorithm(value),
-        )
-    }
-
-    /// KMIP spec 1.0 Section 3.5 Cryptographic Length
-    #[allow(non_snake_case)]
-    pub fn CryptographicLength(value: i32) -> Self {
-        Attribute(AttributeName("Cryptographic Length"), AttributeValue::Integer(value))
-    }
-
-    /// KMIP spec 1.0 Section 3.14 Cryptographic Usage Mask
-    #[allow(non_snake_case)]
-    pub fn CryptographicUsageMask(value: CryptographicUsageMask) -> Self {
-        Attribute(
-            AttributeName("Cryptographic Usage Mask"),
-            AttributeValue::Integer(value as i32),
-        )
-    }
-
-    /// KMIP spec 1.0 Section 3.29 Link
-    #[allow(non_snake_case)]
-    pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
-        Attribute(
-            AttributeName("Link"),
-            AttributeValue::Link(link_type, linked_object_identifier),
-        )
-    }
-}
-
-macro_rules! impl_template_attribute_flavour {
-    ($RustType:ident, $TtlvTag:literal) => {
-        #[derive(Serialize)]
-        #[serde(rename = $TtlvTag)]
-        pub struct $RustType(
-            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Name>>,
-            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
-        );
-        impl $RustType {
-            pub fn unnamed(attributes: Vec<Attribute>) -> Option<Self> {
-                Some(Self(Option::<Vec<Name>>::None, Some(attributes)))
-            }
-        }
-    };
-}
-
-// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
-impl_template_attribute_flavour!(TemplateAttribute, "0x420091");
-
-// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
-impl_template_attribute_flavour!(CommonTemplateAttribute, "0x42001F");
-
-// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
-impl_template_attribute_flavour!(PrivateKeyTemplateAttribute, "0x420065");
-
-// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
-impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
 // KMIP spec 1.0 section 3.1 Unique Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
@@ -168,19 +76,7 @@ impl std::cmp::PartialEq<str> for UniqueIdentifier {
 
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
-#[derive(Serialize)]
-#[serde(rename = "0x420053")]
-pub struct Name(NameValue, NameType);
-
-impl std::fmt::Display for Name {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
-    }
-}
-
-// KMIP spec 1.0 section 3.2 Name
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x420055")]
 pub struct NameValue(pub String);
 
@@ -189,9 +85,10 @@ impl std::fmt::Display for NameValue {
         f.write_str(&self.0)
     }
 }
+
 // KMIP spec 1.0 section 3.3 Object Type
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
-#[derive(Deserialize, Serialize, Display, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Display, PartialEq)]
 #[serde(rename = "0x420057")]
 #[non_exhaustive]
 pub enum ObjectType {
@@ -227,7 +124,7 @@ pub enum ObjectType {
 
 // KMIP spec 1.0 section 3.4 Cryptographic Algorithm Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176
-#[derive(Deserialize, Serialize, Display, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Display, PartialEq)]
 #[serde(rename = "0x420028")]
 #[non_exhaustive]
 #[allow(non_camel_case_types)]
@@ -283,13 +180,13 @@ pub enum CryptographicUsageMask {
 
 // KMIP spec 1.0 section 3.29 Linked Object Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
 
 // KMIP spec 1.0 section 9.1.3.2.10 Name Type Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x420054")]
 pub enum NameType {
     #[serde(rename = "0x00000001")]
@@ -299,9 +196,33 @@ pub enum NameType {
     URI,
 }
 
+// KMIP spec 1.0 section 9.1.3.2.17 State
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582066
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(rename = "0x42008D")]
+pub enum State {
+    #[serde(rename = "0x00000001")]
+    PreActive,
+
+    #[serde(rename = "0x00000002")]
+    Active,
+
+    #[serde(rename = "0x00000003")]
+    Deactivated,
+
+    #[serde(rename = "0x00000004")]
+    Compromised,
+
+    #[serde(rename = "0x00000005")]
+    Destroyed,
+
+    #[serde(rename = "0x00000006")]
+    DestroyedCompromised,
+}
+
 // KMIP spec 1.0 section 9.1.3.2.19 Link Type Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x42004B")]
 pub enum LinkType {
     #[serde(rename = "0x00000101")]

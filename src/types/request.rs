@@ -1,9 +1,124 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    Attribute, CommonTemplateAttribute, DataLength, ObjectType, Operation, PrivateKeyTemplateAttribute,
-    PublicKeyTemplateAttribute, TemplateAttribute, UniqueIdentifier,
+    AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, DataLength, LinkType,
+    LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, UniqueIdentifier,
 };
+
+// KMIP spec 1.0 section 2.1.1 Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+#[derive(Serialize)]
+#[serde(rename = "0x420008")]
+pub struct Attribute(pub AttributeName, pub AttributeValue);
+
+/// Helper functions to simplifying including KMIP TemplateAttributes in requests.
+///
+/// The set of possible attributes and their textual names are specified by the KMIP 1.0 spec in Section 3 Attributes.
+/// We offer various Attribute constructor functions that avoid the need for the caller to couple the right
+/// AttributeName and AttributeValue pairs together and to use the correct AttributeName text value and instead just Do
+/// The Right Thing for them.
+impl Attribute {
+    /// KMIP spec 1.0 Section 3.1 Unique Identifier
+    #[allow(non_snake_case)]
+    pub fn UniqueIdentifier(value: String) -> Self {
+        Attribute(
+            AttributeName("Unique Identifier".into()),
+            AttributeValue::TextString(value),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.2 Name
+    #[allow(non_snake_case)]
+    pub fn Name(value: String) -> Self {
+        Attribute(
+            AttributeName("Name".into()),
+            AttributeValue::Name(NameValue(value), NameType::UninterpretedTextString),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.2 Name
+    #[allow(non_snake_case)]
+    pub fn URI(value: String) -> Self {
+        Attribute(
+            AttributeName("Name".into()),
+            AttributeValue::Name(NameValue(value), NameType::URI),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.3 Object Type
+    #[allow(non_snake_case)]
+    pub fn ObjectType(value: ObjectType) -> Self {
+        Attribute(AttributeName("Object Type".into()), AttributeValue::ObjectType(value))
+    }
+
+    /// KMIP spec 1.0 Section 3.4 Cryptographic Algorithm
+    #[allow(non_snake_case)]
+    pub fn CryptographicAlgorithm(value: CryptographicAlgorithm) -> Self {
+        Attribute(
+            AttributeName("Cryptographic Algorithm".into()),
+            AttributeValue::CryptographicAlgorithm(value),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.5 Cryptographic Length
+    #[allow(non_snake_case)]
+    pub fn CryptographicLength(value: i32) -> Self {
+        Attribute(
+            AttributeName("Cryptographic Length".into()),
+            AttributeValue::Integer(value),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.14 Cryptographic Usage Mask
+    #[allow(non_snake_case)]
+    pub fn CryptographicUsageMask(value: CryptographicUsageMask) -> Self {
+        Attribute(
+            AttributeName("Cryptographic Usage Mask".into()),
+            AttributeValue::Integer(value as i32),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.29 Link
+    #[allow(non_snake_case)]
+    pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
+        Attribute(
+            AttributeName("Link".into()),
+            AttributeValue::Link(link_type, linked_object_identifier),
+        )
+    }
+}
+
+macro_rules! impl_template_attribute_flavour {
+    ($RustType:ident, $TtlvTag:literal) => {
+        #[derive(Serialize)]
+        #[serde(rename = $TtlvTag)]
+        pub struct $RustType(
+            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Name>>,
+            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
+        );
+        impl $RustType {
+            pub fn unnamed(attributes: Vec<Attribute>) -> Option<Self> {
+                Some(Self(Option::<Vec<Name>>::None, Some(attributes)))
+            }
+        }
+    };
+}
+
+// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
+impl_template_attribute_flavour!(TemplateAttribute, "0x420091");
+
+// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
+impl_template_attribute_flavour!(CommonTemplateAttribute, "0x42001F");
+
+// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
+impl_template_attribute_flavour!(PrivateKeyTemplateAttribute, "0x420065");
+
+// KMIP spec 1.0 section 2.1.8 Template-Attribute Structures
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
+impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
 // KMIP spec 1.0 section 2.1.2 Credential
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156
@@ -36,6 +151,18 @@ pub struct Username(pub String);
 #[derive(Serialize)]
 #[serde(rename = "0x4200A1")]
 pub struct Password(pub String);
+
+// KMIP spec 1.0 section 3.2 Name
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
+#[derive(Serialize)]
+#[serde(rename = "0x420053")]
+pub struct Name(NameValue, NameType);
+
+impl std::fmt::Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
 
 // KMIP spec 1.0 section 6.1 Protocol Version
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
@@ -111,6 +238,13 @@ pub enum RequestPayload {
     // KMIP spec 1.0 section 4.8 Locate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
+
+    // KMIP spec 1.0 section 4.11 Get Attributes
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+    GetAttributes(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<Vec<AttributeName>>,
+    ),
 
     // KMIP spec 1.0 section 4.20 Destroy
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228

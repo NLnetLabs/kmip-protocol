@@ -9,13 +9,13 @@ use crate::{
     response::from_slice,
     types::{
         common::{
-            Attribute, CommonTemplateAttribute, CryptographicAlgorithm, CryptographicUsageMask, LinkType,
-            LinkedObjectIdentifier, ObjectType, Operation, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute,
+            CryptographicAlgorithm, CryptographicUsageMask, LinkType, LinkedObjectIdentifier, ObjectType, Operation,
             UniqueIdentifier,
         },
         request::{
-            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            self, Attribute, Authentication, BatchCount, BatchItem, CommonTemplateAttribute, MaximumResponseSize,
+            PrivateKeyTemplateAttribute, ProtocolVersionMajor, ProtocolVersionMinor, PublicKeyTemplateAttribute,
+            RequestHeader, RequestMessage, RequestPayload,
         },
         response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
