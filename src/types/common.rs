@@ -25,19 +25,19 @@ impl std::cmp::PartialEq<str> for AttributeName {
 pub enum AttributeValue {
     #[serde(rename = "if 0x42000A==Cryptographic Algorithm")]
     CryptographicAlgorithm(CryptographicAlgorithm),
-    
+
     #[serde(rename = "if 0x42000A==Linked Object Identifier")]
     Link(LinkType, LinkedObjectIdentifier),
-    
+
     #[serde(rename = "if 0x42000A==Name")]
     Name(NameValue, NameType),
-    
+
     #[serde(rename = "if 0x42000A==Object Type")]
     ObjectType(ObjectType),
-    
+
     #[serde(rename = "if 0x42000A==State")]
     State(State),
-    
+
     Integer(i32),
     TextString(String),
 }
