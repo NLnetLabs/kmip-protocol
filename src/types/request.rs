@@ -1,8 +1,8 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, DataLength, LinkType,
-    LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, UniqueIdentifier,
+    AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, DataLength, KeyCompressionType,
+    KeyFormatType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -284,89 +284,6 @@ pub enum RequestPayload {
     // KMIP spec 1.2 section 4.35 RNG Retrieve
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
     RNGRetrieve(DataLength),
-}
-
-// KMIP spec 1.0 section 9.1.3.2.2 Key Compression Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856
-#[derive(Serialize)]
-#[serde(rename = "0x420041")]
-#[non_exhaustive]
-pub enum KeyCompressionType {
-    #[serde(rename = "0x00000001")]
-    ECPUblicKeyTypeUncompressed,
-
-    #[serde(rename = "0x00000002")]
-    ECPUblicKeyTypeX962CompressedPrime,
-
-    #[serde(rename = "0x00000003")]
-    ECPUblicKeyTypeX962CompressedChar2,
-
-    #[serde(rename = "0x00000004")]
-    ECPUblicKeyTypeX962Hybrid,
-}
-
-// KMIP spec 1.0 section 9.1.3.2.3 Key Format Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241992670
-#[derive(Serialize)]
-#[serde(rename = "0x420042")]
-#[non_exhaustive]
-pub enum KeyFormatType {
-    #[serde(rename = "0x00000001")]
-    Raw,
-
-    #[serde(rename = "0x00000002")]
-    Opaque,
-
-    #[serde(rename = "0x00000003")]
-    PKCS1,
-
-    #[serde(rename = "0x00000004")]
-    PKCS8,
-
-    #[serde(rename = "0x00000005")]
-    X509,
-
-    #[serde(rename = "0x00000006")]
-    ECPrivateKey,
-
-    #[serde(rename = "0x00000007")]
-    TransparentSymmetricKey,
-
-    #[serde(rename = "0x00000008")]
-    TransparentDSAPrivateKey,
-
-    #[serde(rename = "0x00000009")]
-    TransparentDSAPublicKey,
-
-    #[serde(rename = "0x0000000A")]
-    TransparentRSAPrivateKey,
-
-    #[serde(rename = "0x0000000B")]
-    TransparentRSAPublicKey,
-
-    #[serde(rename = "0x0000000C")]
-    TransparentDHPrivateKey,
-
-    #[serde(rename = "0x0000000D")]
-    TransparentDHPublicKey,
-
-    #[serde(rename = "0x0000000E")]
-    TransparentECDSAPrivateKey,
-
-    #[serde(rename = "0x0000000F")]
-    TransparentECDSAPublicKey,
-
-    #[serde(rename = "0x00000010")]
-    TransparentECHDPrivateKey,
-
-    #[serde(rename = "0x00000011")]
-    TransparentECDHPublicKey,
-
-    #[serde(rename = "0x00000012")]
-    TransparentECMQVPrivateKey,
-
-    #[serde(rename = "0x00000013")]
-    TransparentECMQVPublicKey,
 }
 
 // KMIP spec 1.0 section 9.1.3.2.4 Wrapping Method Enumeration

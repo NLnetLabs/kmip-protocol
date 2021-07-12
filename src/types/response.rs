@@ -3,7 +3,127 @@ use serde_derive::Deserialize;
 use enum_display_derive::Display;
 use std::fmt::Display;
 
-use super::common::{AttributeName, AttributeValue, Data, ObjectType, Operation, UniqueIdentifier};
+use super::common::{
+    AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, Data, KeyCompressionType, KeyFormatType,
+    ObjectType, Operation, UniqueIdentifier,
+};
+
+// KMIP spec 1.0 section 2.1.3 Key Block
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581157
+#[derive(Deserialize)]
+#[serde(rename = "0x420040")]
+pub struct KeyBlock {
+    #[serde(rename = "0x420042")]
+    pub key_format_type: KeyFormatType,
+
+    #[serde(rename = "0x420041")]
+    pub key_compression_type: Option<KeyCompressionType>,
+
+    #[serde(rename = "0x420045")]
+    pub key_value: KeyValue,
+
+    #[serde(rename = "0x420028")]
+    pub cryptographic_algorithm: Option<CryptographicAlgorithm>,
+
+    #[serde(rename = "0x42002A")]
+    pub cryptographic_length: Option<i32>,
+
+    #[serde(rename = "0x420046")]
+    pub key_wrapping_data: Option<()>, // TODO
+}
+
+// KMIP spec 1.0 section 2.1.4 Key Value
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
+#[derive(Deserialize)]
+#[serde(rename = "0x420045")]
+pub struct KeyValue {
+    pub key_material: KeyMaterial,
+    pub attributes: Option<Vec<Attribute>>,
+}
+
+// KMIP spec 1.0 section 2.1.4 Key Value
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
+#[derive(Deserialize)]
+#[serde(rename = "0x420043")]
+pub enum KeyMaterial {
+    #[serde(rename = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]")] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
+    #[serde(with = "serde_bytes")]
+    // don't treat the Vec as a sequence of TTLV items but rather as a sequence of bytes
+    Bytes(Vec<u8>),
+
+    #[serde(rename = "if 0x420042 >= 0x00000007")] // Transparent types
+    Structure(TransparentKeyStructure),
+}
+
+// KMIP spec 1.0 section 2.1.7 Transparent Key Structure
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Deserialize)]
+
+pub struct TransparentKeyStructure(); // TODO
+
+// KMIP spec 1.0 section 2.2 Managed Objects
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163
+#[derive(Deserialize)]
+#[non_exhaustive]
+pub enum ManagedObject {
+    #[serde(rename = "if 0x420057==0x00000001")]
+    Certificate(Certificate),
+
+    #[serde(rename = "if 0x420057==0x00000002")]
+    SymmetricKey(SymmetricKey),
+
+    #[serde(rename = "if 0x420057==0x00000003")]
+    PublicKey(PublicKey),
+
+    #[serde(rename = "if 0x420057==0x00000004")]
+    PrivateKey(PrivateKey),
+
+    // TODO:
+    // #[serde(rename = "if 0x420057==0x00000005")]
+    // SplitKey(SplitKey),
+
+    // #[serde(rename = "if 0x420057==0x00000006")]
+    // Template(Template),
+
+    // #[serde(rename = "if 0x420057==0x00000007")]
+    // SecretData(SecretData),
+
+    // #[serde(rename = "if 0x420057==0x00000008")]
+    // OpaqueObject(OpaqueObject),
+}
+
+// KMIP spec 1.0 section 2.2.1 Certificate
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581164
+#[derive(Deserialize)]
+#[serde(rename = "0x420013")]
+pub struct Certificate {
+    pub certificate_type: CertificateType,
+    pub certificate_value: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.2.2 Symmetric Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581165
+#[derive(Deserialize)]
+#[serde(rename = "0x42008F")]
+pub struct SymmetricKey {
+    pub key_block: KeyBlock,
+}
+
+// KMIP spec 1.0 section 2.2.3 Public Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581166
+#[derive(Deserialize)]
+#[serde(rename = "0x42006D")]
+pub struct PublicKey {
+    pub key_block: KeyBlock,
+}
+
+// KMIP spec 1.0 section 2.2.4 Private Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581167
+#[derive(Deserialize)]
+#[serde(rename = "0x420064")]
+pub struct PrivateKey {
+    pub key_block: KeyBlock,
+}
 
 // KMIP spec 1.0 section 4.1 Create
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
@@ -37,6 +157,16 @@ pub struct CreateKeyPairResponsePayload {
 pub struct LocateResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifiers: Vec<UniqueIdentifier>,
+}
+
+// KMIP spec 1.0 section 4.10 Get
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct GetResponsePayload {
+    pub object_type: ObjectType,
+    pub unique_identifier: UniqueIdentifier,
+    pub cryptographic_object: ManagedObject,
 }
 
 // KMIP spec 1.0 section 4.11 Get Attributes
@@ -306,6 +436,11 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     #[serde(rename = "if 0x42005C==0x00000008")]
     Locate(LocateResponsePayload),
+
+    // KMIP spec 1.0 section 4.10 Get
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+    #[serde(rename = "if 0x42005C==0x0000000A")]
+    Get(GetResponsePayload),
 
     // KMIP spec 1.0 section 4.11 Get Attributes
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219

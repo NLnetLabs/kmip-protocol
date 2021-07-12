@@ -7,15 +7,14 @@ use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
 
 use crate::types::{
     common::{
-        AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, ObjectType, Operation, State,
-        UniqueIdentifier,
+        AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, KeyCompressionType,
+        KeyFormatType, ObjectType, Operation, State, UniqueIdentifier,
     },
     request::{
-        self, Attribute, Authentication, BatchCount, BatchItem, KeyCompressionType, KeyFormatType,
-        KeyWrappingSpecification, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader,
-        RequestMessage, RequestPayload, TemplateAttribute,
+        self, Attribute, Authentication, BatchCount, BatchItem, KeyWrappingSpecification, MaximumResponseSize,
+        ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
     },
-    response::{ResponseMessage, ResponsePayload, ResultStatus},
+    response::{KeyMaterial, ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
 };
 
 #[test]
@@ -435,4 +434,68 @@ fn client_b_get_request_symmetric_key() {
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
     assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn client_b_get_response_symmetric_key() {
+    // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
+    //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x00000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x00000000 (0)
+    //     Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004AFBED2B (Thu Nov 12 12:10:35 CET 2009)
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x00000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000A (Get)
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Object Type (0x420057), Type: Enumeration (0x05), Data: 0x00000002 (Symmetric Key)
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Symmetric Key (0x42008F), Type: Structure (0x01), Data:
+    //         Tag: Key Block (0x420040), Type: Structure (0x01), Data:
+    //           Tag: Key Format Type (0x420042), Type: Enumeration (0x05), Data: 0x00000001
+    //           Tag: Key Value (0x420045), Type: Structure (0x01), Data:
+    //             Tag: Key Material (0x420043), Type: Octet String (0x08), Data: EF7833AB15F5A1EE5874BC0D9BBC4BE7
+    //           Tag: Cryptographic Algorithm (0x420028), Type: Enumeration (0x05), Data: 0x00000003 (AES)
+    //           Tag: Cryptographic Length (0x42002A), Type: Integer (0x02), Data: 0x00000080 (128)
+    let use_case_response_hex = concat!(
+        "42007B010000012042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004AFBED2B42000D0200000004000000010000000042000F01000000C842",
+        "005C05000000040000000A0000000042007F0500000004000000000000000042007C01000000A04200570500000004000",
+        "0000200000000420094070000002432316432386238612D303664662D343363302D623732662D32613136313633336164",
+        "61390000000042008F0100000058420040010000005042004205000000040000000100000000420045010000001842004",
+        "30800000010EF7833AB15F5A1EE5874BC0D9BBC4BE74200280500000004000000030000000042002A0200000004000000",
+        "8000000000",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004AFBED2B);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Get)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Get(_))));
+
+    if let Some(ResponsePayload::Get(payload)) = item.payload.as_ref() {
+        assert_eq!(payload.object_type, ObjectType::SymmetricKey);
+        assert_eq!(&payload.unique_identifier, "21d28b8a-06df-43c0-b72f-2a161633ada9");
+        assert!(matches!(payload.cryptographic_object, ManagedObject::SymmetricKey(_)));
+
+        if let ManagedObject::SymmetricKey(sk) = &payload.cryptographic_object {
+            assert_eq!(sk.key_block.key_format_type, KeyFormatType::Raw);
+            assert!(matches!(&sk.key_block.key_value.key_material, KeyMaterial::Bytes(_)));
+            if let KeyMaterial::Bytes(bytes) = &sk.key_block.key_value.key_material {
+                assert_eq!(bytes, &hex::decode("EF7833AB15F5A1EE5874BC0D9BBC4BE7").unwrap());
+            }
+            assert_eq!(sk.key_block.cryptographic_algorithm, Some(CryptographicAlgorithm::AES));
+            assert_eq!(sk.key_block.cryptographic_length, Some(128));
+        }
+    } else {
+        panic!("Wrong payload");
+    }
 }
