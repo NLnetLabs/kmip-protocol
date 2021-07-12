@@ -51,6 +51,7 @@ fn client_a_create_request_symmetric_key() {
 
 #[test]
 fn client_a_create_response() {
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
@@ -124,7 +125,7 @@ fn client_a_get_state_attribute_request() {
 
 #[test]
 fn client_a_get_state_attribute_response() {
-    // From:
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
@@ -203,6 +204,7 @@ fn client_a_activate_request() {
 
 #[test]
 fn client_a_activate_response() {
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     //  Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //    Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //      Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
@@ -273,7 +275,7 @@ fn client_a_get_state_attribute_request2() {
 
 #[test]
 fn client_a_get_state_attribute_response2() {
-    // From:
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
@@ -288,7 +290,7 @@ fn client_a_get_state_attribute_response2() {
     //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
     //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
     //         Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: State
-    //         Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 0x00000001 (Pre-Active)
+    //         Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 0x00000002 (Active)
     let use_case_response_hex = concat!(
         "42007B01000000D842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004AFBED2B42000D0200000004000000010000000042000F010000008042",
