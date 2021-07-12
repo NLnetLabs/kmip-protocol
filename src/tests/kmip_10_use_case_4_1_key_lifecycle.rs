@@ -11,8 +11,9 @@ use crate::types::{
         UniqueIdentifier,
     },
     request::{
-        self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-        ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
+        self, Attribute, Authentication, BatchCount, BatchItem, KeyCompressionType, KeyFormatType,
+        KeyWrappingSpecification, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader,
+        RequestMessage, RequestPayload, TemplateAttribute,
     },
     response::{ResponseMessage, ResponsePayload, ResultStatus},
 };
@@ -404,4 +405,34 @@ fn client_b_locate_response() {
     } else {
         panic!("Wrong payload");
     }
+}
+
+#[test]
+fn client_b_get_request_symmetric_key() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Get,
+            RequestPayload::Get(
+                Some(UniqueIdentifier("21d28b8a-06df-43c0-b72f-2a161633ada9".into())),
+                Option::<KeyFormatType>::None,
+                Option::<KeyCompressionType>::None,
+                Option::<KeyWrappingSpecification>::None,
+            ),
+        )],
+    );
+    let use_case_request_hex = concat!(
+        "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000004842005C05000000040000000A0000000042",
+        "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
+        "4613900000000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
 }

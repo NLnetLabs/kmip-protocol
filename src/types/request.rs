@@ -152,6 +152,12 @@ pub struct Username(pub String);
 #[serde(rename = "0x4200A1")]
 pub struct Password(pub String);
 
+// KMIP spec 1.0 section 2.1.6 Key Wrapping Specification
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160
+#[derive(Serialize)]
+#[serde(rename = "0x420047")]
+pub struct KeyWrappingSpecification(pub WrappingMethod); // ... TODO
+
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
 #[derive(Serialize)]
@@ -239,6 +245,15 @@ pub enum RequestPayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
+    // KMIP spec 1.0 section 4.10 Get
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+    Get(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyFormatType>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyCompressionType>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyWrappingSpecification>,
+    ),
+
     // KMIP spec 1.0 section 4.11 Get Attributes
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
     GetAttributes(
@@ -269,6 +284,111 @@ pub enum RequestPayload {
     // KMIP spec 1.2 section 4.35 RNG Retrieve
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
     RNGRetrieve(DataLength),
+}
+
+// KMIP spec 1.0 section 9.1.3.2.2 Key Compression Type Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856
+#[derive(Serialize)]
+#[serde(rename = "0x420041")]
+#[non_exhaustive]
+pub enum KeyCompressionType {
+    #[serde(rename = "0x00000001")]
+    ECPUblicKeyTypeUncompressed,
+
+    #[serde(rename = "0x00000002")]
+    ECPUblicKeyTypeX962CompressedPrime,
+
+    #[serde(rename = "0x00000003")]
+    ECPUblicKeyTypeX962CompressedChar2,
+
+    #[serde(rename = "0x00000004")]
+    ECPUblicKeyTypeX962Hybrid,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.3 Key Format Type Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241992670
+#[derive(Serialize)]
+#[serde(rename = "0x420042")]
+#[non_exhaustive]
+pub enum KeyFormatType {
+    #[serde(rename = "0x00000001")]
+    Raw,
+
+    #[serde(rename = "0x00000002")]
+    Opaque,
+
+    #[serde(rename = "0x00000003")]
+    PKCS1,
+
+    #[serde(rename = "0x00000004")]
+    PKCS8,
+
+    #[serde(rename = "0x00000005")]
+    X509,
+
+    #[serde(rename = "0x00000006")]
+    ECPrivateKey,
+
+    #[serde(rename = "0x00000007")]
+    TransparentSymmetricKey,
+
+    #[serde(rename = "0x00000008")]
+    TransparentDSAPrivateKey,
+
+    #[serde(rename = "0x00000009")]
+    TransparentDSAPublicKey,
+
+    #[serde(rename = "0x0000000A")]
+    TransparentRSAPrivateKey,
+
+    #[serde(rename = "0x0000000B")]
+    TransparentRSAPublicKey,
+
+    #[serde(rename = "0x0000000C")]
+    TransparentDHPrivateKey,
+
+    #[serde(rename = "0x0000000D")]
+    TransparentDHPublicKey,
+
+    #[serde(rename = "0x0000000E")]
+    TransparentECDSAPrivateKey,
+
+    #[serde(rename = "0x0000000F")]
+    TransparentECDSAPublicKey,
+
+    #[serde(rename = "0x00000010")]
+    TransparentECHDPrivateKey,
+
+    #[serde(rename = "0x00000011")]
+    TransparentECDHPublicKey,
+
+    #[serde(rename = "0x00000012")]
+    TransparentECMQVPrivateKey,
+
+    #[serde(rename = "0x00000013")]
+    TransparentECMQVPublicKey,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.4 Wrapping Method Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241993348
+#[derive(Serialize)]
+#[serde(rename = "0x42009E")]
+#[non_exhaustive]
+pub enum WrappingMethod {
+    #[serde(rename = "0x00000001")]
+    Encrypt,
+
+    #[serde(rename = "0x00000002")]
+    MACSign,
+
+    #[serde(rename = "0x00000003")]
+    EncryptThenMACSign,
+
+    #[serde(rename = "0x00000004")]
+    MACSignThenEncrypt,
+
+    #[serde(rename = "0x00000005")]
+    TR31,
 }
 
 // KMIP spec 1.0 section 9.1.3.2.23 Query Function Enumeration
