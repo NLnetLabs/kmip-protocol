@@ -429,7 +429,7 @@ pub enum LinkType {
 
 // KMIP spec 1.0 section 9.1.3.2.26 Operation Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582076
-#[derive(Deserialize, Serialize, Display, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Display, PartialEq)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
 pub enum Operation {

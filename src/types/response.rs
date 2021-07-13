@@ -77,7 +77,6 @@ pub enum ManagedObject {
 
     #[serde(rename = "if 0x420057==0x00000004")]
     PrivateKey(PrivateKey),
-
     // TODO:
     // #[serde(rename = "if 0x420057==0x00000005")]
     // SplitKey(SplitKey),
@@ -145,7 +144,6 @@ pub struct CreateKeyPairResponsePayload {
 
     #[serde(rename = "0x42006F")]
     pub public_key_unique_identifier: UniqueIdentifier,
-
     // TODO: Add the optional response field that lists attributes for the private key
 
     // TODO: Add the optional response field that lists attributes for the public key
@@ -237,7 +235,7 @@ pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 
 // KMIP spec 1.0 section 4.24 Query
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename = "0x42007C")]
 pub struct QueryResponsePayload {
     #[serde(rename = "0x42005C")]
@@ -267,7 +265,7 @@ impl RNGRetrieveResponsePayload {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename = "0x420088")]
 pub struct ServerInformation {}
 
