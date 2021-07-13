@@ -653,3 +653,110 @@ fn client_b_get_state_attribute_response() {
         panic!("Wrong payload");
     }
 }
+
+// SKIP CLIENT A GET ATTRIBUTES AS IT IS IDENTICAL TO THE CLIENT B GET ATTRIBUTES REQUEST AND RESPONSE TEST ABOVE
+
+#[test]
+fn client_a_get_attribute_list_request() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::GetAttributeList,
+            RequestPayload::GetAttributeList(Some(UniqueIdentifier(KEY_ID.into()))),
+        )],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000004842005C05000000040000000C0000000042",
+        "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
+        "4613900000000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn client_a_get_attribute_list_response() {
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
+    // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
+    //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x00000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x00000000 (0)
+    //     Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004AFBED2C (Thu Nov 12 12:10:36 CET 2009)
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x00000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000C (Get Attribute List)
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Cryptographic Length
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Cryptographic Algorithm
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: State
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Compromise Occurrence Date
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Compromise Date
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Digest
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Initial Date
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Activation Date
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Revocation Reason
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Unique Identifier
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Name
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Cryptographic Usage Mask
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Object Type
+    //       Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Last Change Date
+    let use_case_response_hex = concat!(
+        "42007B010000022042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004AFBED2C42000D0200000004000000010000000042000F01000001C842",
+        "005C05000000040000000C0000000042007F0500000004000000000000000042007C01000001A04200940700000024323",
+        "16432386238612D303664662D343363302D623732662D3261313631363333616461390000000042000A07000000144372",
+        "7970746F67726170686963204C656E6774680000000042000A070000001743727970746F6772617068696320416C676F7",
+        "26974686D0042000A0700000005537461746500000042000A070000001A436F6D70726F6D697365204F6363757272656E",
+        "6365204461746500000000000042000A070000000F436F6D70726F6D69736520446174650042000A07000000064469676",
+        "57374000042000A070000000C496E697469616C20446174650000000042000A070000000F41637469766174696F6E2044",
+        "6174650042000A07000000115265766F636174696F6E20526561736F6E0000000000000042000A0700000011556E69717",
+        "565204964656E7469666965720000000000000042000A07000000044E616D650000000042000A07000000184372797074",
+        "6F67726170686963205573616765204D61736B42000A070000000B4F626A6563742054797065000000000042000A07000",
+        "000104C617374204368616E67652044617465",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004AFBED2C);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::GetAttributeList)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::GetAttributeList(_))));
+
+    if let Some(ResponsePayload::GetAttributeList(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+        assert_eq!(payload.attributes.len(), 14);
+        assert_eq!(&payload.attributes[0], "Cryptographic Length");
+        assert_eq!(&payload.attributes[1], "Cryptographic Algorithm");
+        assert_eq!(&payload.attributes[2], "State");
+        assert_eq!(&payload.attributes[3], "Compromise Occurrence Date");
+        assert_eq!(&payload.attributes[4], "Compromise Date");
+        assert_eq!(&payload.attributes[5], "Digest");
+        assert_eq!(&payload.attributes[6], "Initial Date");
+        assert_eq!(&payload.attributes[7], "Activation Date");
+        assert_eq!(&payload.attributes[8], "Revocation Reason");
+        assert_eq!(&payload.attributes[9], "Unique Identifier");
+        assert_eq!(&payload.attributes[10], "Name");
+        assert_eq!(&payload.attributes[11], "Cryptographic Usage Mask");
+        assert_eq!(&payload.attributes[12], "Object Type");
+        assert_eq!(&payload.attributes[13], "Last Change Date");
+    } else {
+        panic!("Wrong payload");
+    }
+}

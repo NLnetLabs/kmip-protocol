@@ -271,6 +271,10 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<Vec<AttributeName>>,
     ),
 
+    // KMIP spec 1.0 section 4.12 Get Attribute List
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+    GetAttributeList(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
+
     // KMIP spec 1.0 section 4.18 Activate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
     Activate(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),

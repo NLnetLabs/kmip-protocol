@@ -180,6 +180,18 @@ pub struct GetAttributesResponsePayload {
     pub attributes: Option<Vec<Attribute>>,
 }
 
+// KMIP spec 1.0 section 4.12 Get Attribute List
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct GetAttributeListResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x42000A")]
+    pub attributes: Vec<AttributeName>,
+}
+
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
 pub struct UniqueIdentifierResponsePayload {
@@ -446,6 +458,11 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
     #[serde(rename = "if 0x42005C==0x0000000B")]
     GetAttributes(GetAttributesResponsePayload),
+
+    // KMIP spec 1.0 section 4.12 Get Attribute List
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+    #[serde(rename = "if 0x42005C==0x0000000C")]
+    GetAttributeList(GetAttributeListResponsePayload),
 
     // KMIP spec 1.0 section 4.18 Activate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
