@@ -232,9 +232,15 @@ pub struct LinkedObjectIdentifier(pub String);
 
 // KMIP spec 1.0 section 6.4 Unique Batch Item ID
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename = "0x420093")]
 pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
+
+impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
+    fn eq(&self, other: &Vec<u8>) -> bool {
+        &self.0 == other
+    }
+}
 
 // KMIP spec 1.0 section 9.1.3.2.2 Key Compression Type Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856

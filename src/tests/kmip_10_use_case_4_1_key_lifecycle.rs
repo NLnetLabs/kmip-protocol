@@ -870,6 +870,10 @@ fn client_a_add_attribute_batch_response() {
 
     let item = &res.batch_items[0];
     assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("9D407FFB45C95672").unwrap()
+    );
     assert!(matches!(item.operation, Some(Operation::AddAttribute)));
     assert!(matches!(&item.payload, Some(ResponsePayload::AddAttribute(_))));
 
@@ -883,6 +887,10 @@ fn client_a_add_attribute_batch_response() {
 
     let item = &res.batch_items[1];
     assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("D62107C3158409D8").unwrap()
+    );
     assert!(matches!(item.operation, Some(Operation::AddAttribute)));
     assert!(matches!(&item.payload, Some(ResponsePayload::AddAttribute(_))));
 
@@ -895,8 +903,334 @@ fn client_a_add_attribute_batch_response() {
     }
 }
 
-// TODO:
-// Client A: Modify attribute
-// Client A: Delete attribute
-// Client A: Get symmetric key (skip as it is the same as done above for client b)
-// Client A: Destroy symmetric key
+#[test]
+fn client_a_modify_attribute_batch_request() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(2),
+        ),
+        vec![
+            BatchItem(
+                Operation::ModifyAttribute,
+                Some(UniqueBatchItemID(hex::decode("47FB42CCECA3F6EC").unwrap())),
+                RequestPayload::ModifyAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    Attribute(
+                        AttributeName("x-attribute1".into()),
+                        AttributeValue::TextString("ModifiedValue1".into()),
+                    ),
+                ),
+            ),
+            BatchItem(
+                Operation::ModifyAttribute,
+                Some(UniqueBatchItemID(hex::decode("08019A230A05E9E1").unwrap())),
+                RequestPayload::ModifyAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    Attribute(
+                        AttributeName("x-attribute2".into()),
+                        AttributeValue::TextString("ModifiedValue2".into()),
+                    ),
+                ),
+            ),
+        ],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000001704200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000020000000042000F010000009042005C05000000040000000E0000000042",
+        "0093080000000847FB42CCECA3F6EC4200790100000068420094070000002432316432386238612D303664662D3433633",
+        "02D623732662D32613136313633336164613900000000420008010000003042000A070000000C782D6174747269627574",
+        "65310000000042000B070000000E4D6F64696669656456616C756531000042000F010000009042005C050000000400000",
+        "00E00000000420093080000000808019A230A05E9E14200790100000068420094070000002432316432386238612D3036",
+        "64662D343363302D623732662D32613136313633336164613900000000420008010000003042000A070000000C782D617",
+        "474726962757465320000000042000B070000000E4D6F64696669656456616C7565320000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn client_a_modify_attribute_batch_response() {
+    // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
+    // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
+    //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x00000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x00000000 (0)
+    //     Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004AFBED2D (Thu Nov 12 12:10:37 CET 2009)
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x00000002 (2)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000E (Modify Attribute)
+    //     Tag: Unique Batch Item ID (0x420093), Type: Octet String (0x08), Data: 47FB42CCECA3F6EC
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: x-attribute1
+    //         Tag: Attribute Value (0x42000B), Type: Text String (0x07), Data: ModifiedValue1
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000E (Modify Attribute)
+    //     Tag: Unique Batch Item ID (0x420093), Type: Octet String (0x08), Data: 08019A230A05E9E1
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: x-attribute2
+    //         Tag: Attribute Value (0x42000B), Type: Text String (0x07), Data: ModifiedValue2
+    let use_case_response_hex = concat!(
+        "42007B01000001A042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004AFBED2D42000D0200000004000000020000000042000F01000000A042",
+        "005C05000000040000000E00000000420093080000000847FB42CCECA3F6EC42007F05000000040000000000000000420",
+        "07C0100000068420094070000002432316432386238612D303664662D343363302D623732662D32613136313633336164",
+        "613900000000420008010000003042000A070000000C782D617474726962757465310000000042000B070000000E4D6F6",
+        "4696669656456616C756531000042000F01000000A042005C05000000040000000E00000000420093080000000808019A",
+        "230A05E9E142007F0500000004000000000000000042007C0100000068420094070000002432316432386238612D30366",
+        "4662D343363302D623732662D32613136313633336164613900000000420008010000003042000A070000000C782D6174",
+        "74726962757465320000000042000B070000000E4D6F64696669656456616C7565320000",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004AFBED2D);
+    assert_eq!(res.header.batch_count, 2);
+    assert_eq!(res.batch_items.len(), 2);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("47FB42CCECA3F6EC").unwrap()
+    );
+    assert!(matches!(item.operation, Some(Operation::ModifyAttribute)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::ModifyAttribute(_))));
+
+    if let Some(ResponsePayload::ModifyAttribute(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+        assert_eq!(&payload.attribute.name, "x-attribute1");
+        assert!(matches!(&payload.attribute.value, AttributeValue::TextString(str) if str == "ModifiedValue1"));
+    } else {
+        panic!("Wrong payload for batch item 0");
+    }
+
+    let item = &res.batch_items[1];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("08019A230A05E9E1").unwrap()
+    );
+    assert!(matches!(item.operation, Some(Operation::ModifyAttribute)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::ModifyAttribute(_))));
+
+    if let Some(ResponsePayload::ModifyAttribute(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+        assert_eq!(&payload.attribute.name, "x-attribute2");
+        assert!(matches!(&payload.attribute.value, AttributeValue::TextString(str) if str == "ModifiedValue2"));
+    } else {
+        panic!("Wrong payload for batch item 1");
+    }
+}
+
+#[test]
+fn client_a_delete_attribute_batch_request() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(2),
+        ),
+        vec![
+            BatchItem(
+                Operation::DeleteAttribute,
+                Some(UniqueBatchItemID(hex::decode("3E2C080FA8806057").unwrap())),
+                RequestPayload::DeleteAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    AttributeName("x-attribute1".into()),
+                    Option::<i32>::None,
+                ),
+            ),
+            BatchItem(
+                Operation::DeleteAttribute,
+                Some(UniqueBatchItemID(hex::decode("9D55988D43D23B82").unwrap())),
+                RequestPayload::DeleteAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    AttributeName("x-attribute2".into()),
+                    Option::<i32>::None,
+                ),
+            ),
+        ],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000001304200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000020000000042000F010000007042005C05000000040000000F0000000042",
+        "009308000000083E2C080FA88060574200790100000048420094070000002432316432386238612D303664662D3433633",
+        "02D623732662D3261313631363333616461390000000042000A070000000C782D61747472696275746531000000004200",
+        "0F010000007042005C05000000040000000F0000000042009308000000089D55988D43D23B82420079010000004842009",
+        "4070000002432316432386238612D303664662D343363302D623732662D3261313631363333616461390000000042000A",
+        "070000000C782D6174747269627574653200000000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn client_a_delete_attribute_batch_response() {
+    // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
+    // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
+    //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x00000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x00000000 (0)
+    //     Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004AFBED2D (Thu Nov 12 12:10:37 CET 2009)
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x00000002 (2)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000F (Delete Attribute)
+    //     Tag: Unique Batch Item ID (0x420093), Type: Octet String (0x08), Data: 3E2C080FA8806057
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: x-attribute1
+    //         Tag: Attribute Value (0x42000B), Type: Text String (0x07), Data: ModifiedValue1
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x0000000F (Delete Attribute)
+    //     Tag: Unique Batch Item ID (0x420093), Type: Octet String (0x08), Data: 9D55988D43D23B82
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: x-attribute2
+    //         Tag: Attribute Value (0x42000B), Type: Text String (0x07), Data: ModifiedValue2
+    let use_case_response_hex = concat!(
+        "42007B01000001A042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004AFBED2D42000D0200000004000000020000000042000F01000000A042",
+        "005C05000000040000000F0000000042009308000000083E2C080FA880605742007F05000000040000000000000000420",
+        "07C0100000068420094070000002432316432386238612D303664662D343363302D623732662D32613136313633336164",
+        "613900000000420008010000003042000A070000000C782D617474726962757465310000000042000B070000000E4D6F6",
+        "4696669656456616C756531000042000F01000000A042005C05000000040000000F0000000042009308000000089D5598",
+        "8D43D23B8242007F0500000004000000000000000042007C0100000068420094070000002432316432386238612D30366",
+        "4662D343363302D623732662D32613136313633336164613900000000420008010000003042000A070000000C782D6174",
+        "74726962757465320000000042000B070000000E4D6F64696669656456616C7565320000",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004AFBED2D);
+    assert_eq!(res.header.batch_count, 2);
+    assert_eq!(res.batch_items.len(), 2);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("3E2C080FA8806057").unwrap()
+    );
+    assert!(matches!(item.operation, Some(Operation::DeleteAttribute)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::DeleteAttribute(_))));
+
+    if let Some(ResponsePayload::DeleteAttribute(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+        assert_eq!(&payload.attribute.name, "x-attribute1");
+        assert!(matches!(&payload.attribute.value, AttributeValue::TextString(str) if str == "ModifiedValue1"));
+    } else {
+        panic!("Wrong payload for batch item 0");
+    }
+
+    let item = &res.batch_items[1];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert_eq!(
+        item.unique_batch_item_id.as_ref().unwrap(),
+        hex::decode("9D55988D43D23B82").unwrap()
+    );
+    assert!(matches!(item.operation, Some(Operation::DeleteAttribute)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::DeleteAttribute(_))));
+
+    if let Some(ResponsePayload::DeleteAttribute(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+        assert_eq!(&payload.attribute.name, "x-attribute2");
+        assert!(matches!(&payload.attribute.value, AttributeValue::TextString(str) if str == "ModifiedValue2"));
+    } else {
+        panic!("Wrong payload for batch item 1");
+    }
+}
+
+// SKIP CLIENT A GET SYMMETRIC KEY AS IT IS IDENTICAL TO THE CLIENT B GET SYMMETRIC KEY REQUEST AND RESPONSE TEST ABOVE
+
+#[test]
+fn client_a_destroy_request_symmetric_key() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Destroy,
+            Option::<UniqueBatchItemID>::None,
+            RequestPayload::Destroy(Some(UniqueIdentifier(KEY_ID.into()))),
+        )],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000004842005C0500000004000000140000000042",
+        "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
+        "4613900000000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
+}
+
+#[test]
+fn client_a_destroy_response_symmetric_key() {
+    // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
+    // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
+    //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x00000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x00000000 (0)
+    //     Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004AFBED2E (Thu Nov 12 12:10:38 CET 2009)
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x00000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x00000014 (Destroy)
+    //     Tag: Result Status (0x42007F), Type: Enumeration (0x05), Data: 0x00000000 (Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure (0x01), Data:
+    //       Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 21d28b8a-06df-43c0-b72f-2a161633ada9
+    let use_case_response_hex = concat!(
+        "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+        "0000000000000004200920900000008000000004AFBED2E42000D0200000004000000010000000042000F010000005842",
+        "005C0500000004000000140000000042007F0500000004000000000000000042007C01000000304200940700000024323",
+        "16432386238612D303664662D343363302D623732662D32613136313633336164613900000000",
+    );
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 0);
+    assert_eq!(res.header.timestamp, 0x000000004AFBED2E);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Destroy)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Destroy(_))));
+
+    if let Some(ResponsePayload::Destroy(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
+    } else {
+        panic!("Wrong payload");
+    }
+}

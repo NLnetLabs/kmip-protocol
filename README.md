@@ -20,6 +20,52 @@ This crate is one of potentially several crates that will be implemented to add 
 
 This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency.
 
+### KMIP Operations Supported
+
+_Note: Supported operations may lack support for some attribute or managed object types. Vendor specific extensions are not supported._
+
+| KMIP Version | Operation | Support |
+|---|---|---|
+| 1.0 | Create               | (/) |
+| 1.0 | Create Key Pair      | (/) _(lacks response public/private key attribute lists support)_ |
+| 1.0 | Register             | (x) |
+| 1.0 | Re-key               | (x) |
+| 1.1 | Re-key Key Pair      | (x) |
+| 1.0 | Derive Key           | (x) |
+| 1.0 | Certify              | (x) |
+| 1.0 | Re-certify           | (x) |
+| 1.0 | Locate               | (/) _(lacks Maximum Items and Storate Status Mask support)_ |
+| 1.0 | Check                | (x) |
+| 1.0 | Get                  | (/) _(lacks Key Wrapping Specification, TransparentXXX, SplitKey, Template, SecretData and OpaqueObject support)_ |
+| 1.0 | Get Attributes       | (/) _(lacks Big Integer and Interval support)_ |
+| 1.0 | Get Attribute List   | (/) |
+| 1.0 | Add Attribute        | (/) _(lacks Big Integer and Interval support)_ |
+| 1.0 | Modify Attribute     | (/) _(lacks Big Integer and Interval support)_ |
+| 1.0 | Delete Attribute     | (/) |
+| 1.0 | Obtain Lease         | (x) |
+| 1.0 | Get Usage Allocation | (x) |
+| 1.0 | Activate             | (/) |
+| 1.0 | Revoke               | (/) |
+| 1.0 | Destroy              | (/) |
+| 1.0 | Archive              | (x) |
+| 1.0 | Recover              | (x) |
+| 1.0 | Validate             | (x) |
+| 1.0 | Query                | (/) _(lacks Query Application Namespaces support)_ |
+| 1.1 | Discover Versions    | (/) |
+| 1.0 | Cancel               | (x) |
+| 1.0 | Poll                 | (x) |
+| 1.2 | Encrypt              | (x) |
+| 1.2 | Decrypt              | (x) |
+| 1.2 | Sign                 | (x) |
+| 1.2 | Signature Verify     | (x) |
+| 1.2 | MAC                  | (x) |
+| 1.2 | MAC Verify           | (x) |
+| 1.2 | RNG Retrieve         | (x) |
+| 1.2 | RNG Seed             | (x) |
+| 1.2 | Hash                 | (x) |
+| 1.2 | Create Split Key     | (x) |
+| 1.2 | Join Split Key       | (x) |
+
 ### KMIP Use/Test Case Coverage
 
 Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to XML based.
@@ -37,7 +83,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
     - [ ] 3.1.5 Use-case: Register / Destroy Secret Data
   - [ ] 3.2 Use-case: Asynchronous Locate
 - 4 Key life cycle support
-  - [ ] 4.1 Use-case: Revoke scenario
+  - [x] 4.1 Use-case: Revoke scenario
 - 5 Auditing and reporting
   - [ ] 5.1 Use-case: Get usage allocation scenario
 - 6 Key Interchange, Key Exchange
