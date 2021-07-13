@@ -180,23 +180,24 @@ pub struct GetAttributesResponsePayload {
     pub attributes: Option<Vec<Attribute>>,
 }
 
-// KMIP spec 1.0 section 4.18 Activate
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
 #[derive(Deserialize)]
 #[serde(rename = "0x42007C")]
-pub struct ActivateResponsePayload {
+pub struct UniqueIdentifierResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
 }
 
+// KMIP spec 1.0 section 4.18 Activate
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
+pub type ActivateResponsePayload = UniqueIdentifierResponsePayload;
+
+// KMIP spec 1.0 section 4.19 Revoke
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+pub type RevokeResponsePayload = UniqueIdentifierResponsePayload;
+
 // KMIP spec 1.0 section 4.20 Destroy
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
-#[derive(Deserialize)]
-#[serde(rename = "0x42007C")]
-pub struct DestroyResponsePayload {
-    #[serde(rename = "0x420094")]
-    pub unique_identifier: UniqueIdentifier,
-}
+pub type DestroyResponsePayload = UniqueIdentifierResponsePayload;
 
 // KMIP spec 1.0 section 4.24 Query
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
@@ -450,6 +451,11 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
     #[serde(rename = "if 0x42005C==0x00000012")]
     Activate(ActivateResponsePayload),
+
+    // KMIP spec 1.0 section 4.19 Revoke
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+    #[serde(rename = "if 0x42005C==0x00000013")]
+    Revoke(RevokeResponsePayload),
 
     // KMIP spec 1.0 section 4.20 Destroy
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
