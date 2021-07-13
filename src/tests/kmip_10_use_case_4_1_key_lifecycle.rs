@@ -7,15 +7,19 @@ use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
 
 use crate::types::{
     common::{
-        AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, KeyCompressionType,
-        KeyFormatType, ObjectType, Operation, State, UniqueIdentifier,
+        AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
+        KeyCompressionType, KeyFormatType, ObjectType, Operation, RevocationMessage, RevocationReasonCode, State,
+        UniqueIdentifier,
     },
     request::{
         self, Attribute, Authentication, BatchCount, BatchItem, KeyWrappingSpecification, MaximumResponseSize,
-        ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
+        ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, RevocationReason,
+        TemplateAttribute,
     },
     response::{KeyMaterial, ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
 };
+
+const KEY_ID: &'static str = "21d28b8a-06df-43c0-b72f-2a161633ada9";
 
 #[test]
 fn client_a_create_request_symmetric_key() {
@@ -95,7 +99,7 @@ fn client_a_create_response() {
 
     if let Some(ResponsePayload::Create(payload)) = item.payload.as_ref() {
         assert!(matches!(payload.object_type, ObjectType::SymmetricKey));
-        assert_eq!(&payload.unique_identifier, "21d28b8a-06df-43c0-b72f-2a161633ada9");
+        assert_eq!(&payload.unique_identifier, KEY_ID);
     } else {
         panic!("Wrong payload");
     }
@@ -113,7 +117,7 @@ fn client_a_get_state_attribute_request() {
         vec![BatchItem(
             Operation::GetAttributes,
             RequestPayload::GetAttributes(
-                Some(UniqueIdentifier("21d28b8a-06df-43c0-b72f-2a161633ada9".into())),
+                Some(UniqueIdentifier(KEY_ID.into())),
                 Some(vec![AttributeName("State".into())]),
             ),
         )],
@@ -194,7 +198,7 @@ fn client_a_activate_request() {
         ),
         vec![BatchItem(
             Operation::Activate,
-            RequestPayload::Activate(Some(UniqueIdentifier("21d28b8a-06df-43c0-b72f-2a161633ada9".into()))),
+            RequestPayload::Activate(Some(UniqueIdentifier(KEY_ID.into()))),
         )],
     );
 
@@ -245,7 +249,7 @@ fn client_a_activate_response() {
     assert!(matches!(&item.payload, Some(ResponsePayload::Activate(_))));
 
     if let Some(ResponsePayload::Activate(payload)) = item.payload.as_ref() {
-        assert_eq!(&payload.unique_identifier, "21d28b8a-06df-43c0-b72f-2a161633ada9");
+        assert_eq!(&payload.unique_identifier, KEY_ID);
     } else {
         panic!("Wrong payload");
     }
@@ -263,7 +267,7 @@ fn client_a_get_state_attribute_request2() {
         vec![BatchItem(
             Operation::GetAttributes,
             RequestPayload::GetAttributes(
-                Some(UniqueIdentifier("21d28b8a-06df-43c0-b72f-2a161633ada9".into())),
+                Some(UniqueIdentifier(KEY_ID.into())),
                 Some(vec![AttributeName("State".into())]),
             ),
         )],
@@ -400,7 +404,7 @@ fn client_b_locate_response() {
 
     if let Some(ResponsePayload::Locate(payload)) = item.payload.as_ref() {
         assert_eq!(payload.unique_identifiers.len(), 1);
-        assert_eq!(&payload.unique_identifiers[0], "21d28b8a-06df-43c0-b72f-2a161633ada9");
+        assert_eq!(&payload.unique_identifiers[0], KEY_ID);
     } else {
         panic!("Wrong payload");
     }
@@ -418,7 +422,7 @@ fn client_b_get_request_symmetric_key() {
         vec![BatchItem(
             Operation::Get,
             RequestPayload::Get(
-                Some(UniqueIdentifier("21d28b8a-06df-43c0-b72f-2a161633ada9".into())),
+                Some(UniqueIdentifier(KEY_ID.into())),
                 Option::<KeyFormatType>::None,
                 Option::<KeyCompressionType>::None,
                 Option::<KeyWrappingSpecification>::None,
@@ -483,7 +487,7 @@ fn client_b_get_response_symmetric_key() {
 
     if let Some(ResponsePayload::Get(payload)) = item.payload.as_ref() {
         assert_eq!(payload.object_type, ObjectType::SymmetricKey);
-        assert_eq!(&payload.unique_identifier, "21d28b8a-06df-43c0-b72f-2a161633ada9");
+        assert_eq!(&payload.unique_identifier, KEY_ID);
         assert!(matches!(payload.cryptographic_object, ManagedObject::SymmetricKey(_)));
 
         if let ManagedObject::SymmetricKey(sk) = &payload.cryptographic_object {
@@ -498,4 +502,33 @@ fn client_b_get_response_symmetric_key() {
     } else {
         panic!("Wrong payload");
     }
+}
+
+#[test]
+fn client_b_revoke_request_symmetric_key_compromised() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Revoke,
+            RequestPayload::Revoke(
+                Some(UniqueIdentifier(KEY_ID.into())),
+                RevocationReason(RevocationReasonCode::KeyCompromise, Option::<RevocationMessage>::None),
+                Some(CompromiseOccurrenceDate(0x0000000000000006)),
+            ),
+        )],
+    );
+    let use_case_request_hex = concat!(
+        "42007801000000B84200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000010000000042000F010000007042005C0500000004000000130000000042",
+        "00790100000058420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
+        "461390000000042008101000000104200820500000004000000020000000042002109000000080000000000000006",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
 }

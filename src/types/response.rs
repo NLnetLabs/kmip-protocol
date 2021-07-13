@@ -77,7 +77,6 @@ pub enum ManagedObject {
 
     #[serde(rename = "if 0x420057==0x00000004")]
     PrivateKey(PrivateKey),
-
     // TODO:
     // #[serde(rename = "if 0x420057==0x00000005")]
     // SplitKey(SplitKey),

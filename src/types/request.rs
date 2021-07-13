@@ -1,8 +1,9 @@
 use serde_derive::Serialize;
 
 use super::common::{
-    AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, DataLength, KeyCompressionType,
-    KeyFormatType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, UniqueIdentifier,
+    AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
+    DataLength, KeyCompressionType, KeyFormatType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
+    Operation, RevocationMessage, RevocationReasonCode, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -170,6 +171,15 @@ impl std::fmt::Display for Name {
     }
 }
 
+// KMIP spec 1.0 section 3.26 Revocation Reason
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200
+#[derive(Serialize)]
+#[serde(rename = "0x420081")]
+pub struct RevocationReason(
+    pub RevocationReasonCode,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<RevocationMessage>,
+);
+
 // KMIP spec 1.0 section 6.1 Protocol Version
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
 #[derive(Serialize)]
@@ -264,6 +274,14 @@ pub enum RequestPayload {
     // KMIP spec 1.0 section 4.18 Activate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
     Activate(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
+
+    // KMIP spec 1.0 section 4.19 Revoke
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+    Revoke(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        RevocationReason,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<CompromiseOccurrenceDate>,
+    ),
 
     // KMIP spec 1.0 section 4.20 Destroy
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228

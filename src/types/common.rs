@@ -178,6 +178,18 @@ pub enum CryptographicUsageMask {
     TranslateUnwrap                 = 0x00080000,
 }
 
+// KMIP spec 1.0 section 3.24 Compromise Occurrence Date
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198
+#[derive(Serialize)]
+#[serde(rename = "0x420021")]
+pub struct CompromiseOccurrenceDate(pub u64);
+
+// KMIP spec 1.0 section 3.26 Revocation Reason
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200
+#[derive(Serialize)]
+#[serde(rename = "0x420080")]
+pub struct RevocationMessage(pub String);
+
 // KMIP spec 1.0 section 3.29 Linked Object Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -313,6 +325,33 @@ pub enum State {
 
     #[serde(rename = "0x00000006")]
     DestroyedCompromised,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.18 Revocation Reason Code
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241996204
+#[derive(Serialize)]
+#[serde(rename = "0x420082")]
+pub enum RevocationReasonCode {
+    #[serde(rename = "0x00000001")]
+    Unspecified,
+
+    #[serde(rename = "0x00000002")]
+    KeyCompromise,
+
+    #[serde(rename = "0x00000003")]
+    CACompromise,
+
+    #[serde(rename = "0x00000004")]
+    AffiliationChanged,
+
+    #[serde(rename = "0x00000005")]
+    Superseded,
+
+    #[serde(rename = "0x00000006")]
+    CessationOfOperation,
+
+    #[serde(rename = "0x00000007")]
+    PrivilegeWithdrawn,
 }
 
 // KMIP spec 1.0 section 9.1.3.2.19 Link Type Enumeration
