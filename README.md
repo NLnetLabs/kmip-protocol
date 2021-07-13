@@ -26,45 +26,45 @@ _Note: Supported operations may lack support for some attribute or managed objec
 
 | KMIP Version | Operation | Support |
 |---|---|---|
-| 1.0 | Create               | (/) |
-| 1.0 | Create Key Pair      | (/) _(lacks response public/private key attribute lists support)_ |
-| 1.0 | Register             | (x) |
-| 1.0 | Re-key               | (x) |
-| 1.1 | Re-key Key Pair      | (x) |
-| 1.0 | Derive Key           | (x) |
-| 1.0 | Certify              | (x) |
-| 1.0 | Re-certify           | (x) |
-| 1.0 | Locate               | (/) _(lacks Maximum Items and Storate Status Mask support)_ |
-| 1.0 | Check                | (x) |
-| 1.0 | Get                  | (/) _(lacks Key Wrapping Specification, TransparentXXX, SplitKey, Template, SecretData and OpaqueObject support)_ |
-| 1.0 | Get Attributes       | (/) _(lacks Big Integer and Interval support)_ |
-| 1.0 | Get Attribute List   | (/) |
-| 1.0 | Add Attribute        | (/) _(lacks Big Integer and Interval support)_ |
-| 1.0 | Modify Attribute     | (/) _(lacks Big Integer and Interval support)_ |
-| 1.0 | Delete Attribute     | (/) |
-| 1.0 | Obtain Lease         | (x) |
-| 1.0 | Get Usage Allocation | (x) |
-| 1.0 | Activate             | (/) |
-| 1.0 | Revoke               | (/) |
-| 1.0 | Destroy              | (/) |
-| 1.0 | Archive              | (x) |
-| 1.0 | Recover              | (x) |
-| 1.0 | Validate             | (x) |
-| 1.0 | Query                | (/) _(lacks Query Application Namespaces support)_ |
-| 1.1 | Discover Versions    | (/) |
-| 1.0 | Cancel               | (x) |
-| 1.0 | Poll                 | (x) |
-| 1.2 | Encrypt              | (x) |
-| 1.2 | Decrypt              | (x) |
-| 1.2 | Sign                 | (x) |
-| 1.2 | Signature Verify     | (x) |
-| 1.2 | MAC                  | (x) |
-| 1.2 | MAC Verify           | (x) |
-| 1.2 | RNG Retrieve         | (x) |
-| 1.2 | RNG Seed             | (x) |
-| 1.2 | Hash                 | (x) |
-| 1.2 | Create Split Key     | (x) |
-| 1.2 | Join Split Key       | (x) |
+| 1.0 | Create               | :heavy_check_mark: |
+| 1.0 | Create Key Pair      | :heavy_check_mark: _(lacks response public/private key attribute lists support)_ |
+| 1.0 | Register             |  |
+| 1.0 | Re-key               |  |
+| 1.1 | Re-key Key Pair      |  |
+| 1.0 | Derive Key           |  |
+| 1.0 | Certify              |  |
+| 1.0 | Re-certify           |  |
+| 1.0 | Locate               | :heavy_check_mark: _(lacks Maximum Items and Storate Status Mask support)_ |
+| 1.0 | Check                |  |
+| 1.0 | Get                  | :heavy_check_mark: _(lacks Key Wrapping Specification, TransparentXXX, SplitKey, Template, SecretData and OpaqueObject support)_ |
+| 1.0 | Get Attributes       | :heavy_check_mark: _(lacks Big Integer and Interval support)_ |
+| 1.0 | Get Attribute List   | :heavy_check_mark: |
+| 1.0 | Add Attribute        | :heavy_check_mark: _(lacks Big Integer and Interval support)_ |
+| 1.0 | Modify Attribute     | :heavy_check_mark: _(lacks Big Integer and Interval support)_ |
+| 1.0 | Delete Attribute     | :heavy_check_mark: |
+| 1.0 | Obtain Lease         |  |
+| 1.0 | Get Usage Allocation |  |
+| 1.0 | Activate             | :heavy_check_mark: |
+| 1.0 | Revoke               | :heavy_check_mark: |
+| 1.0 | Destroy              | :heavy_check_mark: |
+| 1.0 | Archive              |  |
+| 1.0 | Recover              |  |
+| 1.0 | Validate             |  |
+| 1.0 | Query                | :heavy_check_mark: _(lacks Query Application Namespaces support)_ |
+| 1.1 | Discover Versions    | :heavy_check_mark: |
+| 1.0 | Cancel               |  |
+| 1.0 | Poll                 |  |
+| 1.2 | Encrypt              |  |
+| 1.2 | Decrypt              |  |
+| 1.2 | Sign                 |  |
+| 1.2 | Signature Verify     |  |
+| 1.2 | MAC                  |  |
+| 1.2 | MAC Verify           |  |
+| 1.2 | RNG Retrieve         |  |
+| 1.2 | RNG Seed             |  |
+| 1.2 | Hash                 |  |
+| 1.2 | Create Split Key     |  |
+| 1.2 | Join Split Key       |  |
 
 ### KMIP Use/Test Case Coverage
 
