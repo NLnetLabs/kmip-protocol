@@ -386,10 +386,10 @@ pub enum ResultReason {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254
 #[derive(Deserialize)]
 pub struct MessageExtension {
-    #[serde(rename = "0x42007A")]
+    #[serde(rename = "0x42007D")]
     pub vendor_identification: String,
 
-    #[serde(rename = "0x42009D")]
+    #[serde(rename = "0x420026")]
     pub criticality_indicator: bool,
 
     #[serde(rename = "0x42009C")]
