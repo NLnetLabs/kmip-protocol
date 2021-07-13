@@ -3,7 +3,7 @@ use serde_derive::Serialize;
 use super::common::{
     AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
     DataLength, KeyCompressionType, KeyFormatType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
-    Operation, RevocationMessage, RevocationReasonCode, UniqueIdentifier,
+    Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -200,12 +200,6 @@ pub struct ProtocolVersionMinor(pub i32);
 #[serde(rename = "0x420050")]
 pub struct MaximumResponseSize(pub i32);
 
-// KMIP spec 1.0 section 6.4 Unique Batch Item ID
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
-#[derive(Serialize)]
-#[serde(rename = "0x420093")]
-pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
-
 // KMIP spec 1.0 section 6.6 Authentication
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244
 #[derive(Serialize)]
@@ -290,6 +284,21 @@ pub enum RequestPayload {
     AddAttribute(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         Attribute,
+    ),
+
+    // KMIP spec 1.0 section 4.14 Modify Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+    ModifyAttribute(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        Attribute,
+    ),
+
+    // KMIP spec 1.0 section 4.15 Delete Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+    DeleteAttribute(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        AttributeName,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<i32>,
     ),
 
     // KMIP spec 1.0 section 4.18 Activate

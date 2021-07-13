@@ -6,10 +6,10 @@ use pretty_assertions::{assert_eq, assert_ne};
 use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
 
 use crate::types::{
-    common::Operation,
+    common::{Operation, UniqueBatchItemID},
     request::{
         self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
+        RequestHeader, RequestMessage, RequestPayload,
     },
     response::{ProtocolVersion, ResponseMessage, ResponsePayload, ResultStatus},
 };

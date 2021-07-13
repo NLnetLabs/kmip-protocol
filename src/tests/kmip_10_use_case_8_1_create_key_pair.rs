@@ -10,12 +10,12 @@ use crate::{
     types::{
         common::{
             CryptographicAlgorithm, CryptographicUsageMask, LinkType, LinkedObjectIdentifier, ObjectType, Operation,
-            UniqueIdentifier,
+            UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, CommonTemplateAttribute, MaximumResponseSize,
             PrivateKeyTemplateAttribute, ProtocolVersionMajor, ProtocolVersionMinor, PublicKeyTemplateAttribute,
-            RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
+            RequestHeader, RequestMessage, RequestPayload,
         },
         response::{ResponseMessage, ResponsePayload, ResultStatus},
     },

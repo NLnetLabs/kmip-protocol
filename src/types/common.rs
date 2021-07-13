@@ -38,9 +38,42 @@ pub enum AttributeValue {
     #[serde(rename = "if 0x42000A==State")]
     State(State),
 
+    // KMIP spec 1.0 section 3.33 Custom Attribute:
+    //   "Any data type or structure. If a structure, then the structure SHALL NOT include sub structures"
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581207
+
+    // TODO: Will this support arbitrary structures?
+    #[serde(rename = "if type==Structure")]
+    Structure(Vec<AttributeValue>),
+
+    #[serde(rename = "if type==Integer")]
     Integer(i32),
 
+    #[serde(rename = "if type==LongInteger")]
+    LongInteger(i64),
+
+    // TODO
+    // #[serde(rename = "if type==BigInteger")]
+    // BigInteger(??)
+    #[serde(rename = "if type==Enumeration")]
+    Enumeration(u32),
+
+    #[serde(rename = "if type==Boolean")]
+    Boolean(bool),
+
+    #[serde(rename = "if type==TextString")]
     TextString(String),
+
+    #[serde(rename = "if type==ByteString")]
+    #[serde(with = "serde_bytes")]
+    ByteString(Vec<u8>),
+
+    #[serde(rename = "if type==DateTime")]
+    DateTime(i64),
+
+    // TODO
+    // #[serde(rename = "if type==Interval")]
+    // Interval(??),
 }
 
 // KMIP spec 1.2 section 2.1.10 Data
@@ -196,6 +229,12 @@ pub struct RevocationMessage(pub String);
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename = "0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
+
+// KMIP spec 1.0 section 6.4 Unique Batch Item ID
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "0x420093")]
+pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 // KMIP spec 1.0 section 9.1.3.2.2 Key Compression Type Enumeration
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856

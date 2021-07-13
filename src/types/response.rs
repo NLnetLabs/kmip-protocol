@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use super::common::{
     AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, Data, KeyCompressionType, KeyFormatType,
-    ObjectType, Operation, UniqueIdentifier,
+    ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.3 Key Block
@@ -211,6 +211,28 @@ pub type RevokeResponsePayload = UniqueIdentifierResponsePayload;
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
 pub type DestroyResponsePayload = UniqueIdentifierResponsePayload;
 
+#[derive(Deserialize)]
+#[serde(rename = "0x42007C")]
+pub struct AttributeEditResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x420008")]
+    pub attribute: Attribute,
+}
+
+// KMIP spec 1.0 section 4.13 Add Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+pub type AddAttributeResponsePayload = AttributeEditResponsePayload;
+
+// KMIP spec 1.0 section 4.14 Modify Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+pub type ModifyAttributeResponsePayload = AttributeEditResponsePayload;
+
+// KMIP spec 1.0 section 4.15 Delete Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
+
 // KMIP spec 1.0 section 4.24 Query
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
 #[derive(Deserialize)]
@@ -406,13 +428,11 @@ pub struct ResponseHeader {
 #[serde(rename = "0x42000F")]
 pub struct BatchItem {
     #[serde(rename = "0x42005C")]
-    #[serde(default)]
     pub operation: Option<Operation>,
 
-    // pub unique_batch_item_id: Option<...> // we don't have this field yet because (a) per the spec we don't need it
-    //                                          because we don't send it in the request, and (b) because it uses the
-    //                                          TTLV ByteString type which the krill-kmip-ttlv crate doesn't support
-    //                                          yet.
+    #[serde(rename = "0x420093")]
+    pub unique_batch_item_id: Option<UniqueBatchItemID>,
+
     #[serde(rename = "0x42007F")]
     pub result_status: ResultStatus,
 
@@ -463,6 +483,21 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
     #[serde(rename = "if 0x42005C==0x0000000C")]
     GetAttributeList(GetAttributeListResponsePayload),
+
+    // KMIP spec 1.0 section 4.13 Add Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+    #[serde(rename = "if 0x42005C==0x0000000D")]
+    AddAttribute(AddAttributeResponsePayload),
+
+    // KMIP spec 1.0 section 4.14 Modify Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+    #[serde(rename = "if 0x42005C==0x0000000E")]
+    ModifyAttribute(ModifyAttributeResponsePayload),
+
+    // KMIP spec 1.0 section 4.15 Delete Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+    #[serde(rename = "if 0x42005C==0x0000000F")]
+    DeleteAttribute(DeleteAttributeResponsePayload),
 
     // KMIP spec 1.0 section 4.18 Activate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226

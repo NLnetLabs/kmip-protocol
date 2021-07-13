@@ -1,10 +1,10 @@
 use crate::{
     auth::CredentialType,
     types::{
-        common::Operation,
+        common::{Operation, UniqueBatchItemID},
         request::{
             Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersion, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
         },
     },
 };

@@ -8,10 +8,10 @@ use krill_kmip_ttlv::ser::to_vec;
 use crate::{
     response::from_slice,
     types::{
-        common::{ObjectType, Operation},
+        common::{ObjectType, Operation, UniqueBatchItemID},
         request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
+            ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
         },
         response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
     },
