@@ -11,7 +11,7 @@ use crate::{
         common::{ObjectType, Operation},
         request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
+            ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
         },
         response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
     },
@@ -33,6 +33,7 @@ fn query_request_operations_objects_max_response_size_256() {
             ),                                      //
             vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
                 Operation::Query,                   //     Tag: 0x42005C, Type: 0x05 (Enumeration). Data: 0x00000018
+                Option::<UniqueBatchItemID>::None,  //
                 RequestPayload::Query(vec![         //     Tag: 0x420079, Type: 0x01 (Structure)
                     QueryFunction::QueryOperations, //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000001
                     QueryFunction::QueryObjects     //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000002
@@ -98,6 +99,7 @@ fn query_request_operations_objects_max_response_size_2048() {
             ),                                      //
             vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
                 Operation::Query,                   //     Tag: 0x42005C, Type: 0x05 (Enumeration). Data: 0x00000018
+                Option::<UniqueBatchItemID>::None,  //
                 RequestPayload::Query(vec![         //     Tag: 0x420079, Type: 0x01 (Structure)
                     QueryFunction::QueryOperations, //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000001
                     QueryFunction::QueryObjects,    //       Tag: 0x420074, Type: 0x05 (Enumeration), Data: 0x00000002

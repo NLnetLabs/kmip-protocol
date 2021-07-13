@@ -39,6 +39,7 @@ pub enum AttributeValue {
     State(State),
 
     Integer(i32),
+
     TextString(String),
 }
 

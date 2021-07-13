@@ -15,7 +15,7 @@ use crate::{
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, CommonTemplateAttribute, MaximumResponseSize,
             PrivateKeyTemplateAttribute, ProtocolVersionMajor, ProtocolVersionMinor, PublicKeyTemplateAttribute,
-            RequestHeader, RequestMessage, RequestPayload,
+            RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
         },
         response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
@@ -32,6 +32,7 @@ fn create_key_pair_request_rsa_1024() {
         ),
         vec![BatchItem(
             Operation::CreateKeyPair,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::CreateKeyPair(
                 CommonTemplateAttribute::unnamed(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
@@ -115,6 +116,7 @@ fn locate_request_public_key() {
         ),
         vec![BatchItem(
             Operation::Locate,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Locate(vec![
                 Attribute::ObjectType(ObjectType::PublicKey),
                 Attribute::Link(
@@ -181,6 +183,7 @@ fn locate_request_private_key() {
         ),
         vec![BatchItem(
             Operation::Locate,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Locate(vec![
                 Attribute::ObjectType(ObjectType::PrivateKey),
                 Attribute::Link(
@@ -247,6 +250,7 @@ fn destroy_request_private_key() {
         ),
         vec![BatchItem(
             Operation::Destroy,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Destroy(Some(UniqueIdentifier("a242fca4-ebf0-4398-ac65-879bab490259".into()))),
         )],
     );
@@ -302,6 +306,7 @@ fn destroy_request_public_key() {
         ),
         vec![BatchItem(
             Operation::Destroy,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Destroy(Some(UniqueIdentifier("895f72c2-b20a-49d8-9504-6dc2115cc042".into()))),
         )],
     );

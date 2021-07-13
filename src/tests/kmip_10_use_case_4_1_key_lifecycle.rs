@@ -14,7 +14,7 @@ use crate::types::{
     request::{
         self, Attribute, Authentication, BatchCount, BatchItem, KeyWrappingSpecification, MaximumResponseSize,
         ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, RevocationReason,
-        TemplateAttribute,
+        TemplateAttribute, UniqueBatchItemID,
     },
     response::{KeyMaterial, ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
 };
@@ -32,6 +32,7 @@ fn client_a_create_request_symmetric_key() {
         ),
         vec![BatchItem(
             Operation::Create,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Create(
                 ObjectType::SymmetricKey,
                 TemplateAttribute::unnamed(vec![
@@ -116,6 +117,7 @@ fn client_a_get_state_attribute_request() {
         ),
         vec![BatchItem(
             Operation::GetAttributes,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::GetAttributes(
                 Some(UniqueIdentifier(KEY_ID.into())),
                 Some(vec![AttributeName("State".into())]),
@@ -197,6 +199,7 @@ fn client_a_activate_request() {
         ),
         vec![BatchItem(
             Operation::Activate,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Activate(Some(UniqueIdentifier(KEY_ID.into()))),
         )],
     );
@@ -265,6 +268,7 @@ fn client_a_get_state_attribute_request2() {
         ),
         vec![BatchItem(
             Operation::GetAttributes,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::GetAttributes(
                 Some(UniqueIdentifier(KEY_ID.into())),
                 Some(vec![AttributeName("State".into())]),
@@ -346,6 +350,7 @@ fn client_b_locate_request_symmetric_key_by_name() {
         ),
         vec![BatchItem(
             Operation::Locate,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Locate(vec![
                 Attribute::ObjectType(ObjectType::SymmetricKey),
                 Attribute::Name("Key1".into()),
@@ -419,6 +424,7 @@ fn client_b_get_request_symmetric_key() {
         ),
         vec![BatchItem(
             Operation::Get,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Get(
                 Some(UniqueIdentifier(KEY_ID.into())),
                 Option::<KeyFormatType>::None,
@@ -514,6 +520,7 @@ fn client_b_revoke_request_symmetric_key_compromised() {
         ),
         vec![BatchItem(
             Operation::Revoke,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::Revoke(
                 Some(UniqueIdentifier(KEY_ID.into())),
                 RevocationReason(RevocationReasonCode::KeyCompromise, Option::<RevocationMessage>::None),
@@ -585,6 +592,7 @@ fn client_b_get_state_attribute_request() {
         ),
         vec![BatchItem(
             Operation::GetAttributes,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::GetAttributes(
                 Some(UniqueIdentifier(KEY_ID.into())),
                 Some(vec![AttributeName("State".into())]),
@@ -654,8 +662,6 @@ fn client_b_get_state_attribute_response() {
     }
 }
 
-// SKIP CLIENT A GET ATTRIBUTES AS IT IS IDENTICAL TO THE CLIENT B GET ATTRIBUTES REQUEST AND RESPONSE TEST ABOVE
-
 #[test]
 fn client_a_get_attribute_list_request() {
     let use_case_request = RequestMessage(
@@ -667,6 +673,7 @@ fn client_a_get_attribute_list_request() {
         ),
         vec![BatchItem(
             Operation::GetAttributeList,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::GetAttributeList(Some(UniqueIdentifier(KEY_ID.into()))),
         )],
     );
@@ -759,4 +766,63 @@ fn client_a_get_attribute_list_response() {
     } else {
         panic!("Wrong payload");
     }
+}
+
+// SKIP CLIENT A GET ATTRIBUTES AS IT IS IDENTICAL TO THE CLIENT B GET ATTRIBUTES REQUEST AND RESPONSE TEST ABOVE
+
+// TODO:
+// Client A: Add attribute
+// Client A: Modify attribute
+// Client A: Delete attribute
+// Client A: Get symmetric key (skip as it is the same as done above for client b)
+// Client A: Destroy symmetric key
+
+#[test]
+fn client_a_add_attribute_batch() {
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(2),
+        ),
+        vec![
+            BatchItem(
+                Operation::AddAttribute,
+                Some(UniqueBatchItemID(hex::decode("9D407FFB45C95672").unwrap())),
+                RequestPayload::AddAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    Attribute(
+                        AttributeName("x-attribute1".into()),
+                        AttributeValue::TextString("Value1".into()),
+                    ),
+                ),
+            ),
+            BatchItem(
+                Operation::AddAttribute,
+                Some(UniqueBatchItemID(hex::decode("D62107C3158409D8").unwrap())),
+                RequestPayload::AddAttribute(
+                    Some(UniqueIdentifier(KEY_ID.into())),
+                    Attribute(
+                        AttributeName("x-attribute2".into()),
+                        AttributeValue::TextString("Value2".into()),
+                    ),
+                ),
+            ),
+        ],
+    );
+
+    let use_case_request_hex = concat!(
+        "42007801000001604200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
+        "00000000000000042000D0200000004000000020000000042000F010000008842005C05000000040000000D0000000042",
+        "009308000000089D407FFB45C956724200790100000060420094070000002432316432386238612D303664662D3433633",
+        "02D623732662D32613136313633336164613900000000420008010000002842000A070000000C782D6174747269627574",
+        "65310000000042000B070000000656616C756531000042000F010000008842005C05000000040000000D0000000042009",
+        "30800000008D62107C3158409D84200790100000060420094070000002432316432386238612D303664662D343363302D",
+        "623732662D32613136313633336164613900000000420008010000002842000A070000000C782D6174747269627574653",
+        "20000000042000B070000000656616C7565320000",
+    );
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(use_case_request_hex, actual_request_hex);
 }

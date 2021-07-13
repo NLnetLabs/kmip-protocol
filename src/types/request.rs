@@ -200,6 +200,12 @@ pub struct ProtocolVersionMinor(pub i32);
 #[serde(rename = "0x420050")]
 pub struct MaximumResponseSize(pub i32);
 
+// KMIP spec 1.0 section 6.4 Unique Batch Item ID
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
+#[derive(Serialize)]
+#[serde(rename = "0x420093")]
+pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
+
 // KMIP spec 1.0 section 6.6 Authentication
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244
 #[derive(Serialize)]
@@ -216,7 +222,11 @@ pub struct BatchCount(pub i32);
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253
 #[derive(Serialize)]
 #[serde(rename = "0x42000F")]
-pub struct BatchItem(pub Operation, pub RequestPayload);
+pub struct BatchItem(
+    pub Operation,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<UniqueBatchItemID>,
+    pub RequestPayload,
+);
 
 // KMIP spec 1.0 section 7.1 Message Format
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256
@@ -274,6 +284,13 @@ pub enum RequestPayload {
     // KMIP spec 1.0 section 4.12 Get Attribute List
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
     GetAttributeList(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
+
+    // KMIP spec 1.0 section 4.13 Add Attribute
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+    AddAttribute(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        Attribute,
+    ),
 
     // KMIP spec 1.0 section 4.18 Activate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226

@@ -9,7 +9,7 @@ use crate::types::{
     common::Operation,
     request::{
         self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload,
+        RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
     },
     response::{ProtocolVersion, ResponseMessage, ResponsePayload, ResultStatus},
 };
@@ -25,6 +25,7 @@ fn discover_versions_request_no_versions_provided() {
         ),
         vec![BatchItem(
             Operation::DiscoverVersions,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::DiscoverVersions(vec![]),
         )],
     );
@@ -86,6 +87,7 @@ fn discover_versions_request_with_v10() {
         ),
         vec![BatchItem(
             Operation::DiscoverVersions,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::DiscoverVersions(vec![request::ProtocolVersion(
                 ProtocolVersionMajor(1),
                 ProtocolVersionMinor(0),
@@ -148,6 +150,7 @@ fn discover_versions_request_with_v11() {
         ),
         vec![BatchItem(
             Operation::DiscoverVersions,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::DiscoverVersions(vec![request::ProtocolVersion(
                 ProtocolVersionMajor(1),
                 ProtocolVersionMinor(1),
@@ -210,6 +213,7 @@ fn discover_versions_request_with_v931() {
         ),
         vec![BatchItem(
             Operation::DiscoverVersions,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::DiscoverVersions(vec![request::ProtocolVersion(
                 ProtocolVersionMajor(9),
                 ProtocolVersionMinor(31),

@@ -4,7 +4,7 @@ use crate::{
         common::Operation,
         request::{
             Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersion, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
         },
     },
 };
@@ -19,7 +19,7 @@ pub fn to_vec(operation: Operation, payload: RequestPayload, credential: Option<
             credential.map(Authentication::build),
             BatchCount(1),
         ),
-        vec![BatchItem(operation, payload)],
+        vec![BatchItem(operation, Option::<UniqueBatchItemID>::None, payload)],
     );
     krill_kmip_ttlv::ser::to_vec(&request)
 }

@@ -7,7 +7,7 @@ use crate::types::{
     common::{DataLength, Operation},
     request::{
         self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload,
+        RequestHeader, RequestMessage, RequestPayload, UniqueBatchItemID,
     },
 };
 
@@ -22,6 +22,7 @@ fn rngretrieve_request_serializes_without_error() {
         ),
         vec![BatchItem(
             Operation::RNGRetrieve,
+            Option::<UniqueBatchItemID>::None,
             RequestPayload::RNGRetrieve(DataLength(10)),
         )],
     );
