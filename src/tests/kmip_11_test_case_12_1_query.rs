@@ -158,44 +158,48 @@ fn query_response_operation_succeeded() {
     assert!(matches!(&item.payload, Some(ResponsePayload::Query(_))));
 
     if let Some(ResponsePayload::Query(payload)) = item.payload.as_ref() {
-        assert_eq!(payload.operations.len(), 26);
-        assert!(matches!(payload.operations[0], Operation::Create));
-        assert!(matches!(payload.operations[1], Operation::CreateKeyPair));
-        assert!(matches!(payload.operations[2], Operation::Register));
-        assert!(matches!(payload.operations[3], Operation::Rekey));
-        assert!(matches!(payload.operations[4], Operation::Certify));
-        assert!(matches!(payload.operations[5], Operation::Recertify));
-        assert!(matches!(payload.operations[6], Operation::Locate));
-        assert!(matches!(payload.operations[7], Operation::Check));
-        assert!(matches!(payload.operations[8], Operation::Get));
-        assert!(matches!(payload.operations[9], Operation::GetAttributes));
-        assert!(matches!(payload.operations[10], Operation::GetAttributeList));
-        assert!(matches!(payload.operations[11], Operation::AddAttribute));
-        assert!(matches!(payload.operations[12], Operation::ModifyAttribute));
-        assert!(matches!(payload.operations[13], Operation::DeleteAttribute));
-        assert!(matches!(payload.operations[14], Operation::ObtainLease));
-        assert!(matches!(payload.operations[15], Operation::GetUsageAllocation));
-        assert!(matches!(payload.operations[16], Operation::Activate));
-        assert!(matches!(payload.operations[17], Operation::Revoke));
-        assert!(matches!(payload.operations[18], Operation::Destroy));
-        assert!(matches!(payload.operations[19], Operation::Archive));
-        assert!(matches!(payload.operations[20], Operation::Recover));
-        assert!(matches!(payload.operations[21], Operation::Query));
-        assert!(matches!(payload.operations[22], Operation::Cancel));
-        assert!(matches!(payload.operations[23], Operation::Poll));
-        assert!(matches!(payload.operations[24], Operation::RekeyKeyPair));
-        assert!(matches!(payload.operations[25], Operation::DiscoverVersions));
+        assert!(payload.operations.is_some());
+        let ops = payload.operations.as_ref().unwrap();
+        assert_eq!(ops.len(), 26);
+        assert!(matches!(ops[0], Operation::Create));
+        assert!(matches!(ops[1], Operation::CreateKeyPair));
+        assert!(matches!(ops[2], Operation::Register));
+        assert!(matches!(ops[3], Operation::Rekey));
+        assert!(matches!(ops[4], Operation::Certify));
+        assert!(matches!(ops[5], Operation::Recertify));
+        assert!(matches!(ops[6], Operation::Locate));
+        assert!(matches!(ops[7], Operation::Check));
+        assert!(matches!(ops[8], Operation::Get));
+        assert!(matches!(ops[9], Operation::GetAttributes));
+        assert!(matches!(ops[10], Operation::GetAttributeList));
+        assert!(matches!(ops[11], Operation::AddAttribute));
+        assert!(matches!(ops[12], Operation::ModifyAttribute));
+        assert!(matches!(ops[13], Operation::DeleteAttribute));
+        assert!(matches!(ops[14], Operation::ObtainLease));
+        assert!(matches!(ops[15], Operation::GetUsageAllocation));
+        assert!(matches!(ops[16], Operation::Activate));
+        assert!(matches!(ops[17], Operation::Revoke));
+        assert!(matches!(ops[18], Operation::Destroy));
+        assert!(matches!(ops[19], Operation::Archive));
+        assert!(matches!(ops[20], Operation::Recover));
+        assert!(matches!(ops[21], Operation::Query));
+        assert!(matches!(ops[22], Operation::Cancel));
+        assert!(matches!(ops[23], Operation::Poll));
+        assert!(matches!(ops[24], Operation::RekeyKeyPair));
+        assert!(matches!(ops[25], Operation::DiscoverVersions));
 
-        assert_eq!(payload.object_types.len(), 6);
-        assert!(matches!(payload.object_types[0], ObjectType::Certificate));
-        assert!(matches!(payload.object_types[1], ObjectType::SymmetricKey));
-        assert!(matches!(payload.object_types[2], ObjectType::PublicKey));
-        assert!(matches!(payload.object_types[3], ObjectType::PrivateKey));
-        assert!(matches!(payload.object_types[4], ObjectType::Template));
-        assert!(matches!(payload.object_types[5], ObjectType::SecretData));
+        assert!(payload.object_types.is_some());
+        let types = payload.object_types.as_ref().unwrap();
+        assert_eq!(types.len(), 6);
+        assert!(matches!(types[0], ObjectType::Certificate));
+        assert!(matches!(types[1], ObjectType::SymmetricKey));
+        assert!(matches!(types[2], ObjectType::PublicKey));
+        assert!(matches!(types[3], ObjectType::PrivateKey));
+        assert!(matches!(types[4], ObjectType::Template));
+        assert!(matches!(types[5], ObjectType::SecretData));
 
-        assert!(payload.operations.contains(&Operation::Cancel));
-        assert!(payload.object_types.contains(&ObjectType::Template));
+        assert!(ops.contains(&Operation::Cancel));
+        assert!(types.contains(&ObjectType::Template));
 
         assert_eq!(
             payload.vendor_identification,
