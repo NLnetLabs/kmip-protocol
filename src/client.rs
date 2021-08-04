@@ -1,13 +1,9 @@
 use std::io::{Read, Write};
 
 use crate::{
+    auth::{self, CredentialType},
     request::to_vec,
-    response::from_slice,
-    types::{
-        common::Operation,
-        request::{QueryFunction, RequestPayload},
-        response::{QueryResponsePayload, ResponseMessage, ResponsePayload, ResultStatus},
-    },
+    types::{common::*, request, request::*, response::*},
 };
 
 #[allow(dead_code)]
@@ -15,6 +11,7 @@ pub struct Client<'a, T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
     stream: &'a mut T,
+    reader_config: krill_kmip_ttlv::Config,
 }
 
 #[allow(dead_code)]
@@ -26,52 +23,124 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl<'a, T: Read + Write> Client<'a, T> {
-    pub fn query(&mut self, operations: bool, objects: bool) -> Result<QueryResponsePayload>
-    where
-        T: Read + Write,
-    {
-        // Setup the request
-        let mut wanted_info = Vec::new();
-        operations.then(|| wanted_info.push(QueryFunction::QueryOperations));
-        objects.then(|| wanted_info.push(QueryFunction::QueryObjects));
+    fn auth(&self) -> Option<CredentialType> {
+        if self.username.is_some() && self.password.is_some() {
+            Some(CredentialType::UsernameAndPassword(
+                auth::UsernameAndPasswordCredential::new(self.username.clone().unwrap(), self.password.clone()),
+            ))
+        } else {
+            None
+        }
+    }
+
+    fn do_request(&mut self, request_payload: RequestPayload) -> Result<ResponsePayload> {
+        // Determine the operation being performed
+        let operation = match request_payload {
+            RequestPayload::Create(_, _) => Operation::Create,
+            RequestPayload::CreateKeyPair(_, _, _) => Operation::CreateKeyPair,
+            RequestPayload::Locate(_) => Operation::Locate,
+            RequestPayload::Get(_, _, _, _) => Operation::Get,
+            RequestPayload::GetAttributes(_, _) => Operation::GetAttributes,
+            RequestPayload::GetAttributeList(_) => Operation::GetAttributeList,
+            RequestPayload::AddAttribute(_, _) => Operation::AddAttribute,
+            RequestPayload::ModifyAttribute(_, _) => Operation::ModifyAttribute,
+            RequestPayload::DeleteAttribute(_, _, _) => Operation::DeleteAttribute,
+            RequestPayload::Activate(_) => Operation::Activate,
+            RequestPayload::Revoke(_, _, _) => Operation::Revoke,
+            RequestPayload::Destroy(_) => Operation::Destroy,
+            RequestPayload::Query(_) => Operation::Query,
+            RequestPayload::DiscoverVersions(_) => Operation::DiscoverVersions,
+            RequestPayload::Sign => Operation::Sign,
+            RequestPayload::RNGRetrieve(_) => Operation::RNGRetrieve,
+        };
 
         // Serialize and write the request
-        let req_bytes =
-            to_vec(Operation::Query, RequestPayload::Query(wanted_info), None).map_err(|_| Error::Unknown)?;
+        let req_bytes = to_vec(operation, request_payload, self.auth()).map_err(|_| Error::Unknown)?;
         self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
 
-        // Read and deserialize the response
-        let mut res_bytes = Vec::new();
-        self.stream.read_to_end(&mut res_bytes).map_err(|_| Error::Unknown)?;
+        // The response data is untrusted input. If the reader buffers it could attempt to allocate a huge amount of
+        // memory and cause a panic, so limit the amount we try to read in the worst case.
 
-        // Process the response
-        let mut res: ResponseMessage = from_slice(&res_bytes).map_err(|_| Error::Unknown)?;
+        // Read and deserialize the response
+        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(self.stream, &self.reader_config)
+            .map_err(|e| {
+                eprintln!("Error: {:?}", e);
+                Error::Unknown
+            })?;
         if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
 
-            if matches!(
-                (&item.result_status, &item.operation, &item.payload),
-                (
-                    ResultStatus::Success,
-                    Some(Operation::Query),
-                    Some(ResponsePayload::Query(_))
-                )
-            ) {
+            if item.result_status == ResultStatus::Success && item.operation == Some(operation) {
                 if let Some(payload) = item.payload.take() {
-                    if let ResponsePayload::Query(payload) = payload {
-                        return Ok(payload);
-                    }
+                    return Ok(payload);
                 }
             }
         }
 
         Err(Error::Unknown)
     }
+
+    pub fn query(&mut self, operations: bool, objects: bool) -> Result<QueryResponsePayload> {
+        // Setup the request
+        let mut wanted_info = Vec::new();
+        operations.then(|| wanted_info.push(QueryFunction::QueryOperations));
+        objects.then(|| wanted_info.push(QueryFunction::QueryObjects));
+        let request = RequestPayload::Query(wanted_info);
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::Query(payload) = response {
+            Ok(payload)
+        } else {
+            Err(Error::Unknown)
+        }
+    }
+
+    pub fn create_rsa_key_pair(
+        &mut self,
+        key_length: i32,
+        private_key_name: String,
+        public_key_name: String,
+    ) -> Result<CreateKeyPairResponsePayload> {
+        // Setup the request
+        let request = RequestPayload::CreateKeyPair(
+            CommonTemplateAttribute::unnamed(vec![
+                request::Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
+                request::Attribute::CryptographicLength(key_length),
+            ]),
+            PrivateKeyTemplateAttribute::unnamed(vec![
+                request::Attribute::Name(private_key_name),
+                request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
+            ]),
+            PublicKeyTemplateAttribute::unnamed(vec![
+                request::Attribute::Name(public_key_name),
+                request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
+            ]),
+        );
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::CreateKeyPair(payload) = response {
+            Ok(payload)
+        } else {
+            Err(Error::Unknown)
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::io::{Cursor, Read, Write};
+    use std::{
+        io::{Cursor, Read, Write},
+        net::TcpStream,
+    };
+
+    use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
+    // use rustls::internal::pemfile;
 
     use super::Client;
 
@@ -97,7 +166,7 @@ mod test {
 
     #[test]
     fn test_query() {
-        let use_case_response_hex = concat!(
+        let response_hex = concat!(
             "42007B010000023042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
             "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F01000001D842",
             "005C0500000004000000180000000042007F0500000004000000000000000042007C01000001B042005C0500000004000",
@@ -111,17 +180,106 @@ mod test {
             "0000004200570500000004000000010000000042005705000000040000000200000000420057050000000400000003000",
             "000004200570500000004000000040000000042005705000000040000000600000000"
         );
-        let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+        let response_bytes = hex::decode(response_hex).unwrap();
 
         let mut stream = MockStream {
-            response: Cursor::new(ttlv_wire),
+            response: Cursor::new(response_bytes),
         };
 
         let mut client = Client {
             username: None,
             password: None,
             stream: &mut stream,
+            reader_config: krill_kmip_ttlv::Config::default(),
         };
-        dbg!(client.query(true, true).unwrap());
+
+        let response_payload = client.query(true, true).unwrap();
+
+        dbg!(response_payload);
+    }
+
+    #[test]
+    fn test_create_rsa_key_pair() {
+        let response_hex = concat!(
+            "42007B01000000E042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+            "0000000000000004200920900000008000000004B73C13A42000D0200000004000000010000000042000F010000008842",
+            "005C0500000004000000020000000042007F0500000004000000000000000042007C01000000604200940700000024383",
+            "93566373263322D623230612D343964382D393530342D3664633231313563633034320000000042009407000000246132",
+            "3432666361342D656266302D343339382D616336352D38373962616234393032353900000000"
+        );
+        let response_bytes = hex::decode(response_hex).unwrap();
+
+        let mut stream = MockStream {
+            response: Cursor::new(response_bytes),
+        };
+
+        let mut client = Client {
+            username: None,
+            password: None,
+            stream: &mut stream,
+            reader_config: krill_kmip_ttlv::Config::default(),
+        };
+
+        let response_payload = client
+            .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
+            .unwrap();
+
+        dbg!(response_payload);
+    }
+
+    #[test]
+    #[ignore = "Requires a running PyKMIP instance"]
+    fn test_pykmip_query_against_server() {
+        let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
+        connector.set_verify(SslVerifyMode::NONE);
+        connector
+            .set_certificate_file("/etc/ssl/certs/selfsigned.crt", SslFiletype::PEM)
+            .unwrap();
+        connector
+            .set_private_key_file("/etc/ssl/private/selfsigned.key", SslFiletype::PEM)
+            .unwrap();
+        let connector = connector.build();
+        let stream = TcpStream::connect("localhost:5696").unwrap();
+        let mut tls = connector.connect("localhost", stream).unwrap();
+
+        let mut client = Client {
+            username: None,
+            password: None,
+            stream: &mut tls,
+            reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
+        };
+
+        let response_payload = client.query(true, false).unwrap();
+
+        dbg!(response_payload);
+    }
+
+    #[test]
+    fn test_pykmip_query_response() {
+        let response_hex = concat!(
+            "42007b010000014042007a0100000048420069010000002042006a0200000004000000010000000042006b02000000040",
+            "00000000000000042009209000000080000000060ff457142000d0200000004000000010000000042000f01000000e842",
+            "005c0500000004000000180000000042007f0500000004000000000000000042007c01000000c042005c0500000004000",
+            "000010000000042005c0500000004000000020000000042005c0500000004000000030000000042005c05000000040000",
+            "00050000000042005c0500000004000000080000000042005c05000000040000000a0000000042005c050000000400000",
+            "00b0000000042005c05000000040000000c0000000042005c0500000004000000120000000042005c0500000004000000",
+            "130000000042005c0500000004000000140000000042005c05000000040000001800000000"
+        );
+        let response_bytes = hex::decode(response_hex).unwrap();
+
+        let mut stream = MockStream {
+            response: Cursor::new(response_bytes),
+        };
+
+        let mut client = Client {
+            username: None,
+            password: None,
+            stream: &mut stream,
+            reader_config: krill_kmip_ttlv::Config::default(),
+        };
+
+        let response_payload = client.query(true, true).unwrap();
+
+        dbg!(response_payload);
     }
 }
