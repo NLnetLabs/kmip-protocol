@@ -65,7 +65,10 @@ fn create_key_pair_request_rsa_1024() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -137,7 +140,10 @@ fn locate_request_public_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -204,7 +210,10 @@ fn locate_request_private_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -263,7 +272,10 @@ fn destroy_request_private_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -319,7 +331,10 @@ fn destroy_request_public_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]

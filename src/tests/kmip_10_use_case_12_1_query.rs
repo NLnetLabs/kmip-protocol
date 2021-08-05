@@ -53,7 +53,10 @@ fn query_request_operations_objects_max_response_size_256() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -119,7 +122,10 @@ fn query_request_operations_objects_max_response_size_2048() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]

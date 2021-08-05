@@ -55,18 +55,21 @@ impl<'a, T: Read + Write> Client<'a, T> {
         };
 
         // Serialize and write the request
-        let req_bytes = to_vec(operation, request_payload, self.auth()).map_err(|_| Error::Unknown)?;
+        let req_bytes = to_vec(operation, request_payload, self.auth()).map_err(|e| {
+            eprintln!("{}", e);
+            Error::Unknown
+        })?;
         self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
 
         // The response data is untrusted input. If the reader buffers it could attempt to allocate a huge amount of
         // memory and cause a panic, so limit the amount we try to read in the worst case.
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(self.stream, &self.reader_config)
-            .map_err(|e| {
-                eprintln!("Error: {:?}", e);
-                Error::Unknown
-            })?;
+        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(self.stream, &self.reader_config).map_err(|e| {
+            eprintln!("Error: {:?}", e);
+            Error::Unknown
+        })?;
+        // TODO: Handle operation failed here.
         if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
 
@@ -140,7 +143,6 @@ mod test {
     };
 
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
-    // use rustls::internal::pemfile;
 
     use super::Client;
 
@@ -250,6 +252,30 @@ mod test {
         };
 
         let response_payload = client.query(true, false).unwrap();
+
+        dbg!(response_payload);
+    }
+
+    #[test]
+    #[ignore = "Requires a running Kryptus instance"]
+    fn test_kryptus_query_against_server() {
+        let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
+        connector.set_verify(SslVerifyMode::NONE);
+        let connector = connector.build();
+        let host = std::env::var("KRYPTUS_HOST").unwrap();
+        let port = std::env::var("KRYPTUS_PORT").unwrap();
+        let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
+        let mut tls = connector.connect(&host, stream).unwrap();
+
+        let mut client = Client {
+            username: Some(std::env::var("KRYPTUS_USER").unwrap()),
+            password: Some(std::env::var("KRYPTUS_PASS").unwrap()),
+            stream: &mut tls,
+            reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
+        };
+
+        let response_payload = client.query(true, false);
+        let response_payload = response_payload.unwrap();
 
         dbg!(response_payload);
     }

@@ -58,7 +58,10 @@ fn client_a_create_request_symmetric_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -133,7 +136,10 @@ fn client_a_get_state_attribute_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -212,7 +218,10 @@ fn client_a_activate_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -284,7 +293,10 @@ fn client_a_get_state_attribute_request2() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -367,7 +379,10 @@ fn client_b_locate_request_symmetric_key_by_name() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -441,7 +456,10 @@ fn client_b_get_request_symmetric_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -536,7 +554,10 @@ fn client_b_revoke_request_symmetric_key_compromised() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -608,7 +629,10 @@ fn client_b_get_state_attribute_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -686,7 +710,10 @@ fn client_a_get_attribute_list_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -817,7 +844,10 @@ fn client_a_add_attribute_batch_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -950,7 +980,10 @@ fn client_a_modify_attribute_batch_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -1078,7 +1111,10 @@ fn client_a_delete_attribute_batch_request() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -1190,7 +1226,10 @@ fn client_a_destroy_request_symmetric_key() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]

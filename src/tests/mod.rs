@@ -1,7 +1,10 @@
+mod kmip_10_use_case_11_1_access_control;
 mod kmip_10_use_case_12_1_query;
 mod kmip_10_use_case_4_1_key_lifecycle;
 mod kmip_10_use_case_8_1_create_key_pair;
+
 mod kmip_11_test_case_12_1_query;
 mod kmip_11_test_case_16_1_discover_versions;
+
 mod locate_key_by_name_and_type;
 mod rngretrieve;

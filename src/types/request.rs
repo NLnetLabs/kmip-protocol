@@ -3,9 +3,10 @@ use serde_derive::Serialize;
 use std::fmt::Display;
 
 use super::common::{
-    AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
-    DataLength, KeyCompressionType, KeyFormatType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
-    Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
+    AttributeName, AttributeValue, BlockCipherMode, CompromiseOccurrenceDate, CryptographicAlgorithm,
+    CryptographicUsageMask, DataLength, HashingAlgorithm, KeyCompressionType, KeyFormatType, KeyRoleType, LinkType,
+    LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, PaddingMethod, RevocationMessage,
+    RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -69,6 +70,34 @@ impl Attribute {
         Attribute(
             AttributeName("Cryptographic Length".into()),
             AttributeValue::Integer(value),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.6 Cryptographic Parameters
+    #[allow(non_snake_case)]
+    pub fn CryptographicParameters(
+        block_cipher_mode: Option<BlockCipherMode>,
+        padding_method: Option<PaddingMethod>,
+        hashing_algorithm: Option<HashingAlgorithm>,
+        key_role_type: Option<KeyRoleType>,
+    ) -> Self {
+        Attribute(
+            AttributeName("Cryptographic Parameters".into()),
+            AttributeValue::CryptographicParameters(
+                block_cipher_mode,
+                padding_method,
+                hashing_algorithm,
+                key_role_type,
+            ),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.13 Operation Policy Name
+    #[allow(non_snake_case)]
+    pub fn OperationPolicyName(value: String) -> Self {
+        Attribute(
+            AttributeName("Operation Policy Name".into()),
+            AttributeValue::TextString(value),
         )
     }
 
@@ -141,24 +170,24 @@ pub enum CredentialType {
 #[serde(rename = "0x420025")]
 #[non_exhaustive]
 pub enum CredentialValue {
-    UsernameAndPassword(UsernameAndPasswordCredential),
+    UsernameAndPassword(
+        Username,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<Password>,
+    ),
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-pub struct UsernameAndPasswordCredential(pub Username, pub Option<Password>);
-
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420099")]
+#[serde(rename = "Transparent:0x420099")]
 pub struct Username(pub String);
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x4200A1")]
+#[serde(rename = "Transparent:0x4200A1")]
 pub struct Password(pub String);
 
 // KMIP spec 1.0 section 2.1.6 Key Wrapping Specification
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160
 #[derive(Clone, Debug, Serialize, PartialEq)]
-#[serde(rename = "0x420047")]
+#[serde(rename = "Transparent:0x420047")]
 pub struct KeyWrappingSpecification(pub WrappingMethod); // ... TODO
 
 // KMIP spec 1.0 section 3.2 Name
@@ -189,17 +218,17 @@ pub struct RevocationReason(
 pub struct ProtocolVersion(pub ProtocolVersionMajor, pub ProtocolVersionMinor);
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42006A")]
+#[serde(rename = "Transparent:0x42006A")]
 pub struct ProtocolVersionMajor(pub i32);
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42006B")]
+#[serde(rename = "Transparent:0x42006B")]
 pub struct ProtocolVersionMinor(pub i32);
 
 // KMIP spec 1.0 section 6.3 Maximum Response Size
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581241
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420050")]
+#[serde(rename = "Transparent:0x420050")]
 pub struct MaximumResponseSize(pub i32);
 
 // KMIP spec 1.0 section 6.6 Authentication
@@ -211,7 +240,7 @@ pub struct Authentication(pub Credential);
 // KMIP spec 1.0 section 6.14 Batch Count
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581252
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42000D")]
+#[serde(rename = "Transparent:0x42000D")]
 pub struct BatchCount(pub i32);
 
 // KMIP spec 1.0 section 6.15 Batch Item

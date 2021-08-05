@@ -37,7 +37,10 @@ fn discover_versions_request_no_versions_provided() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -102,7 +105,10 @@ fn discover_versions_request_with_v10() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -165,7 +171,10 @@ fn discover_versions_request_with_v11() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]
@@ -228,7 +237,10 @@ fn discover_versions_request_with_v931() {
     );
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(use_case_request_hex, actual_request_hex);
+    assert_eq!(
+        use_case_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
 }
 
 #[test]

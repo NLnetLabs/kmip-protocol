@@ -2,13 +2,13 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
 use enum_display_derive::Display;
-use enumflags2::bitflags;
+use enum_flags::EnumFlags;
 use std::fmt::Display;
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42000A")]
+#[serde(rename = "Transparent:0x42000A")]
 pub struct AttributeName(pub String);
 
 impl std::cmp::PartialEq<str> for AttributeName {
@@ -23,19 +23,30 @@ impl std::cmp::PartialEq<str> for AttributeName {
 #[serde(rename = "0x42000B")]
 #[non_exhaustive]
 pub enum AttributeValue {
-    #[serde(rename = "if 0x42000A==Cryptographic Algorithm")]
+    #[serde(rename(deserialize = "if 0x42000A==Cryptographic Algorithm"))]
+    #[serde(rename(serialize = "Transparent"))]
     CryptographicAlgorithm(CryptographicAlgorithm),
 
-    #[serde(rename = "if 0x42000A==Linked Object Identifier")]
+    #[serde(rename = "if 0x42000A==Cryptographic Parameters")]
+    CryptographicParameters(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<BlockCipherMode>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<PaddingMethod>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<HashingAlgorithm>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyRoleType>,
+    ),
+
+    #[serde(rename(deserialize = "if 0x42000A==Linked Object Identifier"))]
     Link(LinkType, LinkedObjectIdentifier),
 
-    #[serde(rename = "if 0x42000A==Name")]
+    #[serde(rename(deserialize = "if 0x42000A==Name"))]
     Name(NameValue, NameType),
 
-    #[serde(rename = "if 0x42000A==Object Type")]
+    #[serde(rename(deserialize = "if 0x42000A==Object Type"))]
+    #[serde(rename(serialize = "Transparent"))]
     ObjectType(ObjectType),
 
-    #[serde(rename = "if 0x42000A==State")]
+    #[serde(rename(deserialize = "if 0x42000A==State"))]
+    #[serde(rename(serialize = "Transparent"))]
     State(State),
 
     // KMIP spec 1.0 section 3.33 Custom Attribute:
@@ -43,34 +54,38 @@ pub enum AttributeValue {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581207
 
     // TODO: Will this support arbitrary structures?
-    #[serde(rename = "if type==Structure")]
+    #[serde(rename(deserialize = "if type==Structure"))]
     Structure(Vec<AttributeValue>),
 
-    #[serde(rename = "if type==Integer")]
+    #[serde(rename(deserialize = "if type==Integer"))]
+    #[serde(rename(serialize = "Transparent"))]
     Integer(i32),
 
-    #[serde(rename = "if type==LongInteger")]
+    #[serde(rename(deserialize = "if type==LongInteger"))]
     LongInteger(i64),
 
     // TODO
     // #[serde(rename = "if type==BigInteger")]
     // BigInteger(??)
-    #[serde(rename = "if type==Enumeration")]
+    #[serde(rename(deserialize = "if type==Enumeration"))]
+    #[serde(rename(serialize = "Transparent"))]
     Enumeration(u32),
 
-    #[serde(rename = "if type==Boolean")]
+    #[serde(rename(deserialize = "if type==Boolean"))]
+    #[serde(rename(serialize = "Transparent"))]
     Boolean(bool),
 
-    #[serde(rename = "if type==TextString")]
+    #[serde(rename(deserialize = "if type==TextString"))]
+    #[serde(rename(serialize = "Transparent"))]
     TextString(String),
 
-    #[serde(rename = "if type==ByteString")]
+    #[serde(rename(deserialize = "if type==ByteString"))]
     #[serde(with = "serde_bytes")]
     ByteString(Vec<u8>),
 
-    #[serde(rename = "if type==DateTime")]
+    #[serde(rename(deserialize = "if type==DateTime"))]
+    #[serde(rename(serialize = "Transparent"))]
     DateTime(i64),
-
     // TODO
     // #[serde(rename = "if type==Interval")]
     // Interval(??),
@@ -85,13 +100,13 @@ pub struct Data(pub Vec<u8>);
 // KMIP spec 1.2 section 2.1.11 Data Length
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x4200C4")]
+#[serde(rename = "Transparent:0x4200C4")]
 pub struct DataLength(pub i32);
 
 // KMIP spec 1.0 section 3.1 Unique Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420094")]
+#[serde(rename = "Transparent:0x420094")]
 pub struct UniqueIdentifier(pub String);
 
 impl std::ops::Deref for UniqueIdentifier {
@@ -111,7 +126,7 @@ impl std::cmp::PartialEq<str> for UniqueIdentifier {
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420055")]
+#[serde(rename = "Transparent:0x420055")]
 pub struct NameValue(pub String);
 
 impl std::fmt::Display for NameValue {
@@ -185,10 +200,10 @@ pub struct CryptographicParameters(CryptographicAlgorithm);
 // KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188
 // Note: This enum value is stored in a u32 but is serialized as an i32.
-#[bitflags]
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(EnumFlags, Clone, Copy, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[rustfmt::skip]
+#[non_exhaustive]
 pub enum CryptographicUsageMask {
     Sign                            = 0x00000001,
     Verify                          = 0x00000002,
@@ -215,25 +230,25 @@ pub enum CryptographicUsageMask {
 // KMIP spec 1.0 section 3.24 Compromise Occurrence Date
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420021")]
+#[serde(rename = "Transparent:0x420021")]
 pub struct CompromiseOccurrenceDate(pub u64);
 
 // KMIP spec 1.0 section 3.26 Revocation Reason
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420080")]
+#[serde(rename = "Transparent:0x420080")]
 pub struct RevocationMessage(pub String);
 
 // KMIP spec 1.0 section 3.29 Linked Object Identifier
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42004C")]
+#[serde(rename = "Transparent:0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
 
 // KMIP spec 1.0 section 6.4 Unique Batch Item ID
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420093")]
+#[serde(rename(serialize = "Transparent:0x420093"))]
 pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
@@ -329,6 +344,7 @@ pub enum KeyFormatType {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42001D")]
+#[non_exhaustive]
 pub enum CertificateType {
     #[serde(rename = "0x00000001")]
     X509,
@@ -341,6 +357,7 @@ pub enum CertificateType {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420054")]
+#[non_exhaustive]
 pub enum NameType {
     #[serde(rename = "0x00000001")]
     UninterpretedTextString,
@@ -349,10 +366,220 @@ pub enum NameType {
     URI,
 }
 
+// KMIP spec 1.0 section 9.1.3.2.13 Block Cipher Mode Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497881
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x420011")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum BlockCipherMode {
+    #[serde(rename = "0x00000001")]
+    CBC,
+
+    #[serde(rename = "0x00000002")]
+    ECB,
+
+    #[serde(rename = "0x00000003")]
+    PCBC,
+
+    #[serde(rename = "0x00000004")]
+    CFB,
+
+    #[serde(rename = "0x00000005")]
+    OFB,
+
+    #[serde(rename = "0x00000006")]
+    CTR,
+
+    #[serde(rename = "0x00000007")]
+    CMAC,
+
+    #[serde(rename = "0x00000008")]
+    CCM,
+
+    #[serde(rename = "0x00000009")]
+    GCM,
+
+    #[serde(rename = "0x0000000A")]
+    CBC_MAC,
+
+    #[serde(rename = "0x0000000B")]
+    XTS,
+
+    #[serde(rename = "0x0000000C")]
+    AESKeyWrapPadding,
+
+    #[serde(rename = "0x0000000D")]
+    NISTKeyWrap,
+
+    #[serde(rename = "0x0000000E")]
+    X9_102_AESKW,
+
+    #[serde(rename = "0x0000000F")]
+    X9_102_TDKW,
+
+    #[serde(rename = "0x00000010")]
+    X9_102_AKW1,
+
+    #[serde(rename = "0x00000011")]
+    X9_102_AKW2,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.14 Padding Method Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497882
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x42005F")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum PaddingMethod {
+    #[serde(rename = "0x00000001")]
+    None,
+
+    #[serde(rename = "0x00000002")]
+    OAEP,
+
+    #[serde(rename = "0x00000003")]
+    PKCS5,
+
+    #[serde(rename = "0x00000004")]
+    SSL3,
+
+    #[serde(rename = "0x00000005")]
+    Zeros,
+
+    #[serde(rename = "0x00000006")]
+    ANSI_X9_23,
+
+    #[serde(rename = "0x00000007")]
+    ISO_10126,
+
+    #[serde(rename = "0x00000008")]
+    PKCS1_v1_5,
+
+    #[serde(rename = "0x00000009")]
+    X9_31,
+
+    #[serde(rename = "0x0000000A")]
+    PSS,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.15 Hashing Algorithm Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x420038")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum HashingAlgorithm {
+    #[serde(rename = "0x00000001")]
+    MD2,
+
+    #[serde(rename = "0x00000002")]
+    MD4,
+
+    #[serde(rename = "0x00000003")]
+    MD5,
+
+    #[serde(rename = "0x00000004")]
+    SHA1,
+
+    #[serde(rename = "0x00000005")]
+    SHA224,
+
+    #[serde(rename = "0x00000006")]
+    SHA256,
+
+    #[serde(rename = "0x00000007")]
+    SHA384,
+
+    #[serde(rename = "0x00000008")]
+    SHA512,
+
+    #[serde(rename = "0x00000009")]
+    RIPEMD160,
+
+    #[serde(rename = "0x0000000A")]
+    Tiger,
+
+    #[serde(rename = "0x0000000B")]
+    Whirlpool,
+}
+
+// KMIP spec 1.0 section 9.1.3.2.15 Key Role TypeEnumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497884
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x420083")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum KeyRoleType {
+    #[serde(rename = "0x00000001")]
+    BDK,
+
+    #[serde(rename = "0x00000002")]
+    CVK,
+
+    #[serde(rename = "0x00000003")]
+    DEK,
+
+    #[serde(rename = "0x00000004")]
+    MKAC,
+
+    #[serde(rename = "0x00000005")]
+    MKSMC,
+
+    #[serde(rename = "0x00000006")]
+    MKSMI,
+
+    #[serde(rename = "0x00000007")]
+    MKDAC,
+
+    #[serde(rename = "0x00000008")]
+    MKDN,
+
+    #[serde(rename = "0x00000009")]
+    MKCP,
+
+    #[serde(rename = "0x0000000A")]
+    MKOTH,
+
+    #[serde(rename = "0x0000000B")]
+    KEK,
+
+    #[serde(rename = "0x0000000C")]
+    MAC16609,
+
+    #[serde(rename = "0x0000000D")]
+    MAC97971,
+
+    #[serde(rename = "0x0000000E")]
+    MAC97972,
+
+    #[serde(rename = "0x0000000F")]
+    MAC97973,
+
+    #[serde(rename = "0x00000010")]
+    MAC97974,
+
+    #[serde(rename = "0x00000011")]
+    MAC97975,
+
+    #[serde(rename = "0x00000012")]
+    ZPK,
+
+    #[serde(rename = "0x00000013")]
+    PVKIBM,
+
+    #[serde(rename = "0x00000014")]
+    PVKPVV,
+
+    #[serde(rename = "0x00000015")]
+    PVKOTH,
+}
+
 // KMIP spec 1.0 section 9.1.3.2.17 State
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582066
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42008D")]
+#[non_exhaustive]
 pub enum State {
     #[serde(rename = "0x00000001")]
     PreActive,
@@ -377,6 +604,7 @@ pub enum State {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241996204
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420082")]
+#[non_exhaustive]
 pub enum RevocationReasonCode {
     #[serde(rename = "0x00000001")]
     Unspecified,
@@ -404,6 +632,7 @@ pub enum RevocationReasonCode {
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42004B")]
+#[non_exhaustive]
 pub enum LinkType {
     #[serde(rename = "0x00000101")]
     CertificateLink,

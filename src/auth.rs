@@ -23,7 +23,7 @@ impl Authentication {
                 let password = inner.password.map(Password);
                 Authentication(Credential(
                     request::CredentialType::UsernameAndPassword,
-                    CredentialValue::UsernameAndPassword(request::UsernameAndPasswordCredential(username, password)),
+                    CredentialValue::UsernameAndPassword(username, password),
                 ))
             }
         }
