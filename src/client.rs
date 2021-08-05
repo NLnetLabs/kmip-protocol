@@ -83,11 +83,13 @@ impl<'a, T: Read + Write> Client<'a, T> {
         Err(Error::Unknown)
     }
 
-    pub fn query(&mut self, operations: bool, objects: bool) -> Result<QueryResponsePayload> {
+    pub fn query(&mut self) -> Result<QueryResponsePayload> {
         // Setup the request
-        let mut wanted_info = Vec::new();
-        operations.then(|| wanted_info.push(QueryFunction::QueryOperations));
-        objects.then(|| wanted_info.push(QueryFunction::QueryObjects));
+        let wanted_info = vec![
+            QueryFunction::QueryOperations,
+            QueryFunction::QueryObjects,
+            QueryFunction::QueryServerInformation,
+        ];
         let request = RequestPayload::Query(wanted_info);
 
         // Execute the request and capture the response
@@ -195,7 +197,7 @@ mod test {
             reader_config: krill_kmip_ttlv::Config::default(),
         };
 
-        let response_payload = client.query(true, true).unwrap();
+        let response_payload = client.query().unwrap();
 
         dbg!(response_payload);
     }
@@ -251,7 +253,7 @@ mod test {
             reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
         };
 
-        let response_payload = client.query(true, false).unwrap();
+        let response_payload = client.query().unwrap();
 
         dbg!(response_payload);
     }
@@ -274,8 +276,7 @@ mod test {
             reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
         };
 
-        let response_payload = client.query(true, false);
-        let response_payload = response_payload.unwrap();
+        let response_payload = client.query().unwrap();
 
         dbg!(response_payload);
     }
@@ -304,7 +305,7 @@ mod test {
             reader_config: krill_kmip_ttlv::Config::default(),
         };
 
-        let response_payload = client.query(true, true).unwrap();
+        let response_payload = client.query().unwrap();
 
         dbg!(response_payload);
     }
