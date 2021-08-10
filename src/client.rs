@@ -175,6 +175,20 @@ impl<'a, T: Read + Write> Client<'a, T> {
             Err(Error::Unknown)
         }
     }
+
+    pub fn rng_retrieve(&mut self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
+        let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::RNGRetrieve(payload) = response {
+            Ok(payload)
+        } else {
+            Err(Error::Unknown)
+        }
+    }
 }
 
 #[cfg(test)]
