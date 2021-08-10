@@ -60,7 +60,7 @@ _Note: Supported operations may lack support for some attribute or managed objec
 | 1.2 | Signature Verify     |  |
 | 1.2 | MAC                  |  |
 | 1.2 | MAC Verify           |  |
-| 1.2 | RNG Retrieve         |  |
+| 1.2 | RNG Retrieve         | :heavy_check_mark: |
 | 1.2 | RNG Seed             |  |
 | 1.2 | Hash                 |  |
 | 1.2 | Create Split Key     |  |
@@ -72,7 +72,7 @@ Each KMIP specification document is accompanied by a separate document that defi
 
 The subset of the TTLV/hex format test cases that this crate [demonstrates compliance with](https://github.com/NLnetLabs/krill-kmip-protocol/tree/main/src/tests) are represented below by ticked boxes:
 
-**[KMIP Use Cases v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html):**
+**KMIP Use Cases [v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html)/[v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
 
 - 3 Centralized Management
   - 3.1 Basic Functionality
@@ -103,62 +103,31 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 10 Archival
   - [ ] 10.1 Use-case: Create a Key, Archive and Recover it
 - 11 Access Control, Policies
-  - [ ] 11.1 Use-case: Credential, Operation Policy, Destroy Date
+  - [ ] 11.1 Use-case: Credential, Operation Policy, Destroy Date _**(Partially implemented)**_
+  - [ ] 11.2 Test Case: Device Credential, Operation Policy, Destroy Date _(Added in KMIP v1.1)_
 - 12 Query, Maximum Response Size
-  - [x] 12.1 Use-case: Query, Maximum Response Size
-
-**[KMIP Test Cases v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
-
-- 3       Centralized Management
-  - 3.1     Basic Functionality
-    - [ ] 3.1.1 Test Case: Create / Destroy
-    - [ ] 3.1.2 Test Case: Register / Create / Get attributes / Destroy
-    - [ ] 3.1.3 Test Case: Create / Locate / Get / Destroy
-    - [ ] 3.1.4 Test Case: Dual Client Test Case, ID Placeholder-linked Locate & Get Batch
-    - [ ] 3.1.5 Test Case: Register / Destroy Secret Data
-  - [ ] 3.2 Test Case: Asynchronous Locate
-- 4       Key Life Cycle Support
-  - [ ] 4.1 Test Case: Revoke Scenario
-- 5       Auditing and Reporting
-  - [ ] 5.1 Test Case: Get Usage Allocation Scenario
-- 6       Key Interchange, Key Exchange
-  - [ ] 6.1 Test Case: Import of a Third-party Key
-- 7       Vendor Extensions
-  - [ ] 7.1 Test Case: Unrecognized Message Extension with Criticality Indicator False
-  - [ ] 7.2 Test Case: Unrecognized Message Extension with Criticality Indicator True
-- 8       Asymmetric Keys
-  - [ ] 8.1 Test Case: Create a Key Pair
-  - [ ] 8.2 Test Case: Register Both Halves of a Key Pair
-- 9       Key Roll-over
-  - [ ] 9.1 Test Case: Create a Key, Re-key
-  - [ ] 9.2 Test Case: Existing Key Expired, Re-key with Same Life-cycle
-  - [ ] 9.3 Test Case: Existing Key Compromised, Re-key with Same Life-cycle
-  - [ ] 9.4 Test Case: Create Key, Re-key with New Life-cycle
-  - [ ] 9.5 Test Case: Obtain Lease for Expired Key
-- 10     Archival
-  - [ ] 10.1 Test Case: Create a Key, Archive and Recover it
-- 11     Access Control, Policies
-  - [ ] 11.1 Test Case: Credential, Operation Policy, Destroy Date
-  - [ ] 11.2 Test Case: Device Credential, Operation Policy, Destroy Date
-- 12     Query, Maximum Response Size
-  - [x] 12.1 Test Case: Query, Maximum Response Size
-  - [ ] 12.2 Test Case: Query Vendor Extensions
-- 13     Asymmetric Keys and Certificates
+  - [x] 12.1 Use-case: Query, Maximum Response Size _**(Implemented for both KMIP v1.0 and v1.1 test variants)**_
+  - [ ] 12.2 Test Case: Query Vendor Extensions _(Added in KMIP v1.1)_
+- 13     Asymmetric Keys and Certificates _(Added in KMIP v1.1)_
   - [ ] 13.1 Test Case: Register an Asymmetric Key Pair in PKCS#1 Format
   - [ ] 13.2 Test Case: Register an Asymmetric Key Pair and a Corresponding X.509 Certificate
   - [ ] 13.3 Test Case: Create, Re-key Key Pair
   - [ ] 13.4 Test Case: Register Key Pair, Certify and Re-certify Public Key
-- 14     Key Wrapping
+- 14     Key Wrapping _(Added in KMIP v1.1)_
   - [ ] 14.1 Test Case: Key Wrapping using AES Key Wrap and No Encoding
   - [ ] 14.2 Test Case: Key Wrapping using AES Key Wrap with Attributes
-- 15     Groups
+- 15     Groups _(Added in KMIP v1.1)_
   - [ ] 15.1 Test Case: Locate a Fresh Object from the Default Group
   - [ ] 15.2 Test Case: Client-side Group Management
   - [ ] 15.3 Test Case: Default Object Group Member
-- 16     Discover Versions
+- 16     Discover Versions _(Added in KMIP v1.1)_
   - [x] 16.1 Test Case: Discover Versions
-- 17     Attribute Handling
+- 17     Attribute Handling _(Added in KMIP v1.1)_
   - [ ] 17.1 Test Case: Handling of Attributes and Attribute Index Values
-- 18     Digest
+- 18     Digest _(Added in KMIP v1.1)_
   - [ ] 18.1 Test Case: Digests of Symmetric Keys
   - [ ] 18.2 Test Case: Digests of RSA Private Keys
+
+**Other implemented KMIP test cases:**
+
+- https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml
