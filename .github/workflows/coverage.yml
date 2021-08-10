@@ -16,3 +16,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: Cover
         uses: actions-rs/tarpaulin@v0.1
+        with:
+          args: '--exclude-files src/tests/*'
