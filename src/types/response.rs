@@ -4,7 +4,7 @@ use enum_display_derive::Display;
 use std::fmt::Display;
 
 use super::common::{
-    AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, Data, KeyCompressionType, KeyFormatType,
+    AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType, KeyFormatType,
     ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
@@ -97,7 +97,7 @@ pub enum ManagedObject {
 #[serde(rename = "0x420013")]
 pub struct Certificate {
     pub certificate_type: CertificateType,
-    pub certificate_value: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub certificate_value: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.2.2 Symmetric Key
@@ -256,13 +256,7 @@ pub struct QueryResponsePayload {
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename = "0x42007C")]
 pub struct RNGRetrieveResponsePayload {
-    pub data: Data,
-}
-
-impl RNGRetrieveResponsePayload {
-    pub fn new(data: Data) -> Self {
-        Self { data }
-    }
+    #[serde(with = "serde_bytes")] pub data: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -284,11 +278,8 @@ pub struct DiscoverVersionsResponsePayload {
 #[serde(rename = "0x42007C")]
 pub struct SignResponsePayload {
     pub unique_identifier: UniqueIdentifier,
-    pub signature_data: SignatureData,
+    #[serde(with = "serde_bytes")] pub signature_data: Vec<u8>,
 }
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct SignatureData(Vec<u8>);
 
 // KMIP spec 1.0 section 6.1 Protocol Version
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239
