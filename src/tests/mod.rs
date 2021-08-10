@@ -1,5 +1,6 @@
 mod kmip_10_use_case_11_1_access_control;
 mod kmip_10_use_case_12_1_query;
+mod kmip_10_use_case_3_1_basic_functionality;
 mod kmip_10_use_case_4_1_key_lifecycle;
 mod kmip_10_use_case_8_1_create_key_pair;
 

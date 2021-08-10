@@ -73,29 +73,11 @@ impl<'a, T: Read + Write> Client<'a, T> {
         }
     }
 
-    fn do_request(&mut self, request_payload: RequestPayload) -> Result<ResponsePayload> {
-        // Determine the operation being performed
-        let operation = match request_payload {
-            RequestPayload::Create(_, _) => Operation::Create,
-            RequestPayload::CreateKeyPair(_, _, _) => Operation::CreateKeyPair,
-            RequestPayload::Locate(_) => Operation::Locate,
-            RequestPayload::Get(_, _, _, _) => Operation::Get,
-            RequestPayload::GetAttributes(_, _) => Operation::GetAttributes,
-            RequestPayload::GetAttributeList(_) => Operation::GetAttributeList,
-            RequestPayload::AddAttribute(_, _) => Operation::AddAttribute,
-            RequestPayload::ModifyAttribute(_, _) => Operation::ModifyAttribute,
-            RequestPayload::DeleteAttribute(_, _, _) => Operation::DeleteAttribute,
-            RequestPayload::Activate(_) => Operation::Activate,
-            RequestPayload::Revoke(_, _, _) => Operation::Revoke,
-            RequestPayload::Destroy(_) => Operation::Destroy,
-            RequestPayload::Query(_) => Operation::Query,
-            RequestPayload::DiscoverVersions(_) => Operation::DiscoverVersions,
-            RequestPayload::Sign => Operation::Sign,
-            RequestPayload::RNGRetrieve(_) => Operation::RNGRetrieve,
-        };
+    fn do_request(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
+        let operation = payload.operation();
 
         // Serialize and write the request
-        let req_bytes = to_vec(operation, request_payload, self.auth()).map_err(|e| {
+        let req_bytes = to_vec(payload, self.auth()).map_err(|e| {
             eprintln!("{}", e);
             Error::Unknown
         })?;

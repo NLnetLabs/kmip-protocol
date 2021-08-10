@@ -23,10 +23,27 @@ impl std::cmp::PartialEq<str> for AttributeName {
 #[serde(rename = "0x42000B")]
 #[non_exhaustive]
 pub enum AttributeValue {
+    // KMIP spec 1.0 section 3.1 Unique Identifier
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.2 Name
+    #[serde(rename(deserialize = "if 0x42000A==Name"))]
+    Name(NameValue, NameType),
+
+    // KMIP spec 1.0 section 3.3 Object Type
+    #[serde(rename(deserialize = "if 0x42000A==Object Type"))]
+    #[serde(rename(serialize = "Transparent"))]
+    ObjectType(ObjectType),
+
+    // KMIP spec 1.0 section 3.4 Cryptographic Algorithm
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Algorithm"))]
     #[serde(rename(serialize = "Transparent"))]
     CryptographicAlgorithm(CryptographicAlgorithm),
 
+    // KMIP spec 1.0 section 3.5 Cryptographic Length
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.6 Cryptographic Parameters
     #[serde(rename = "if 0x42000A==Cryptographic Parameters")]
     CryptographicParameters(
         #[serde(skip_serializing_if = "Option::is_none")] Option<BlockCipherMode>,
@@ -35,19 +52,89 @@ pub enum AttributeValue {
         #[serde(skip_serializing_if = "Option::is_none")] Option<KeyRoleType>,
     ),
 
-    #[serde(rename(deserialize = "if 0x42000A==Linked Object Identifier"))]
-    Link(LinkType, LinkedObjectIdentifier),
+    // KMIP spec 1.0 section 3.7 Cryptographic Domain Parameters
+    // Not implemented
 
-    #[serde(rename(deserialize = "if 0x42000A==Name"))]
-    Name(NameValue, NameType),
+    // KMIP spec 1.0 section 3.8 Certificate Type
+    // Not implemented
 
-    #[serde(rename(deserialize = "if 0x42000A==Object Type"))]
-    #[serde(rename(serialize = "Transparent"))]
-    ObjectType(ObjectType),
+    // KMIP spec 1.0 section 3.9 Certificate Identifier
+    // Not implemented
 
+    // KMIP spec 1.0 section 3.10 Certificate Subject
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.11 Certificate Issuer
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.12 Digest
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.13 Operation Policy Name
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.15 Lease Time
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.16 Usage Limits
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.17 State
     #[serde(rename(deserialize = "if 0x42000A==State"))]
     #[serde(rename(serialize = "Transparent"))]
     State(State),
+
+    // KMIP spec 1.0 section 3.18 Initial Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.19 Activation Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.20 Process Start Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.21 Protect Stop Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.22 Deactivation Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.23 Destroy Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.24 Compromise Occurence Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.25 Compromise Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.26 Revocation Reason
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.27 Archive Date
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.28 Object Group
+    // Not implemented
+
+    // KMIP spec 1.0 section 3.29 Link
+    #[serde(rename(deserialize = "if 0x42000A==Linked Object Identifier"))]
+    Link(LinkType, LinkedObjectIdentifier),
+
+    // KMIP spec 1.0 section 3.30 Application Specific Information
+    #[serde(rename(deserialize = "if 0x42000A==Application Specific Information"))]
+    ApplicationSpecificInformation(ApplicationNamespace, ApplicationData),
+
+    // KMIP spec 1.0 section 3.31 Contact Information
+    #[serde(rename(deserialize = "if 0x42000A==Contact Information"))]
+    #[serde(rename(serialize = "Transparent"))]
+    ContactInformation(String),
+
+    // KMIP spec 1.0 section 3.32 Last Change Date
+    // Not implemented
 
     // KMIP spec 1.0 section 3.33 Custom Attribute:
     //   "Any data type or structure. If a structure, then the structure SHALL NOT include sub structures"
@@ -244,6 +331,18 @@ pub struct RevocationMessage(pub String);
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
+
+// KMIP spec 1.0 section 3.30 Application Namespace
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x420003")]
+pub struct ApplicationNamespace(pub String);
+
+// KMIP spec 1.0 section 3.30 Application Data
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x420002")]
+pub struct ApplicationData(pub String);
 
 // KMIP spec 1.0 section 6.4 Unique Batch Item ID
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242

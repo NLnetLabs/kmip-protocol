@@ -3,10 +3,10 @@ use serde_derive::Serialize;
 use std::fmt::Display;
 
 use super::common::{
-    AttributeName, AttributeValue, BlockCipherMode, CompromiseOccurrenceDate, CryptographicAlgorithm,
-    CryptographicUsageMask, DataLength, HashingAlgorithm, KeyCompressionType, KeyFormatType, KeyRoleType, LinkType,
-    LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, PaddingMethod, RevocationMessage,
-    RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
+    ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, BlockCipherMode, CompromiseOccurrenceDate,
+    CryptographicAlgorithm, CryptographicUsageMask, DataLength, HashingAlgorithm, KeyCompressionType, KeyFormatType,
+    KeyRoleType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, PaddingMethod,
+    RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -110,12 +110,39 @@ impl Attribute {
         )
     }
 
+    /// KMIP spec 1.0 Section 3.28 Object Group
+    #[allow(non_snake_case)]
+    pub fn ObjectGroup(value: String) -> Self {
+        Attribute(AttributeName("Object Group".into()), AttributeValue::TextString(value))
+    }
+
     /// KMIP spec 1.0 Section 3.29 Link
     #[allow(non_snake_case)]
     pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
         Attribute(
             AttributeName("Link".into()),
             AttributeValue::Link(link_type, linked_object_identifier),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.30 Application Specific Information
+    #[allow(non_snake_case)]
+    pub fn ApplicationSpecificInformation(
+        application_namespace: ApplicationNamespace,
+        application_data: ApplicationData,
+    ) -> Self {
+        Attribute(
+            AttributeName("Application Specific Information".into()),
+            AttributeValue::ApplicationSpecificInformation(application_namespace, application_data),
+        )
+    }
+
+    /// KMIP spec 1.0 Section 3.31 Contact Information
+    #[allow(non_snake_case)]
+    pub fn ContactInformation(value: String) -> Self {
+        Attribute(
+            AttributeName("Contact Information".into()),
+            AttributeValue::ContactInformation(value),
         )
     }
 }
@@ -189,6 +216,40 @@ pub struct Password(pub String);
 #[derive(Clone, Debug, Serialize, PartialEq)]
 #[serde(rename = "Transparent:0x420047")]
 pub struct KeyWrappingSpecification(pub WrappingMethod); // ... TODO
+
+// KMIP spec 1.0 section 2.2 Managed Objects
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(untagged)]
+#[non_exhaustive]
+pub enum ManagedObject {
+    // Certificate(Certificate),
+    // Not implemented
+
+    // SymmetricKey(SymmetricKey),
+    // Not implemented
+
+    // PublicKey(PublicKey),
+    // Not implemented
+
+    // PrivateKey(PrivateKey),
+    // Not implemented
+
+    // SplitKey(SplitKey),
+    // Not implemented
+    Template(Template),
+    // SecretData(SecretData),
+    // Not implemented
+
+    // OpaqueObject(OpaqueObject),
+    // Not implemented
+}
+
+// KMIP spec 1.0 section 2.2.6 Template
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581169
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename = "0x420090")]
+pub struct Template(pub Vec<Attribute>);
 
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
@@ -286,6 +347,14 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<PublicKeyTemplateAttribute>,
     ),
 
+    // KMIP spec 1.0 section 4.3 Register
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+    Register(
+        ObjectType,
+        TemplateAttribute,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<ManagedObject>,
+    ),
+
     // KMIP spec 1.0 section 4.8 Locate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
@@ -363,6 +432,75 @@ pub enum RequestPayload {
     // KMIP spec 1.2 section 4.35 RNG Retrieve
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
     RNGRetrieve(DataLength),
+}
+
+impl RequestPayload {
+    pub fn operation(&self) -> Operation {
+        match self {
+            RequestPayload::Create(..) => Operation::Create,
+            RequestPayload::CreateKeyPair(..) => Operation::CreateKeyPair,
+            RequestPayload::Register(..) => Operation::Register,
+            // Not implemented: Re-key (KMIP 1.0)
+            // Not implemented: Re-key Key Pair (KMIP 1.1)
+            // Not implemented: Derive Key (KMIP 1.0)
+            // Not implemented: Certify (KMIP 1.0)
+            // Not implemented: Re-certify (KMIP 1.0)
+            RequestPayload::Locate(..) => Operation::Locate,
+            // Not implemented: Check (KMIP 1.0)
+            RequestPayload::Get(..) => Operation::Get,
+            RequestPayload::GetAttributes(..) => Operation::GetAttributes,
+            RequestPayload::GetAttributeList(..) => Operation::GetAttributeList,
+            RequestPayload::AddAttribute(..) => Operation::AddAttribute,
+            RequestPayload::ModifyAttribute(..) => Operation::ModifyAttribute,
+            RequestPayload::DeleteAttribute(..) => Operation::DeleteAttribute,
+            // Not implemented: Obtain Lease (KMIP 1.0)
+            // Not implemented: Get Usage Allocation (KMIP 1.0)
+            RequestPayload::Activate(..) => Operation::Activate,
+            RequestPayload::Revoke(..) => Operation::Revoke,
+            RequestPayload::Destroy(..) => Operation::Destroy,
+            // Not implemented: Archive (KMIP 1.0)
+            // Not implemented: Recover (KMIP 1.0)
+            // Not implemented: Validate (KMIP 1.0)
+            RequestPayload::Query(..) => Operation::Query,
+            RequestPayload::DiscoverVersions(..) => Operation::DiscoverVersions,
+            // Not implemented: Cancel (KMIP 1.0)
+            // Not implemented: Poll (KMIP 1.0)
+            // Not implemented: Encrypt (KMIP 1.2)
+            // Not implemented: Decrypt (KMIP 1.2)
+            RequestPayload::Sign => Operation::Sign,
+            // Not implemented: Signature Verify (KMIP 1.2)
+            // Not implemented: MAC (KMIP 1.2)
+            // Not implemented: MAC Verify (KMIP 1.2)
+            RequestPayload::RNGRetrieve(..) => Operation::RNGRetrieve,
+            // Not implemented: RNG Seed (KMIP 1.2)
+            // Not implemented: Hash (KMIP 1.2)
+            // Not implemented: Create Split Key (KMIP 1.2)
+            // Not implemented: Join Split Key (KMIP 1.2)
+        }
+    }
+
+    pub fn protocol_version(&self) -> ProtocolVersion {
+        match self {
+            RequestPayload::Create(..)
+            | RequestPayload::CreateKeyPair(..)
+            | RequestPayload::Register(..)
+            | RequestPayload::Locate(..)
+            | RequestPayload::Get(..)
+            | RequestPayload::GetAttributes(..)
+            | RequestPayload::GetAttributeList(..)
+            | RequestPayload::AddAttribute(..)
+            | RequestPayload::ModifyAttribute(..)
+            | RequestPayload::DeleteAttribute(..)
+            | RequestPayload::Activate(..)
+            | RequestPayload::Revoke(..)
+            | RequestPayload::Destroy(..)
+            | RequestPayload::Query(..)
+            | RequestPayload::DiscoverVersions(..) => ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            RequestPayload::Sign | RequestPayload::RNGRetrieve(..) => {
+                ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(2))
+            }
+        }
+    }
 }
 
 // KMIP spec 1.0 section 9.1.3.2.4 Wrapping Method Enumeration
