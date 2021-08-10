@@ -64,9 +64,9 @@ dependencies = [
 
 [[package]]
 name = "enum-flags"
-version = "0.1.6"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec84454f09ee83514453f2496ea97af71f2795ae06230585a93dbdf22d4856ad"
+checksum = "3682d2328e61f5529088a02cd20bb0a9aeaeeeb2f26597436dd7d75d1340f8f5"
 dependencies = [
  "proc-macro2",
  "quote",
