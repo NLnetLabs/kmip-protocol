@@ -86,7 +86,6 @@ pub enum AttributeValue {
     #[serde(rename(deserialize = "if type==DateTime"))]
     #[serde(rename(serialize = "Transparent"))]
     DateTime(i64),
-
     // TODO
     // #[serde(rename = "if type==Interval")]
     // Interval(??),

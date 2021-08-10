@@ -97,7 +97,8 @@ pub enum ManagedObject {
 #[serde(rename = "0x420013")]
 pub struct Certificate {
     pub certificate_type: CertificateType,
-    #[serde(with = "serde_bytes")] pub certificate_value: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub certificate_value: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.2.2 Symmetric Key
@@ -256,7 +257,8 @@ pub struct QueryResponsePayload {
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename = "0x42007C")]
 pub struct RNGRetrieveResponsePayload {
-    #[serde(with = "serde_bytes")] pub data: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub data: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -278,7 +280,8 @@ pub struct DiscoverVersionsResponsePayload {
 #[serde(rename = "0x42007C")]
 pub struct SignResponsePayload {
     pub unique_identifier: UniqueIdentifier,
-    #[serde(with = "serde_bytes")] pub signature_data: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub signature_data: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 6.1 Protocol Version

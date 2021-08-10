@@ -401,6 +401,5 @@ pub enum QueryFunction {
 
     #[serde(rename = "0x00000003")]
     QueryServerInformation,
-
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }
