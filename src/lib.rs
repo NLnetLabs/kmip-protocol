@@ -7,4 +7,5 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-pub use client::Client;
+pub use client::{Client, ClientBuilder};
+pub use krill_kmip_ttlv::Config;

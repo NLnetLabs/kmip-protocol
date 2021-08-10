@@ -1,17 +1,57 @@
 use std::io::{Read, Write};
 
+use krill_kmip_ttlv::Config;
+
 use crate::{
     auth::{self, CredentialType},
     request::to_vec,
     types::{common::*, request, request::*, response::*},
 };
 
-#[allow(dead_code)]
+pub struct ClientBuilder<'a, T: Read + Write> {
+    username: Option<String>,
+    password: Option<String>,
+    stream: &'a mut T,
+    reader_config: Config,
+}
+
+impl<'a, T: Read + Write> ClientBuilder<'a, T> {
+    pub fn new(stream: &'a mut T) -> Self {
+        Self {
+            username: None,
+            password: None,
+            stream,
+            reader_config: Config::default(),
+        }
+    }
+
+    pub fn with_credentials(self, username: &str, password: Option<&str>) -> Self {
+        Self {
+            username: Some(username.to_string()),
+            password: password.and(Some(password.unwrap().to_string())),
+            ..self
+        }
+    }
+
+    pub fn with_reader_config(self, reader_config: Config) -> Self {
+        Self { reader_config, ..self }
+    }
+
+    pub fn unwrap(self) -> Client<'a, T> {
+        Client {
+            username: self.username,
+            password: self.password,
+            stream: self.stream,
+            reader_config: self.reader_config,
+        }
+    }
+}
+
 pub struct Client<'a, T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
     stream: &'a mut T,
-    reader_config: krill_kmip_ttlv::Config,
+    reader_config: Config,
 }
 
 #[allow(dead_code)]
@@ -144,9 +184,10 @@ mod test {
         net::TcpStream,
     };
 
+    use krill_kmip_ttlv::Config;
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
-    use super::Client;
+    use crate::client::ClientBuilder;
 
     struct MockStream {
         pub response: Cursor<Vec<u8>>,
@@ -190,12 +231,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = Client {
-            username: None,
-            password: None,
-            stream: &mut stream,
-            reader_config: krill_kmip_ttlv::Config::default(),
-        };
+        let mut client = ClientBuilder::new(&mut stream).unwrap();
 
         let response_payload = client.query().unwrap();
 
@@ -217,12 +253,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = Client {
-            username: None,
-            password: None,
-            stream: &mut stream,
-            reader_config: krill_kmip_ttlv::Config::default(),
-        };
+        let mut client = ClientBuilder::new(&mut stream).unwrap();
 
         let response_payload = client
             .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -246,12 +277,9 @@ mod test {
         let stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = connector.connect("localhost", stream).unwrap();
 
-        let mut client = Client {
-            username: None,
-            password: None,
-            stream: &mut tls,
-            reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
-        };
+        let mut client = ClientBuilder::new(&mut tls)
+            .with_reader_config(Config::default().with_max_bytes(64 * 1024))
+            .unwrap();
 
         let response_payload = client.query().unwrap();
 
@@ -269,12 +297,13 @@ mod test {
         let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
         let mut tls = connector.connect(&host, stream).unwrap();
 
-        let mut client = Client {
-            username: Some(std::env::var("KRYPTUS_USER").unwrap()),
-            password: Some(std::env::var("KRYPTUS_PASS").unwrap()),
-            stream: &mut tls,
-            reader_config: krill_kmip_ttlv::Config::default().with_max_bytes(64 * 1024),
-        };
+        let mut client = ClientBuilder::new(&mut tls)
+            .with_credentials(
+                &std::env::var("KRYPTUS_USER").unwrap(),
+                Some(&std::env::var("KRYPTUS_PASS").unwrap()),
+            )
+            .with_reader_config(Config::default().with_max_bytes(64 * 1024))
+            .unwrap();
 
         let response_payload = client.query().unwrap();
 
@@ -298,12 +327,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = Client {
-            username: None,
-            password: None,
-            stream: &mut stream,
-            reader_config: krill_kmip_ttlv::Config::default(),
-        };
+        let mut client = ClientBuilder::new(&mut stream).unwrap();
 
         let response_payload = client.query().unwrap();
 
