@@ -19,8 +19,7 @@ impl std::cmp::PartialEq<str> for AttributeName {
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename = "0x42000B")]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AttributeValue {
     // KMIP spec 1.0 section 3.1 Unique Identifier
@@ -178,6 +177,7 @@ pub enum AttributeValue {
     // Interval(??),
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 // KMIP spec 1.2 section 2.1.10 Data
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -280,9 +280,7 @@ pub enum CryptographicAlgorithm {
 
 // KMIP spec 1.0 section 3.6 Cryptographic Parameters
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487
-#[derive(Clone, Deserialize, Serialize, PartialEq)]
-#[serde(rename = "0x420094")]
-pub struct CryptographicParameters(CryptographicAlgorithm);
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 
 // KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188

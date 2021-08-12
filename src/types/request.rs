@@ -11,7 +11,7 @@ use super::common::{
 
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420008")]
 pub struct Attribute(pub AttributeName, pub AttributeValue);
 
@@ -149,7 +149,7 @@ impl Attribute {
 
 macro_rules! impl_template_attribute_flavour {
     ($RustType:ident, $TtlvTag:literal) => {
-        #[derive(Clone, Debug, Serialize, PartialEq)]
+        #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
         #[serde(rename = $TtlvTag)]
         pub struct $RustType(
             #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Name>>,
@@ -181,7 +181,7 @@ impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
 // KMIP spec 1.0 section 2.1.2 Credential
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420023")]
 pub struct Credential(pub CredentialType, pub CredentialValue);
 
@@ -193,7 +193,7 @@ pub enum CredentialType {
     UsernameAndPassword,
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420025")]
 #[non_exhaustive]
 pub enum CredentialValue {
@@ -213,13 +213,13 @@ pub struct Password(pub String);
 
 // KMIP spec 1.0 section 2.1.6 Key Wrapping Specification
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420047")]
 pub struct KeyWrappingSpecification(pub WrappingMethod); // ... TODO
 
 // KMIP spec 1.0 section 2.2 Managed Objects
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
 #[non_exhaustive]
 pub enum ManagedObject {
@@ -247,13 +247,13 @@ pub enum ManagedObject {
 
 // KMIP spec 1.0 section 2.2.6 Template
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581169
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420090")]
 pub struct Template(pub Vec<Attribute>);
 
 // KMIP spec 1.0 section 3.2 Name
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420053")]
 pub struct Name(NameValue, NameType);
 
@@ -294,7 +294,7 @@ pub struct MaximumResponseSize(pub i32);
 
 // KMIP spec 1.0 section 6.6 Authentication
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000C")]
 pub struct Authentication(pub Credential);
 
@@ -306,7 +306,7 @@ pub struct BatchCount(pub i32);
 
 // KMIP spec 1.0 section 6.15 Batch Item
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000F")]
 pub struct BatchItem(
     pub Operation,
@@ -316,13 +316,13 @@ pub struct BatchItem(
 
 // KMIP spec 1.0 section 7.1 Message Format
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420078")]
 pub struct RequestMessage(pub RequestHeader, pub Vec<BatchItem>);
 
 // KMIP spec 1.0 section 7.2 Operations
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420077")]
 pub struct RequestHeader(
     pub ProtocolVersion,
@@ -331,7 +331,7 @@ pub struct RequestHeader(
     pub BatchCount,
 );
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420079")]
 #[non_exhaustive]
 pub enum RequestPayload {
