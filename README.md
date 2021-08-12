@@ -28,7 +28,7 @@ _Note: Supported operations may lack support for some attribute or managed objec
 |---|---|---|
 | 1.0 | Create               | :heavy_check_mark: |
 | 1.0 | Create Key Pair      | :heavy_check_mark: _(lacks response public/private key attribute lists support)_ |
-| 1.0 | Register             |  |
+| 1.0 | Register             | :heavy_check_mark: _(only supports a subset of managed object types at present)_ |
 | 1.0 | Re-key               |  |
 | 1.1 | Re-key Key Pair      |  |
 | 1.0 | Derive Key           |  |
@@ -77,7 +77,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 3 Centralized Management
   - 3.1 Basic Functionality
     - [ ] 3.1.1 Use-case: Create / Destroy
-    - [ ] 3.1.2 Use-case: Register / Create / Get attributes / Destroy
+    - [x] 3.1.2 Use-case: Register / Create / Get attributes / Destroy _**(Partially implemented)**_
     - [ ] 3.1.3 Use-case: Create / Locate / Get / Destroy
     - [ ] 3.1.4 Use-case: Dual client use-case, ID Placeholder linked Locate & Get batch
     - [ ] 3.1.5 Use-case: Register / Destroy Secret Data
@@ -128,6 +128,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
   - [ ] 18.1 Test Case: Digests of Symmetric Keys
   - [ ] 18.2 Test Case: Digests of RSA Private Keys
 
-**Other implemented KMIP test cases:**
+**Other (partially) implemented KMIP test cases:**
 
+- https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml
 - https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml
