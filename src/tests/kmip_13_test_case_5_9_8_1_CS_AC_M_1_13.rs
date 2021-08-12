@@ -5,7 +5,6 @@
 use pretty_assertions::{assert_eq, assert_ne};
 
 use krill_kmip_ttlv::ser::to_vec;
-use simple_logger::SimpleLogger;
 
 use crate::types::{
     common::{
@@ -22,7 +21,8 @@ use crate::types::{
 
 #[test]
 fn register_request() {
-    SimpleLogger::new().init().unwrap();
+    // To get more insight into failed tests use a log implementation, e.g.:
+    // SimpleLogger::new().init().unwrap();
 
     let use_case_key_material_hex = concat!(
         "308204a50201000282010100ab7f161c0042496ccd6c6d4dadb919973435357776003acf54b7af1e440afb80b64a8755f",
