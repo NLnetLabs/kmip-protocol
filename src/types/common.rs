@@ -127,7 +127,8 @@ pub enum AttributeValue {
     // Not implemented
 
     // KMIP spec 1.0 section 3.28 Object Group
-    // Not implemented
+    #[serde(rename(deserialize = "if 0x42000A==Object Group"))]
+    ObjectGroup(String),
 
     // KMIP spec 1.0 section 3.29 Link
     #[serde(rename(deserialize = "if 0x42000A==Linked Object Identifier"))]

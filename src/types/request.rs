@@ -155,6 +155,13 @@ macro_rules! impl_template_attribute_flavour {
             pub fn unnamed(attributes: Vec<Attribute>) -> Self {
                 Self(Option::<Vec<Name>>::None, Some(attributes))
             }
+
+            pub fn named(name: String, attributes: Vec<Attribute>) -> Self {
+                Self(
+                    Some(vec![Name(NameValue(name), NameType::UninterpretedTextString)]),
+                    Some(attributes),
+                )
+            }
         }
     };
 }

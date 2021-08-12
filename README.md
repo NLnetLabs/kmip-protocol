@@ -77,7 +77,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 3 Centralized Management
   - 3.1 Basic Functionality
     - [ ] 3.1.1 Use-case: Create / Destroy
-    - [x] 3.1.2 Use-case: Register / Create / Get attributes / Destroy _**(Partially implemented)**_
+    - [x] 3.1.2 Use-case: Register / Create / Get attributes / Destroy
     - [ ] 3.1.3 Use-case: Create / Locate / Get / Destroy
     - [ ] 3.1.4 Use-case: Dual client use-case, ID Placeholder linked Locate & Get batch
     - [ ] 3.1.5 Use-case: Register / Destroy Secret Data

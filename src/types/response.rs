@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use super::common::{
     AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType, KeyFormatType,
-    KeyMaterial, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+    KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.3 Key Block
@@ -38,6 +38,15 @@ pub struct KeyBlock {
 #[serde(rename = "0x420045")]
 pub struct KeyValue {
     pub key_material: KeyMaterial,
+    pub attributes: Option<Vec<Attribute>>,
+}
+
+// KMIP spec 1.0 section 2.1.8 Template Attribute
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename = "0x420091")]
+pub struct TemplateAttribute {
+    pub name: KeyMaterial,
     pub attributes: Option<Vec<Attribute>>,
 }
 
@@ -105,6 +114,15 @@ pub struct PrivateKey {
     pub key_block: KeyBlock,
 }
 
+// KMIP spec 1.0 section 3.2 Name
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename = "0x420053")]
+pub struct Name {
+    pub name: NameValue,
+    pub r#type: NameType,
+}
+
 // KMIP spec 1.0 section 4.1 Create
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -128,6 +146,18 @@ pub struct CreateKeyPairResponsePayload {
     // TODO: Add the optional response field that lists attributes for the private key
 
     // TODO: Add the optional response field that lists attributes for the public key
+}
+
+// KMIP spec 1.0 section 4.3 Register
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename = "0x42007C")]
+pub struct RegisterResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x420091")]
+    pub template_attributes: Option<Vec<TemplateAttribute>>,
 }
 
 // KMIP spec 1.0 section 4.8 Locate
@@ -437,6 +467,11 @@ pub enum ResponsePayload {
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
     #[serde(rename = "if 0x42005C==0x00000002")]
     CreateKeyPair(CreateKeyPairResponsePayload),
+
+    // KMIP spec 1.0 section 4.3 Register
+    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+    #[serde(rename = "if 0x42005C==0x00000003")]
+    Register(RegisterResponsePayload),
 
     // KMIP spec 1.0 section 4.8 Locate
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216

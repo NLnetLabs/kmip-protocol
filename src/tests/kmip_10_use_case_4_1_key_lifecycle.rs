@@ -181,12 +181,12 @@ fn client_a_get_state_attribute_response() {
     assert!(matches!(&item.payload, Some(ResponsePayload::GetAttributes(_))));
 
     if let Some(ResponsePayload::GetAttributes(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
         assert!(payload.attributes.is_some());
         if let Some(attributes) = &payload.attributes {
             assert_eq!(attributes.len(), 1);
-            assert_eq!(attributes.len(), 1);
             assert_eq!(&attributes[0].name, "State");
-            assert!(matches!(attributes[0].value, AttributeValue::State(State::PreActive)));
+            assert_eq!(attributes[0].value, AttributeValue::State(State::PreActive));
         }
     } else {
         panic!("Wrong payload");
@@ -338,12 +338,12 @@ fn client_a_get_state_attribute_response2() {
     assert!(matches!(&item.payload, Some(ResponsePayload::GetAttributes(_))));
 
     if let Some(ResponsePayload::GetAttributes(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
         assert!(payload.attributes.is_some());
         if let Some(attributes) = &payload.attributes {
             assert_eq!(attributes.len(), 1);
-            assert_eq!(attributes.len(), 1);
             assert_eq!(&attributes[0].name, "State");
-            assert!(matches!(attributes[0].value, AttributeValue::State(State::Active)));
+            assert_eq!(attributes[0].value, AttributeValue::State(State::Active));
         }
     } else {
         panic!("Wrong payload");
@@ -674,11 +674,12 @@ fn client_b_get_state_attribute_response() {
     assert!(matches!(&item.payload, Some(ResponsePayload::GetAttributes(_))));
 
     if let Some(ResponsePayload::GetAttributes(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, KEY_ID);
         assert!(payload.attributes.is_some());
         if let Some(attributes) = &payload.attributes {
             assert_eq!(attributes.len(), 1);
             assert_eq!(&attributes[0].name, "State");
-            assert!(matches!(attributes[0].value, AttributeValue::State(State::Compromised)));
+            assert_eq!(attributes[0].value, AttributeValue::State(State::Compromised));
         }
     } else {
         panic!("Wrong payload");
