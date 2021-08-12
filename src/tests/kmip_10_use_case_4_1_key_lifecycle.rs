@@ -8,15 +8,15 @@ use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
 use crate::types::{
     common::{
         AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
-        KeyCompressionType, KeyFormatType, ObjectType, Operation, RevocationMessage, RevocationReasonCode, State,
-        UniqueBatchItemID, UniqueIdentifier,
+        KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType, Operation, RevocationMessage, RevocationReasonCode,
+        State, UniqueBatchItemID, UniqueIdentifier,
     },
     request::{
         self, Attribute, Authentication, BatchCount, BatchItem, KeyWrappingSpecification, MaximumResponseSize,
         ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, RevocationReason,
         TemplateAttribute,
     },
-    response::{KeyMaterial, ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
+    response::{ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
 };
 
 const KEY_ID: &'static str = "21d28b8a-06df-43c0-b72f-2a161633ada9";

@@ -3,10 +3,10 @@ use serde_derive::Serialize;
 use std::fmt::Display;
 
 use super::common::{
-    ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, BlockCipherMode, CompromiseOccurrenceDate,
-    CryptographicAlgorithm, CryptographicUsageMask, DataLength, HashingAlgorithm, KeyCompressionType, KeyFormatType,
-    KeyRoleType, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType, Operation, PaddingMethod,
-    RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
+    ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, CompromiseOccurrenceDate,
+    CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, DataLength,
+    KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
+    Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.1 Attribute
@@ -75,20 +75,10 @@ impl Attribute {
 
     /// KMIP spec 1.0 Section 3.6 Cryptographic Parameters
     #[allow(non_snake_case)]
-    pub fn CryptographicParameters(
-        block_cipher_mode: Option<BlockCipherMode>,
-        padding_method: Option<PaddingMethod>,
-        hashing_algorithm: Option<HashingAlgorithm>,
-        key_role_type: Option<KeyRoleType>,
-    ) -> Self {
+    pub fn CryptographicParameters(cryptographic_parameters: CryptographicParameters) -> Self {
         Attribute(
             AttributeName("Cryptographic Parameters".into()),
-            AttributeValue::CryptographicParameters(
-                block_cipher_mode,
-                padding_method,
-                hashing_algorithm,
-                key_role_type,
-            ),
+            cryptographic_parameters.into(),
         )
     }
 
@@ -108,6 +98,12 @@ impl Attribute {
             AttributeName("Cryptographic Usage Mask".into()),
             AttributeValue::Integer(value as i32),
         )
+    }
+
+    /// KMIP spec 1.0 Section 3.24 Activation Date
+    #[allow(non_snake_case)]
+    pub fn ActivationDate(value: u64) -> Self {
+        Attribute(AttributeName("Activation Date".into()), AttributeValue::DateTime(value))
     }
 
     /// KMIP spec 1.0 Section 3.28 Object Group
@@ -211,11 +207,77 @@ pub struct Username(pub String);
 #[serde(rename = "Transparent:0x4200A1")]
 pub struct Password(pub String);
 
+// KMIP spec 1.0 section 2.1.3 Key Block
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613459
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420040")]
+pub struct KeyBlock(
+    pub KeyFormatType,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<KeyCompressionType>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<KeyValue>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicAlgorithm>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicLength>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<KeyWrappingData>,
+);
+
+// KMIP spec 1.0 section 2.1.4 Key Value
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420045")]
+pub struct KeyValue(
+    pub KeyMaterial,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
+);
+
+// KMIP spec 1.0 section 2.1.5 Key Wrapping Data
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420046")]
+pub struct KeyWrappingData(
+    pub WrappingMethod,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<EncryptionKeyInformation>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<MACOrSignatureKeyInformation>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<MACOrSignature>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<IVOrCounterOrNonce>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
+);
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42004D")]
+pub struct MACOrSignature(#[serde(with = "serde_bytes")] Vec<u8>);
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42003D")]
+pub struct IVOrCounterOrNonce(#[serde(with = "serde_bytes")] Vec<u8>);
+
+// KMIP spec 1.0 section 2.1.5 Encryption Key Information
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420036")]
+pub struct EncryptionKeyInformation(
+    pub UniqueIdentifier,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicParameters>,
+);
+
+// KMIP spec 1.0 section 2.1.5 MAC/Signature Key Information
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42004E")]
+pub struct MACOrSignatureKeyInformation(
+    pub UniqueIdentifier,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicParameters>,
+);
+
 // KMIP spec 1.0 section 2.1.6 Key Wrapping Specification
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420047")]
-pub struct KeyWrappingSpecification(pub WrappingMethod); // ... TODO
+pub struct KeyWrappingSpecification(
+    pub WrappingMethod,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<EncryptionKeyInformation>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<MACOrSignatureKeyInformation>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
+);
 
 // KMIP spec 1.0 section 2.2 Managed Objects
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163
@@ -231,9 +293,7 @@ pub enum ManagedObject {
 
     // PublicKey(PublicKey),
     // Not implemented
-
-    // PrivateKey(PrivateKey),
-    // Not implemented
+    PrivateKey(PrivateKey),
 
     // SplitKey(SplitKey),
     // Not implemented
@@ -245,6 +305,12 @@ pub enum ManagedObject {
     // Not implemented
 }
 
+// KMIP spec 1.0 section 2.2.4 Private Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613475
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420064")]
+pub struct PrivateKey(pub KeyBlock);
+
 // KMIP spec 1.0 section 2.2.6 Template
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581169
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
@@ -255,7 +321,7 @@ pub struct Template(pub Vec<Attribute>);
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420053")]
-pub struct Name(NameValue, NameType);
+pub struct Name(pub NameValue, pub NameType);
 
 impl std::fmt::Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

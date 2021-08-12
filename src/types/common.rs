@@ -20,6 +20,7 @@ impl std::cmp::PartialEq<str> for AttributeName {
 // KMIP spec 1.0 section 2.1.1 Attribute
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename(serialize = "Override:0x42000B"))]
 #[non_exhaustive]
 pub enum AttributeValue {
     // KMIP spec 1.0 section 3.1 Unique Identifier
@@ -43,12 +44,21 @@ pub enum AttributeValue {
     // Not implemented
 
     // KMIP spec 1.0 section 3.6 Cryptographic Parameters
-    #[serde(rename = "if 0x42000A==Cryptographic Parameters")]
+    #[serde(rename(deserialize = "if 0x42000A==Cryptographic Parameters"))]
     CryptographicParameters(
         #[serde(skip_serializing_if = "Option::is_none")] Option<BlockCipherMode>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<PaddingMethod>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<HashingAlgorithm>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<KeyRoleType>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<DigitalSignatureAlgorithm>, // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<CryptographicAlgorithm>,    // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<RandomIV>,                  // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<IVLength>,                  // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<TagLength>,                 // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<FixedFieldLength>,          // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<InvocationFieldLength>,     // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<CounterLength>,             // KMIP 1.2
+        #[serde(skip_serializing_if = "Option::is_none")] Option<InitialCounterValue>,       // KMIP 1.2
     ),
 
     // KMIP spec 1.0 section 3.7 Cryptographic Domain Parameters
@@ -171,13 +181,30 @@ pub enum AttributeValue {
 
     #[serde(rename(deserialize = "if type==DateTime"))]
     #[serde(rename(serialize = "Transparent"))]
-    DateTime(i64),
+    DateTime(u64),
     // TODO
     // #[serde(rename = "if type==Interval")]
     // Interval(??),
 }
 
+// KMIP spec 1.0 section 2.1.4 Key Value
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub enum KeyMaterial {
+    #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
+    #[serde(rename(serialize = "Transparent"))]
+    Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
+
+    #[serde(rename(deserialize = "if 0x420042 >= 0x00000007"))] // Transparent types
+    Structure(TransparentKeyStructure),
+}
+
+// KMIP spec 1.0 section 2.1.7 Transparent Key Structure
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct TransparentKeyStructure(); // TODO
+
 // KMIP spec 1.2 section 2.1.10 Data
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -278,9 +305,173 @@ pub enum CryptographicAlgorithm {
     RSA,
 }
 
+// KMIP spec 1.0 section 3.5 Cryptographic Length
+// See: htts://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42002A")]
+pub struct CryptographicLength(pub i32);
+
 // KMIP spec 1.0 section 3.6 Cryptographic Parameters
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42002B")]
+#[rustfmt::skip]
+pub struct CryptographicParameters {
+    #[serde(skip_serializing_if = "Option::is_none")] block_cipher_mode: Option<BlockCipherMode>,
+    #[serde(skip_serializing_if = "Option::is_none")] padding_method: Option<PaddingMethod>,
+    #[serde(skip_serializing_if = "Option::is_none")] hashing_algorithm: Option<HashingAlgorithm>,
+    #[serde(skip_serializing_if = "Option::is_none")] key_role_type: Option<KeyRoleType>,
+    #[serde(skip_serializing_if = "Option::is_none")] digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] random_iv: Option<RandomIV>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] iv_length: Option<IVLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] tag_length: Option<TagLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] counter_length: Option<CounterLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+}
+
+impl CryptographicParameters {
+    pub fn with_block_cipher_mode(self, value: BlockCipherMode) -> Self {
+        Self {
+            block_cipher_mode: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_padding_method(self, value: PaddingMethod) -> Self {
+        Self {
+            padding_method: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_hashing_algorithm(self, value: HashingAlgorithm) -> Self {
+        Self {
+            hashing_algorithm: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_key_role_type(self, value: KeyRoleType) -> Self {
+        Self {
+            key_role_type: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_digital_signature_algorithm(self, value: DigitalSignatureAlgorithm) -> Self {
+        Self {
+            digital_signature_algorithm: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_cryptographic_algorithm(self, value: CryptographicAlgorithm) -> Self {
+        Self {
+            cryptographic_algorithm: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_random_iv(self, value: RandomIV) -> Self {
+        Self {
+            random_iv: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_iv_length(self, value: IVLength) -> Self {
+        Self {
+            iv_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_tag_length(self, value: TagLength) -> Self {
+        Self {
+            tag_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_fixed_field_length(self, value: FixedFieldLength) -> Self {
+        Self {
+            fixed_field_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_invocation_field_length(self, value: InvocationFieldLength) -> Self {
+        Self {
+            invocation_field_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_counter_length(self, value: CounterLength) -> Self {
+        Self {
+            counter_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_initial_counter_value(self, value: InitialCounterValue) -> Self {
+        Self {
+            initial_counter_value: Some(value),
+            ..self
+        }
+    }
+}
+
+impl From<CryptographicParameters> for AttributeValue {
+    fn from(params: CryptographicParameters) -> Self {
+        AttributeValue::CryptographicParameters(
+            params.block_cipher_mode,
+            params.padding_method,
+            params.hashing_algorithm,
+            params.key_role_type,
+            params.digital_signature_algorithm,
+            params.cryptographic_algorithm,
+            params.random_iv,
+            params.iv_length,
+            params.tag_length,
+            params.fixed_field_length,
+            params.invocation_field_length,
+            params.counter_length,
+            params.initial_counter_value,
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200C5")]
+pub struct RandomIV(pub bool);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200CD")]
+pub struct IVLength(pub i32);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200CE")]
+pub struct TagLength(pub i32);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200CF")]
+pub struct FixedFieldLength(pub i32);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200D2")]
+pub struct InvocationFieldLength(pub i32);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200D0")]
+pub struct CounterLength(pub i32);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x4200D1")]
+pub struct InitialCounterValue(pub i32);
 
 // KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188
@@ -448,6 +639,62 @@ pub enum CertificateType {
 
     #[serde(rename = "0x00000002")]
     PGP,
+}
+
+// KMIP spec 1.2 section 9.1.3.2.7 Digital Signature Algorithm Enumeration
+// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Ref306812211
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x4200AE")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum DigitalSignatureAlgorithm {
+    #[serde(rename = "0x00000001")]
+    MD2WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000002")]
+    MD5WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000003")]
+    SHA1WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000004")]
+    SHA224WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000005")]
+    SHA256WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000006")]
+    SHA384WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000007")]
+    SHA512WithRSAEncryption_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000008")]
+    RSASSA_PSS_PKCS1_v1_5,
+
+    #[serde(rename = "0x00000009")]
+    DSAWithSHA1,
+
+    #[serde(rename = "0x0000000A")]
+    DSAWithSHA224,
+
+    #[serde(rename = "0x0000000B")]
+    DSAWithSHA256,
+
+    #[serde(rename = "0x0000000C")]
+    ECDSAWithSHA1,
+
+    #[serde(rename = "0x0000000D")]
+    ECDSAWithSHA224,
+
+    #[serde(rename = "0x0000000E")]
+    ECDSAWithSHA256,
+
+    #[serde(rename = "0x0000000F")]
+    ECDSAWithSHA384,
+
+    #[serde(rename = "0x00000010")]
+    ECDSAWithSHA512,
 }
 
 // KMIP spec 1.0 section 9.1.3.2.10 Name Type Enumeration

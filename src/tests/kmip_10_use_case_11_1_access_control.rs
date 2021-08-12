@@ -9,8 +9,8 @@ use crate::{
     auth::{self, CredentialType},
     types::{
         common::{
-            BlockCipherMode, CryptographicAlgorithm, CryptographicUsageMask, HashingAlgorithm, ObjectType, Operation,
-            PaddingMethod, UniqueBatchItemID,
+            BlockCipherMode, CryptographicAlgorithm, CryptographicParameters, CryptographicUsageMask, HashingAlgorithm,
+            ObjectType, Operation, PaddingMethod, UniqueBatchItemID,
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
@@ -46,13 +46,12 @@ fn client_a_create_request_symmetric_key() {
                     Attribute::Name("PolicyKey".into()),
                     Attribute::OperationPolicyName("default".into()),
                     Attribute::CryptographicParameters(
-                        Some(BlockCipherMode::CBC),
-                        Some(PaddingMethod::PKCS5),
-                        Some(HashingAlgorithm::SHA1),
-                        None,
+                        CryptographicParameters::default()
+                            .with_block_cipher_mode(BlockCipherMode::CBC)
+                            .with_padding_method(PaddingMethod::PKCS5)
+                            .with_hashing_algorithm(HashingAlgorithm::SHA1),
                     ),
-                ])
-                .unwrap(),
+                ]),
             ),
         )],
     );

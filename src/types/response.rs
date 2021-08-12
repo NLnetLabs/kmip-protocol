@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use super::common::{
     AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType, KeyFormatType,
-    ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+    KeyMaterial, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.3 Key Block
@@ -40,26 +40,6 @@ pub struct KeyValue {
     pub key_material: KeyMaterial,
     pub attributes: Option<Vec<Attribute>>,
 }
-
-// KMIP spec 1.0 section 2.1.4 Key Value
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-#[serde(rename = "0x420043")]
-pub enum KeyMaterial {
-    #[serde(rename = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]")] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
-    #[serde(with = "serde_bytes")]
-    // don't treat the Vec as a sequence of TTLV items but rather as a sequence of bytes
-    Bytes(Vec<u8>),
-
-    #[serde(rename = "if 0x420042 >= 0x00000007")] // Transparent types
-    Structure(TransparentKeyStructure),
-}
-
-// KMIP spec 1.0 section 2.1.7 Transparent Key Structure
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-
-pub struct TransparentKeyStructure(); // TODO
 
 // KMIP spec 1.0 section 2.2 Managed Objects
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163

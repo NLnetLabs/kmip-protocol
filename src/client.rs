@@ -133,18 +133,18 @@ impl<'a, T: Read + Write> Client<'a, T> {
     ) -> Result<CreateKeyPairResponsePayload> {
         // Setup the request
         let request = RequestPayload::CreateKeyPair(
-            CommonTemplateAttribute::unnamed(vec![
+            Some(CommonTemplateAttribute::unnamed(vec![
                 request::Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
                 request::Attribute::CryptographicLength(key_length),
-            ]),
-            PrivateKeyTemplateAttribute::unnamed(vec![
+            ])),
+            Some(PrivateKeyTemplateAttribute::unnamed(vec![
                 request::Attribute::Name(private_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
-            ]),
-            PublicKeyTemplateAttribute::unnamed(vec![
+            ])),
+            Some(PublicKeyTemplateAttribute::unnamed(vec![
                 request::Attribute::Name(public_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
-            ]),
+            ])),
         );
 
         // Execute the request and capture the response
