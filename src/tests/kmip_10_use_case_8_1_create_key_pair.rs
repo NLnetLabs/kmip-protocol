@@ -34,18 +34,18 @@ fn create_key_pair_request_rsa_1024() {
             Operation::CreateKeyPair,
             Option::<UniqueBatchItemID>::None,
             RequestPayload::CreateKeyPair(
-                CommonTemplateAttribute::unnamed(vec![
+                Some(CommonTemplateAttribute::unnamed(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
                     Attribute::CryptographicLength(1024),
-                ]),
-                PrivateKeyTemplateAttribute::unnamed(vec![
+                ])),
+                Some(PrivateKeyTemplateAttribute::unnamed(vec![
                     Attribute::Name("PrivateKey1".into()),
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
-                ]),
-                PublicKeyTemplateAttribute::unnamed(vec![
+                ])),
+                Some(PublicKeyTemplateAttribute::unnamed(vec![
                     Attribute::Name("PublicKey1".into()),
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
-                ]),
+                ])),
             ),
         )],
     );

@@ -30,7 +30,7 @@ fn register_request() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Register(
                 ObjectType::Template,
-                TemplateAttribute::unnamed(vec![]).unwrap(),
+                TemplateAttribute::unnamed(vec![]),
                 Some(ManagedObject::Template(Template(vec![
                     Attribute::ObjectGroup("Group1".into()),
                     Attribute::ApplicationSpecificInformation(

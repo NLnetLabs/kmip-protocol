@@ -156,8 +156,8 @@ macro_rules! impl_template_attribute_flavour {
             #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
         );
         impl $RustType {
-            pub fn unnamed(attributes: Vec<Attribute>) -> Option<Self> {
-                Some(Self(Option::<Vec<Name>>::None, Some(attributes)))
+            pub fn unnamed(attributes: Vec<Attribute>) -> Self {
+                Self(Option::<Vec<Name>>::None, Some(attributes))
             }
         }
     };

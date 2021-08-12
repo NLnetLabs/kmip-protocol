@@ -40,8 +40,7 @@ fn client_a_create_request_symmetric_key() {
                     Attribute::CryptographicLength(128),
                     Attribute::Name("Key1".into()),
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Encrypt),
-                ])
-                .unwrap(),
+                ]),
             ),
         )],
     );
