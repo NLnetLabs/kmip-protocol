@@ -267,3 +267,80 @@ fn sign_request() {
         "expected hex (left) differs to the generated hex (right)"
     );
 }
+
+#[test]
+fn sign_response() {
+    // <ResponseMessage>
+    //   <ResponseHeader>
+    //     <ProtocolVersion>
+    //       <ProtocolVersionMajor type="Integer" value="1"/>
+    //       <ProtocolVersionMinor type="Integer" value="3"/>
+    //     </ProtocolVersion>
+    //     <TimeStamp type="DateTime" value="$NOW"/>
+    //     <BatchCount type="Integer" value="1"/>
+    //   </ResponseHeader>
+    //   <BatchItem>
+    //     <Operation type="Enumeration" value="Sign"/>
+    //     <ResultStatus type="Enumeration" value="Success"/>
+    //     <ResponsePayload>
+    //       <UniqueIdentifier type="TextString" value="$UNIQUE_IDENTIFIER_0"/>
+    //       <SignatureData type="ByteString" value="9d888ed8c169ebc052e21f7392427b0efa78321f64558ac4dba2277f0b22c3a94eb098a608ef2a70931eece25482e5c962a560fe73f83471779a69d85099ff44fe5da16977fe9f92bdd26a153612d57f325c619570577f81eff22ca511c684bc037a579981c899c91da6d1ac34c230fa68db59c3f31bc5add7c75328f9974f342f1bb5e928b89619894fb301002ef60a1d093dfc22f87c442c13cb8a6cd83be0ecc5b18647c51fb92238a90fbd3e4aaf37612ab4b76243bda44db4a48a88b0899fa672d06f7b4c1094858e7257c4851447ca29dbbc11a664c0cd8be7ce7b27173fa8042d54d240ade8ee6069459ec08bf510eaf68e2fc1e50561dc686525ba0f"/>
+    //     </ResponsePayload>
+    //   </BatchItem>
+    // </ResponseMessage>
+
+    let use_case_signature_data = concat!(
+        "9d888ed8c169ebc052e21f7392427b0efa78321f64558ac4dba2277f0b22c3a94eb098a608ef2a70931eece25482e5c96",
+        "2a560fe73f83471779a69d85099ff44fe5da16977fe9f92bdd26a153612d57f325c619570577f81eff22ca511c684bc03",
+        "7a579981c899c91da6d1ac34c230fa68db59c3f31bc5add7c75328f9974f342f1bb5e928b89619894fb301002ef60a1d0",
+        "93dfc22f87c442c13cb8a6cd83be0ecc5b18647c51fb92238a90fbd3e4aaf37612ab4b76243bda44db4a48a88b0899fa6",
+        "72d06f7b4c1094858e7257c4851447ca29dbbc11a664c0cd8be7ce7b27173fa8042d54d240ade8ee6069459ec08bf510e",
+        "af68e2fc1e50561dc686525ba0f"
+    )
+    .to_uppercase();
+
+    // Note: This hex was created by hand as the official KMIP test case includes only an XML representation of the
+    // request.
+    let use_case_response_hex = concat!(
+        "42007B 01 000001A8",
+        "  42007A 01 00000048",
+        "    420069 01 00000020",
+        "      42006A 02 00000004 00000001 00000000",
+        "      42006B 02 00000004 00000003 00000000",
+        "    420092 09 00000008 00000000 4AFBE7C4",
+        "    42000D 02 00000004 00000001 00000000",
+        "  42000F 01 00000150",
+        "    42005C 05 00000004 00000021 00000000",
+        "    42007F 05 00000004 00000000 00000000",
+        "    42007C 01 00000128",
+        "      420094 07 00000014 <UNIQUE_IDENTIFIER_0>00000000",
+        "      4200C3 08 00000100 <SIGNATURE_DATA>"
+    );
+    let use_case_response_hex = use_case_response_hex.replace(" ", "");
+    let use_case_response_hex = use_case_response_hex.replace(
+        "<UNIQUE_IDENTIFIER_0>",
+        &hex::encode_upper(UNIQUE_IDENTIFIER_0.as_bytes()),
+    );
+    let use_case_response_hex = use_case_response_hex.replace("<SIGNATURE_DATA>", &use_case_signature_data);
+
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 3);
+    assert_eq!(res.header.timestamp, 0x000000004AFBE7C4);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Sign)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Sign(_))));
+
+    if let Some(ResponsePayload::Sign(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, UNIQUE_IDENTIFIER_0);
+        assert_eq!(payload.signature_data, hex::decode(&use_case_signature_data).unwrap())
+    } else {
+        panic!("Wrong payload");
+    }
+}

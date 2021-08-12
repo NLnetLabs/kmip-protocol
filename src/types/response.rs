@@ -289,7 +289,10 @@ pub struct DiscoverVersionsResponsePayload {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename = "0x42007C")]
 pub struct SignResponsePayload {
+    #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x4200C3")]
     #[serde(with = "serde_bytes")]
     pub signature_data: Vec<u8>,
 }
