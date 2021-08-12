@@ -6,18 +6,26 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use krill_kmip_ttlv::ser::to_vec;
 
-use crate::types::{
-    common::{
-        AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength, CryptographicParameters,
-        CryptographicUsageMask, HashingAlgorithm, KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType,
-        Operation, PaddingMethod, UniqueBatchItemID,
-    },
-    request::{
-        self, Attribute, Authentication, BatchCount, BatchItem, KeyBlock, KeyValue, KeyWrappingData, ManagedObject,
-        MaximumResponseSize, PrivateKey, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage,
-        RequestPayload, TemplateAttribute,
+use crate::{
+    response::from_slice,
+    types::{
+        common::{
+            AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength, CryptographicParameters,
+            CryptographicUsageMask, Data, HashingAlgorithm, KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType,
+            Operation, PaddingMethod, UniqueBatchItemID, UniqueIdentifier,
+        },
+        request::{
+            self, Attribute, Authentication, BatchCount, BatchItem, KeyBlock, KeyValue, KeyWrappingData, ManagedObject,
+            MaximumResponseSize, PrivateKey, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage,
+            RequestPayload, TemplateAttribute,
+        },
+        response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
 };
+
+const TIMESTAMP: u64 = 0x000000004B7918AA;
+const TIMESTAMP_STR: &'static str = "000000004B7918AA";
+const UNIQUE_IDENTIFIER_0: &'static str = "$UNIQUE_IDENTIFIER_0";
 
 #[test]
 fn register_request() {
@@ -79,7 +87,7 @@ fn register_request() {
                         AttributeName("x-ID".into()),
                         AttributeValue::TextString("CS-AC-M-1-13-prikey1".into()),
                     ),
-                    Attribute::ActivationDate(0x000000004B7918AA),
+                    Attribute::ActivationDate(TIMESTAMP),
                 ]),
                 Some(ManagedObject::PrivateKey(PrivateKey(KeyBlock(
                     KeyFormatType::PKCS1,
@@ -97,7 +105,7 @@ fn register_request() {
     );
 
     // Note: This hex was created by hand as the official KMIP test case includes only an XML representation of the
-    // request. Lengths are represented by <X> placeholders as their values are calculated and replaced below.
+    // request.
     let expected_request_hex = concat!(
         "420078 01 00000678",                         // Request Message, Structure (0x01)
         "  420077 01 00000038",                       // Request Header, Structure (0x01)
@@ -124,9 +132,9 @@ fn register_request() {
         "          42000B 07 00000014 43532D41432D4D2D312D31332D7072696B65793100000000", // Attribute Value, Text String (0x07), Data: CS-AC-M-1-13-prikey1 (+ 4 pad bytes)
         "        420008 01 00000028",                                                    // Attribute, Structure (0x01)
         "          42000A 07 0000000F 41637469766174696F6E204461746500", // Attribute Name, Text String (0x07), Data: Activation Date
-        "          42000B 09 00000008 000000004B7918AA", // Attribute Value, Date-Time (0x09), Data: 04B7918AA
-        "      420064 01 000004F8",                      // Private Key, Structure (0x01)
-        "        420040 01 000004F0",                    // Key Block, Structure (0x01)
+        "          42000B 09 00000008 <ACTIVATION_DATE>", // Attribute Value, Date-Time (0x09), Data: 04B7918AA
+        "      420064 01 000004F8",                       // Private Key, Structure (0x01)
+        "        420040 01 000004F0",                     // Key Block, Structure (0x01)
         "          420042 05 00000004 00000003 00000000", // Key Format Type, Enumeration (0x05), Data: 3 (PKCS1 + 4 pad bytes)
         "          420045 01 000004B8",                   // Key Value, Structure (0x01)
         "            420043 08 000004A9 <KEY_MATERIAL_BYTES>00000000000000", // Key Material, Byte String (0x08), Data: 0x4A9 (1193) bytes of key data (+ 7 pad bytes)
@@ -134,7 +142,123 @@ fn register_request() {
         "            42002A 02 00000004 00000800 00000000", // Cryptgraphic Length, Integer (0x02), Data: 0x800 (2048 + 4 pad bytes)
     );
     let expected_request_hex = expected_request_hex.replace(" ", "");
+    let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", &TIMESTAMP_STR);
     let expected_request_hex = expected_request_hex.replace("<KEY_MATERIAL_BYTES>", &use_case_key_material_hex);
+
+    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    assert_eq!(
+        expected_request_hex, actual_request_hex,
+        "expected hex (left) differs to the generated hex (right)"
+    );
+}
+
+#[test]
+fn register_response() {
+    // <ResponseMessage>
+    //   <ResponseHeader>
+    //     <ProtocolVersion>
+    //       <ProtocolVersionMajor type="Integer" value="1"/>
+    //       <ProtocolVersionMinor type="Integer" value="3"/>
+    //     </ProtocolVersion>
+    //     <TimeStamp type="DateTime" value="$NOW"/>
+    //     <BatchCount type="Integer" value="1"/>
+    //   </ResponseHeader>
+    //   <BatchItem>
+    //     <Operation type="Enumeration" value="Register"/>
+    //     <ResultStatus type="Enumeration" value="Success"/>
+    //     <ResponsePayload>
+    //       <UniqueIdentifier type="TextString" value="$UNIQUE_IDENTIFIER_0"/>
+    //     </ResponsePayload>
+    //   </BatchItem>
+    // </ResponseMessage>
+
+    // Note: This hex was created by hand as the official KMIP test case includes only an XML representation of the
+    // request.
+    let use_case_response_hex = concat!(
+        "42007B 01 000000A0",
+        "  42007A 01 00000048",
+        "    420069 01 00000020",
+        "      42006A 02 00000004 00000001 00000000",
+        "      42006B 02 00000004 00000003 00000000",
+        "    420092 09 00000008 00000000 4AFBE7C4",
+        "    42000D 02 00000004 00000001 00000000",
+        "  42000F 01 00000048",
+        "    42005C 05 00000004 00000003 00000000",
+        "    42007F 05 00000004 00000000 00000000",
+        "    42007C 01 00000020",
+        "      420094 07 00000014 <UNIQUE_IDENTIFIER_0>00000000",
+    );
+    let use_case_response_hex = use_case_response_hex.replace(" ", "");
+    let use_case_response_hex = use_case_response_hex.replace(
+        "<UNIQUE_IDENTIFIER_0>",
+        &hex::encode_upper(UNIQUE_IDENTIFIER_0.as_bytes()),
+    );
+
+    let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
+    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+
+    assert_eq!(res.header.protocol_version.major, 1);
+    assert_eq!(res.header.protocol_version.minor, 3);
+    assert_eq!(res.header.timestamp, 0x000000004AFBE7C4);
+    assert_eq!(res.header.batch_count, 1);
+    assert_eq!(res.batch_items.len(), 1);
+
+    let item = &res.batch_items[0];
+    assert!(matches!(item.result_status, ResultStatus::Success));
+    assert!(matches!(item.operation, Some(Operation::Register)));
+    assert!(matches!(&item.payload, Some(ResponsePayload::Register(_))));
+
+    if let Some(ResponsePayload::Register(payload)) = item.payload.as_ref() {
+        assert_eq!(&payload.unique_identifier, UNIQUE_IDENTIFIER_0);
+    } else {
+        panic!("Wrong payload");
+    }
+}
+
+#[test]
+fn sign_request() {
+    let use_case_bytes_to_sign = "01020304050607080910111213141516";
+
+    let use_case_request = RequestMessage(
+        RequestHeader(
+            request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
+            Option::<MaximumResponseSize>::None,
+            Option::<Authentication>::None,
+            BatchCount(1),
+        ),
+        vec![BatchItem(
+            Operation::Sign,
+            Option::<UniqueBatchItemID>::None,
+            RequestPayload::Sign(
+                Some(UniqueIdentifier(UNIQUE_IDENTIFIER_0.into())),
+                Option::<CryptographicParameters>::None,
+                Data(hex::decode(use_case_bytes_to_sign).unwrap()),
+            ),
+        )],
+    );
+
+    // Note: This hex was created by hand as the official KMIP test case includes only an XML representation of the
+    // request.
+    let expected_request_hex = concat!(
+        "420078 01 00000098",                                     // Request Message, Structure (0x01)
+        "  420077 01 00000038",                                   // Request Header, Structure (0x01)
+        "    420069 01 00000020",                                 // Protocol Version, Structure (0x01)
+        "      42006A 02 00000004 00000001 00000000", // Protocol Version Major, Integer (0x02), Data: 1 (+ 4 pad bytes)
+        "      42006B 02 00000004 00000003 00000000", // Protocol Version Minor, Integer (0x02), Data: 3 (+ 4 pad bytes)
+        "    42000D 02 00000004 00000001 00000000",   // Batch Count, Integer (0x02), Data: 0x01 (+ 4 pad bytes)
+        "  42000F 01 00000050",                       // Batch Item, Structure (0x01)
+        "    42005C 05 00000004 00000021 00000000",   // Operation, Enumeration (0x05), Data: 0x21 (Sign + 4 pad bytes)
+        "    420079 01 00000038",                     // Request Payload, Structure (0x01)
+        "      420094 07 00000014 <UNIQUE_IDENTIFIER_0>00000000", // Unique Identifier, Text String (0x07), Data: $UNIQUE_IDENTIFIER_0
+        "      4200C2 08 00000010 <USE_CASE_BYTES_TO_SIGN>",
+    );
+    let expected_request_hex = expected_request_hex.replace(" ", "");
+    let expected_request_hex = expected_request_hex.replace(
+        "<UNIQUE_IDENTIFIER_0>",
+        &hex::encode_upper(UNIQUE_IDENTIFIER_0.as_bytes()),
+    );
+    let expected_request_hex = expected_request_hex.replace("<USE_CASE_BYTES_TO_SIGN>", use_case_bytes_to_sign);
 
     let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 

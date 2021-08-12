@@ -208,8 +208,9 @@ pub struct TransparentKeyStructure(); // TODO
 
 // KMIP spec 1.2 section 2.1.10 Data
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename = "0x4200C2")]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename(deserialize = "0x4200C2"))]
+#[serde(rename(serialize = "Transparent:0x4200C2"))]
 pub struct Data(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 // KMIP spec 1.2 section 2.1.11 Data Length

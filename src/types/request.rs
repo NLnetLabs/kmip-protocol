@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use super::common::{
     ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, CompromiseOccurrenceDate,
-    CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, DataLength,
+    CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, Data, DataLength,
     KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
     Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
@@ -501,7 +501,11 @@ pub enum RequestPayload {
 
     // KMIP spec 1.2 section 4.31 Sign
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
-    Sign,
+    Sign(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<CryptographicParameters>,
+        Data,
+    ),
 
     // KMIP spec 1.2 section 4.35 RNG Retrieve
     // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
@@ -541,7 +545,7 @@ impl RequestPayload {
             // Not implemented: Poll (KMIP 1.0)
             // Not implemented: Encrypt (KMIP 1.2)
             // Not implemented: Decrypt (KMIP 1.2)
-            RequestPayload::Sign => Operation::Sign,
+            RequestPayload::Sign(..) => Operation::Sign,
             // Not implemented: Signature Verify (KMIP 1.2)
             // Not implemented: MAC (KMIP 1.2)
             // Not implemented: MAC Verify (KMIP 1.2)
@@ -570,7 +574,7 @@ impl RequestPayload {
             | RequestPayload::Destroy(..)
             | RequestPayload::Query(..)
             | RequestPayload::DiscoverVersions(..) => ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
-            RequestPayload::Sign | RequestPayload::RNGRetrieve(..) => {
+            RequestPayload::Sign(..) | RequestPayload::RNGRetrieve(..) => {
                 ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(2))
             }
         }
