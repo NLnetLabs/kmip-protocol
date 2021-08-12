@@ -56,7 +56,7 @@ _Note: Supported operations may lack support for some attribute or managed objec
 | 1.0 | Poll                 |  |
 | 1.2 | Encrypt              |  |
 | 1.2 | Decrypt              |  |
-| 1.2 | Sign                 |  |
+| 1.2 | Sign                 | :heavy_check_mark: |
 | 1.2 | Signature Verify     |  |
 | 1.2 | MAC                  |  |
 | 1.2 | MAC Verify           |  |
