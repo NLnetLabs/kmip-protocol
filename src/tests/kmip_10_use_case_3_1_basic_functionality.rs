@@ -1,4 +1,4 @@
-//! See: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
+//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};

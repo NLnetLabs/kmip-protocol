@@ -1,5 +1,5 @@
-//! See: http://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml
-//! See: http://docs.oasis-open.org/kmip/profiles/v1.3/cs01/kmip-profiles-v1.3-cs01.html#_Toc459802023
+//! See: https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml
+//! See: https://docs.oasis-open.org/kmip/profiles/v1.3/cs01/kmip-profiles-v1.3-cs01.html#_Toc459802023
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
