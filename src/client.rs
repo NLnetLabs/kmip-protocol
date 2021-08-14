@@ -1,4 +1,7 @@
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    ops::Deref,
+};
 
 use krill_kmip_ttlv::Config;
 
@@ -125,12 +128,13 @@ impl<'a, T: Read + Write> Client<'a, T> {
         }
     }
 
+    // Returns the private and public unique key identifiers.
     pub fn create_rsa_key_pair(
         &mut self,
         key_length: i32,
         private_key_name: String,
         public_key_name: String,
-    ) -> Result<CreateKeyPairResponsePayload> {
+    ) -> Result<(String, String)> {
         // Setup the request
         let request = RequestPayload::CreateKeyPair(
             Some(CommonTemplateAttribute::unnamed(vec![
@@ -152,7 +156,10 @@ impl<'a, T: Read + Write> Client<'a, T> {
 
         // Process the successful response
         if let ResponsePayload::CreateKeyPair(payload) = response {
-            Ok(payload)
+            Ok((
+                payload.private_key_unique_identifier.deref().clone(),
+                payload.public_key_unique_identifier.deref().clone(),
+            ))
         } else {
             Err(Error::Unknown)
         }
@@ -167,6 +174,80 @@ impl<'a, T: Read + Write> Client<'a, T> {
         // Process the successful response
         if let ResponsePayload::RNGRetrieve(payload) = response {
             Ok(payload)
+        } else {
+            Err(Error::Unknown)
+        }
+    }
+
+    // Takes the bytes to sign and the id of the private key to sign them with.
+    // Returns the signed bytes.
+    pub fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<Vec<u8>> {
+        let request = RequestPayload::Sign(
+            Some(UniqueIdentifier(private_key_id.to_owned())),
+            Some(
+                CryptographicParameters::default()
+                    .with_padding_method(PaddingMethod::PKCS1_v1_5)
+                    .with_hashing_algorithm(HashingAlgorithm::SHA256)
+                    .with_cryptographic_algorithm(CryptographicAlgorithm::RSA),
+            ),
+            Data(in_bytes.to_vec()),
+        );
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::Sign(payload) = response {
+            Ok(payload.signature_data)
+        } else {
+            Err(Error::Unknown)
+        }
+    }
+
+    pub fn activate_key(&mut self, private_key_id: &str) -> Result<()> {
+        let request = RequestPayload::Activate(Some(UniqueIdentifier(private_key_id.to_owned())));
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::Activate(_) = response {
+            Ok(())
+        } else {
+            Err(Error::Unknown)
+        }
+    }
+
+    pub fn revoke_key(&mut self, private_key_id: &str) -> Result<()> {
+        let request = RequestPayload::Revoke(
+            Some(UniqueIdentifier(private_key_id.to_owned())),
+            RevocationReason(
+                RevocationReasonCode::CessationOfOperation,
+                Option::<RevocationMessage>::None,
+            ),
+            Option::<CompromiseOccurrenceDate>::None,
+        );
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::Revoke(_) = response {
+            Ok(())
+        } else {
+            Err(Error::Unknown)
+        }
+    }
+
+    pub fn destroy_key(&mut self, private_key_id: &str) -> Result<()> {
+        let request = RequestPayload::Destroy(Some(UniqueIdentifier(private_key_id.to_owned())));
+
+        // Execute the request and capture the response
+        let response = self.do_request(request)?;
+
+        // Process the successful response
+        if let ResponsePayload::Destroy(_) = response {
+            Ok(())
         } else {
             Err(Error::Unknown)
         }
