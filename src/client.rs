@@ -90,7 +90,7 @@ impl<'a, T: Read + Write> Client<'a, T> {
         // memory and cause a panic, so limit the amount we try to read in the worst case.
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(self.stream, &self.reader_config).map_err(|e| {
+        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
             eprintln!("Error: {:?}", e);
             Error::Unknown
         })?;
