@@ -1,9 +1,11 @@
 use crate::types::request::{self, Authentication, Credential, CredentialValue, Password, Username};
 
+#[derive(Debug)]
 pub enum CredentialType {
     UsernameAndPassword(UsernameAndPasswordCredential),
 }
 
+#[derive(Debug)]
 pub struct UsernameAndPasswordCredential {
     pub username: String,
     pub password: Option<String>,

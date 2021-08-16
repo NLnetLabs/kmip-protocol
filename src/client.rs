@@ -11,6 +11,7 @@ use crate::{
     types::{common::*, request, request::*, response::*},
 };
 
+#[derive(Debug)]
 pub struct ClientBuilder<'a, T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
@@ -49,6 +50,7 @@ impl<'a, T: Read + Write> ClientBuilder<'a, T> {
     }
 }
 
+#[derive(Debug)]
 pub struct Client<'a, T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
