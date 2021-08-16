@@ -181,7 +181,7 @@ impl<'a, T: Read + Write> Client<'a, T> {
 
     // Takes the bytes to sign and the id of the private key to sign them with.
     // Returns the signed bytes.
-    pub fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<Vec<u8>> {
+    pub fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             Some(
@@ -198,7 +198,7 @@ impl<'a, T: Read + Write> Client<'a, T> {
 
         // Process the successful response
         if let ResponsePayload::Sign(payload) = response {
-            Ok(payload.signature_data)
+            Ok(payload)
         } else {
             Err(Error::Unknown)
         }
