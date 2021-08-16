@@ -97,7 +97,11 @@ fn main() {
     }
 }
 
-fn create_kmip_client<'a>(tls_stream: &'a mut SslStream<TcpStream>, opt: Opt, password: Option<String>) -> Client<SslStream<TcpStream>> {
+fn create_kmip_client<'a>(
+    tls_stream: &'a mut SslStream<TcpStream>,
+    opt: Opt,
+    password: Option<String>,
+) -> Client<SslStream<TcpStream>> {
     let mut client = ClientBuilder::new(tls_stream);
     if let Some(username) = opt.username {
         client = client.with_credentials(username, password);
