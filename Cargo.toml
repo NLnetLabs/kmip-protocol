@@ -4,7 +4,11 @@ version = "0.1.0-dev"
 authors = ["The NLnet Labs RPKI Team <rpki-team@nlnetlabs.nl>"]
 edition = "2018"
 description = "KMIP TTLV message protocol library"
+repository = "https://github.com/NLnetLabs/krill-kmip-protocol/"
 license = "BSD-3-Clause"
+keywords = ["KMIP", "TTLV"]
+categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
+exclude = ["/.github"]
 
 [dependencies]
 enum-display-derive = "0.1.1"
