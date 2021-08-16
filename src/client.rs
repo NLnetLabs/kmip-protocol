@@ -87,9 +87,6 @@ impl<'a, T: Read + Write> Client<'a, T> {
         })?;
         self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
 
-        // The response data is untrusted input. If the reader buffers it could attempt to allocate a huge amount of
-        // memory and cause a panic, so limit the amount we try to read in the worst case.
-
         // Read and deserialize the response
         let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
             eprintln!("Error: {:?}", e);
