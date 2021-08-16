@@ -30,7 +30,7 @@ See [`examples/cli-tool.rs`](examples/cli-tool.rs). For more information about r
 
 ### KMIP Operations Supported
 
-_Note: Supported operations may lack support for some attribute or managed object types. Vendor specific extensions are not supported._
+_Note: Supported operations may lack support for some attribute or managed object types. Vendor specific extensions are ignored._
 
 | KMIP Version | Operation | Support |
 |---|---|---|
