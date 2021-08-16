@@ -24,7 +24,7 @@ fn test_deserialize_arbitrary_server_information() {
     );
 }
 
-/// Any KMIP Batch Item may include a vendor specific message extension whihc could contain anything.
+/// Any KMIP Batch Item may include a vendor specific message extension which could contain anything.
 /// We don't attempt to make sense of it, but we shouldn't fail to deserialize this kind of response either.
 #[test]
 fn test_batch_item_vendor_extensions() {
