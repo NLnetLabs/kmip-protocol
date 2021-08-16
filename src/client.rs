@@ -376,8 +376,8 @@ mod test {
 
         let mut client = ClientBuilder::new(&mut tls)
             .with_credentials(
-                &std::env::var("KRYPTUS_USER").unwrap(),
-                Some(&std::env::var("KRYPTUS_PASS").unwrap()),
+                std::env::var("KRYPTUS_USER").unwrap(),
+                Some(std::env::var("KRYPTUS_PASS").unwrap()),
             )
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
             .unwrap();
