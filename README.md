@@ -22,7 +22,11 @@ This is a work-in-progress. The interface offered by this library is expected to
 
 ### Example Code
 
-See [`examples/cli-tool.rs`](examples/cli-tool.rs).
+See [`examples/cli-tool.rs`](examples/cli-tool.rs). For more information about running the example see:
+
+```bash
+ cargo run --example cli-tool -- --help
+```
 
 ### KMIP Operations Supported
 

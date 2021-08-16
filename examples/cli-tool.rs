@@ -1,21 +1,22 @@
-use std::net::TcpStream;
+use std::{net::TcpStream, path::PathBuf};
 
-use krill_kmip_protocol::ClientBuilder;
+use krill_kmip_protocol::{Client, ClientBuilder};
 use log::{error, info};
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslStream, SslVerifyMode};
 use stderrlog::Timestamp;
 use structopt::StructOpt;
 
 /// A StructOpt example
 #[derive(StructOpt, Debug)]
 #[structopt()]
+#[rustfmt::skip]
 struct Opt {
     /// Silence all output
     #[structopt(short = "q", long = "quiet")]
     quiet: bool,
 
     /// Verbose mode (-v, -vv, -vvv, etc)
-    #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
+    #[structopt(short = "v", long = "verbose", parse(from_occurrences), help = "Increase logging to DEBUG (-v) or TRACE (-vv) level")]
     verbose: usize,
 
     /// HSM host/domain name
@@ -25,6 +26,19 @@ struct Opt {
     /// HSM port number
     #[structopt(short = "p", long = "port", default_value = "5696")]
     port: u16,
+
+    /// HSM username
+    #[structopt(short = "u", long = "user", help = "Specify an optional password in env var HSM_PASSWORD")]
+    username: Option<String>,
+
+    #[structopt(short = "i", long = "insecure", help = "Disable verification of the server certificate")]
+    insecure: bool,
+
+    #[structopt(short = "c", long = "client-cert", parse(from_os_str), help = "Path to the client certificate file in PEM format")]
+    client_cert_path: Option<PathBuf>,
+
+    #[structopt(short = "k", long = "client-key", parse(from_os_str), help = "Path to the client certifcate key file in PEM format")]
+    client_key_path: Option<PathBuf>,
 }
 
 fn main() {
@@ -35,25 +49,15 @@ fn main() {
         .module("krill_kmip_protocol")
         .module("krill_kmip_ttlv")
         .quiet(opt.quiet)
-        .verbosity(opt.verbose)
+        .verbosity(opt.verbose + 2) // show INFO level logging by default, use -q to silence this
         .timestamp(Timestamp::Second)
         .init()
         .unwrap();
 
-    let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
-    connector.set_verify(SslVerifyMode::NONE);
-    let connector = connector.build();
-    let host = std::env::var("KRYPTUS_HOST").unwrap();
-    let port = std::env::var("KRYPTUS_PORT").unwrap();
-    let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
-    let mut tls = connector.connect(&host, stream).unwrap();
-
-    let mut client = ClientBuilder::new(&mut tls)
-        .with_credentials(
-            &std::env::var("KRYPTUS_USER").unwrap(),
-            Some(&std::env::var("KRYPTUS_PASS").unwrap()),
-        )
-        .unwrap();
+    let tls_client = create_tls_client(&opt);
+    let tcp_stream = TcpStream::connect(format!("{}:{}", opt.host, opt.port)).unwrap();
+    let mut tls_stream = tls_client.connect(&opt.host, tcp_stream).unwrap();
+    let mut client = create_kmip_client(&mut tls_stream, opt);
 
     info!("Querying server properties..");
     info!("{:?}", client.query().unwrap());
@@ -90,4 +94,27 @@ fn main() {
     } else {
         error!("Request for 32 random bytes failed");
     }
+}
+
+fn create_kmip_client<'a>(tls_stream: &'a mut SslStream<TcpStream>, opt: Opt) -> Client<SslStream<TcpStream>> {
+    let mut client = ClientBuilder::new(tls_stream);
+    if let Some(username) = opt.username {
+        client = client.with_credentials(username, std::env::var("HSM_PASSWORD").ok());
+    }
+    client.unwrap()
+}
+
+fn create_tls_client(opt: &Opt) -> SslConnector {
+    let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
+    connector.set_verify(SslVerifyMode::NONE);
+    if opt.insecure {
+        connector.set_verify(SslVerifyMode::NONE);
+    }
+    if let Some(path) = &opt.client_cert_path {
+        connector.set_certificate_file(path, SslFiletype::PEM).unwrap();
+    }
+    if let Some(path) = &opt.client_key_path {
+        connector.set_private_key_file(path, SslFiletype::PEM).unwrap();
+    }
+    connector.build()
 }
