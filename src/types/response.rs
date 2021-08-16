@@ -272,8 +272,8 @@ pub struct RNGRetrieveResponsePayload {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename = "0x420088")]
-pub struct ServerInformation {}
+#[serde(rename = "0x420088", transparent)]
+pub struct ServerInformation(#[serde(with = "serde_bytes")] pub Option<Vec<u8>>);
 
 // KMIP spec 1.1 section 4.26 Discover Versions
 // See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
@@ -390,6 +390,7 @@ pub enum ResultReason {
 // KMIP spec 1.0 section 6.16 Message Extension
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename = "0x420051")]
 pub struct MessageExtension {
     #[serde(rename = "0x42007D")]
     pub vendor_identification: String,
@@ -402,7 +403,8 @@ pub struct MessageExtension {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct VendorExtension;
+#[serde(rename = "0x42009C", transparent)]
+pub struct VendorExtension(#[serde(with = "serde_bytes")] pub Option<Vec<u8>>);
 
 // KMIP spec 1.0 section 7.1 Message Format
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256

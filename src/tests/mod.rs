@@ -12,4 +12,5 @@ mod kmip_13_test_case_5_9_8_1_CS_AC_M_1_13;
 #[allow(non_snake_case)]
 mod kmip_13_test_case_5_9_9_1_CS_RNG_M_1_13;
 
+mod handle_unspecified_input;
 mod locate_key_by_name_and_type;
