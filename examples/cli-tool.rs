@@ -54,10 +54,11 @@ fn main() {
         .init()
         .unwrap();
 
+    let password = std::env::var("HSM_PASSWORD").ok();
     let tls_client = create_tls_client(&opt);
     let tcp_stream = TcpStream::connect(format!("{}:{}", opt.host, opt.port)).unwrap();
     let mut tls_stream = tls_client.connect(&opt.host, tcp_stream).unwrap();
-    let mut client = create_kmip_client(&mut tls_stream, opt);
+    let mut client = create_kmip_client(&mut tls_stream, opt, password);
 
     info!("Querying server properties..");
     info!("{:?}", client.query().unwrap());
@@ -96,10 +97,10 @@ fn main() {
     }
 }
 
-fn create_kmip_client<'a>(tls_stream: &'a mut SslStream<TcpStream>, opt: Opt) -> Client<SslStream<TcpStream>> {
+fn create_kmip_client<'a>(tls_stream: &'a mut SslStream<TcpStream>, opt: Opt, password: Option<String>) -> Client<SslStream<TcpStream>> {
     let mut client = ClientBuilder::new(tls_stream);
     if let Some(username) = opt.username {
-        client = client.with_credentials(username, std::env::var("HSM_PASSWORD").ok());
+        client = client.with_credentials(username, password);
     }
     client.unwrap()
 }
