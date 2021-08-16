@@ -18,7 +18,7 @@ This crate is one of potentially several crates that will be implemented to add 
 
 ### Status
 
-This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/) appears to work as expected.
+This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/krill-kmip-protocol/issues/14)) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/krill-kmip-protocol/issues/15)) appears to work as expected.
 
 ### Example Code
 
