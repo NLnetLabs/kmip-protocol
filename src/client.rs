@@ -28,19 +28,18 @@ impl<'a, T: Read + Write> ClientBuilder<'a, T> {
         }
     }
 
-    pub fn with_credentials(self, username: String, password: Option<String>) -> Self {
-        Self {
-            username: Some(username),
-            password,
-            ..self
-        }
+    pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
+        self.username = Some(username);
+        self.password = password;
+        self
     }
 
-    pub fn with_reader_config(self, reader_config: Config) -> Self {
-        Self { reader_config, ..self }
+    pub fn with_reader_config(mut self, reader_config: Config) -> Self {
+        self.reader_config = reader_config;
+        self
     }
 
-    pub fn unwrap(self) -> Client<'a, T> {
+    pub fn configure(self) -> Client<'a, T> {
         Client {
             username: self.username,
             password: self.password,
@@ -308,7 +307,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).unwrap();
+        let mut client = ClientBuilder::new(&mut stream).configure();
 
         let response_payload = client.query().unwrap();
 
@@ -330,7 +329,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).unwrap();
+        let mut client = ClientBuilder::new(&mut stream).configure();
 
         let response_payload = client
             .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -356,7 +355,7 @@ mod test {
 
         let mut client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-            .unwrap();
+            .configure();
 
         let response_payload = client.query().unwrap();
 
@@ -380,7 +379,7 @@ mod test {
                 Some(std::env::var("KRYPTUS_PASS").unwrap()),
             )
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-            .unwrap();
+            .configure();
 
         let response_payload = client.query().unwrap();
 
@@ -404,7 +403,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).unwrap();
+        let mut client = ClientBuilder::new(&mut stream).configure();
 
         let response_payload = client.query().unwrap();
 
