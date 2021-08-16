@@ -28,10 +28,10 @@ impl<'a, T: Read + Write> ClientBuilder<'a, T> {
         }
     }
 
-    pub fn with_credentials(self, username: &str, password: Option<&str>) -> Self {
+    pub fn with_credentials(self, username: String, password: Option<String>) -> Self {
         Self {
-            username: Some(username.to_string()),
-            password: password.and(Some(password.unwrap().to_string())),
+            username: Some(username),
+            password,
             ..self
         }
     }
