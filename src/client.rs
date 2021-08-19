@@ -88,10 +88,11 @@ impl<'a, T: Read + Write> Client<'a, T> {
         self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = krill_kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
-            eprintln!("Error: {:?}", e);
-            Error::Unknown
-        })?;
+        let mut res: ResponseMessage =
+            krill_kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
+                eprintln!("Error: {:?}", e);
+                Error::Unknown
+            })?;
         // TODO: Handle operation failed here.
         if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
