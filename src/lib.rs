@@ -34,7 +34,25 @@
 //!     client.destroy_key(&private_key_id).ok();
 //! }
 //! ```
-
+//!
+//! # Advanced usage
+//!
+//! If none of the helper functions on the [Client] fit your needs you can use [Client::do_request] directly to handle
+//! the request construction and response parsing yourself, for example:
+//!
+//! ```ignore
+//! let mut client = ClientBuilder::new(&mut stream).configure();
+//!
+//! let result = client
+//!     .do_request(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
+//!     .unwrap();
+//!
+//! if let ResponsePayload::Query(payload) = result {
+//!     dbg!(payload);
+//! } else {
+//!     panic!("Expected query response!");
+//! }
+//! ```
 pub mod auth;
 pub mod client;
 pub mod request;

@@ -77,7 +77,7 @@ impl<'a, T: Read + Write> Client<'a, T> {
         }
     }
 
-    fn do_request(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
+    pub fn do_request(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
         let operation = payload.operation();
 
         // Serialize and write the request
@@ -264,7 +264,13 @@ mod test {
     use krill_kmip_ttlv::Config;
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
-    use crate::client::ClientBuilder;
+    use crate::{
+        client::ClientBuilder,
+        types::{
+            request::{QueryFunction, RequestPayload},
+            response::ResponsePayload,
+        },
+    };
 
     struct MockStream {
         pub response: Cursor<Vec<u8>>,
@@ -550,8 +556,14 @@ mod test {
 
         let mut client = ClientBuilder::new(&mut stream).configure();
 
-        let response_payload = client.query().unwrap();
+        let result = client
+            .do_request(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
+            .unwrap();
 
-        dbg!(response_payload);
+        if let ResponsePayload::Query(payload) = result {
+            dbg!(payload);
+        } else {
+            panic!("Expected query response!");
+        }
     }
 }
