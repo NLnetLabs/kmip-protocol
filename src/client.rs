@@ -256,8 +256,9 @@ impl<'a, T: Read + Write> Client<'a, T> {
 #[cfg(test)]
 mod test {
     use std::{
-        io::{Cursor, Read, Write},
+        io::{BufReader, Cursor, Read, Write},
         net::TcpStream,
+        sync::Arc,
     };
 
     use krill_kmip_ttlv::Config;
@@ -340,7 +341,7 @@ mod test {
 
     #[test]
     #[ignore = "Requires a running PyKMIP instance"]
-    fn test_pykmip_query_against_server() {
+    fn test_pykmip_query_against_server_with_openssl() {
         let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
         connector.set_verify(SslVerifyMode::NONE);
         connector
@@ -352,6 +353,150 @@ mod test {
         let connector = connector.build();
         let stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = connector.connect("localhost", stream).unwrap();
+
+        let mut client = ClientBuilder::new(&mut tls)
+            .with_reader_config(Config::default().with_max_bytes(64 * 1024))
+            .configure();
+
+        let response_payload = client.query().unwrap();
+
+        dbg!(response_payload);
+    }
+
+    #[test]
+    #[ignore = "Requires a running PyKMIP instance"]
+    fn test_pykmip_query_against_server_with_rustls() {
+        // To setup input files for PyKMIP and RustLS to work together we must use a cipher they have in common, either
+        // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA384.
+        //
+        // To generate the required files use the following commands:
+        //
+        // ```
+        // # Prepare a directory to contain the PyKMIP config file and supporting certificate files
+        // sudo mkdir /etc/pykmip
+        // sudo chown $USER: /etc/pykmip
+        // cd /etc/pykmip
+        //
+        // # Prepare an OpenSSL configuration file for adding a Subject Alternative Name (SAN) to the generated CSR
+        // # and certificate. Without the SAN we would need to use the RustDL "dangerous" feature to ignore the server/
+        // # certificate mismatched name verification failure.
+        // cat <<EOF >san.cnf
+        // [ext]
+        // subjectAltName = DNS:localhost
+        // EOF
+        //
+        // # Prepare to do CA signing
+        // mkdir demoCA
+        // touch demoCA/index.txt
+        // echo 01 > demoCA/serial
+        //
+        // # Generate CA key
+        // # Warns: using curve name prime256v1 instead of secp256r1
+        // openssl ecparam -out ca.key -name secp256r1 -genkey
+        //
+        // # Generate CA certificate
+        // openssl req -x509 -new -key ca.key -out ca.crt -outform PEM -days 3650 -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=NLnet Labs/CN=localhost"
+        //
+        // # Generate PyKMIP server key
+        // # Warns: using curve name prime256v1 instead of secp256r1
+        // openssl ecparam -out server.key -name secp256r1 -genkey
+        //
+        // # Generate request for PyKMIP server certificate
+        // openssl req -new -nodes -key server.key -outform pem -out server.csr -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=NLnet Labs/CN=localhost"
+        //
+        // # Ask the CA to sign the request to create the PyKMIP server certificate
+        // openssl ca -keyfile ca.key -cert ca.crt -in server.csr -out server.crt -outdir . -batch -noemailDN -extfile san.cnf -extensions ext
+        //
+        // # Convert the server key from --BEGIN EC PRIVATE KEY-- format to --BEGIN PRIVATE KEY-- format
+        // # as RustLS cannot pass the former as a client certificate when connecting...
+        // openssl pkcs8 -topk8 -nocrypt -in server.key -out server.pkcs8.key
+        //
+        // # Replace the original server.key with the PKCS#8 format one because PyKMIP can use that as well
+        // mv server.pkcs8.key server.key
+        //
+        // # Now write a PyKMIP config file that uses the generated files
+        // cat <<EOF >server.conf
+        // [server]
+        // hostname=127.0.0.1
+        // port=5696
+        // certificate_path=/etc/pykmip/server.crt
+        // key_path=/etc/pykmip/server.key
+        // ca_path=/etc/pykmip/ca.crt
+        // auth_suite=TLS1.2
+        // enable_tls_client_auth=False
+        // tls_cipher_suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        // logging_level=DEBUG
+        // database_path=/tmp/pykmip.db
+        // EOF
+        //
+        // # Lastly, run PyKMIP:
+        // pykmip-server
+        // ```
+
+        // For more insight into what RustLS is doing enabling the "logging" feature of the RustLS crate and then use
+        // a logging implementation here, e.g.
+        //     stderrlog::new()
+        //         .module(module_path!())
+        //         .module("rustls")
+        //         .quiet(false)
+        //         .verbosity(5) // show INFO level logging by default, use -q to silence this
+        //         .timestamp(stderrlog::Timestamp::Second)
+        //         .init()
+        //         .unwrap();
+
+        fn load_binary_file(path: &'static str) -> std::io::Result<Vec<u8>> {
+            let mut buf = Vec::new();
+            std::fs::File::open(path)?.read_to_end(&mut buf)?;
+            Ok(buf)
+        }
+
+        fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>> {
+            let cert_chain = rustls_pemfile::read_all(&mut BufReader::new(bytes))?
+                .iter()
+                .map(|i: &rustls_pemfile::Item| match i {
+                    rustls_pemfile::Item::X509Certificate(bytes) => rustls::Certificate(bytes.clone()),
+                    rustls_pemfile::Item::RSAKey(_) => panic!("Expected an X509 certificate, got an RSA key"),
+                    rustls_pemfile::Item::PKCS8Key(_) => panic!("Expected an X509 certificate, got a PKCS8 key"),
+                })
+                .collect();
+            Ok(cert_chain)
+        }
+
+        fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<rustls::PrivateKey> {
+            let private_key = rustls_pemfile::read_one(&mut BufReader::new(bytes))?
+                .map(|i: rustls_pemfile::Item| match i {
+                    rustls_pemfile::Item::X509Certificate(_) => panic!("Expected a PKCS8 key, got an X509 certificate"),
+                    rustls_pemfile::Item::RSAKey(_) => panic!("Expected a PKCS8 key, got an RSA key"),
+                    rustls_pemfile::Item::PKCS8Key(bytes) => rustls::PrivateKey(bytes.clone()),
+                })
+                .unwrap();
+            Ok(private_key)
+        }
+
+        // Load files
+        let ca_cert_pem = load_binary_file("/etc/pykmip/ca.crt").unwrap();
+        let server_cert_pem = load_binary_file("/etc/pykmip/server.crt").unwrap();
+        let server_key_pem = load_binary_file("/etc/pykmip/server.key").unwrap();
+
+        let mut config = rustls::ClientConfig::new();
+        config
+            .root_store
+            .add_pem_file(&mut BufReader::new(ca_cert_pem.as_slice()))
+            .unwrap();
+        config
+            .root_store
+            .add_pem_file(&mut BufReader::new(server_cert_pem.as_slice()))
+            .unwrap();
+
+        let cert_chain = bytes_to_cert_chain(&server_cert_pem).unwrap();
+        let key_der = bytes_to_private_key(&server_key_pem).unwrap();
+        config.set_single_client_cert(cert_chain, key_der).unwrap();
+
+        let rc_config = Arc::new(config);
+        let localhost = webpki::DNSNameRef::try_from_ascii_str("localhost").unwrap();
+        let mut sess = rustls::ClientSession::new(&rc_config, localhost);
+        let mut stream = TcpStream::connect("localhost:5696").unwrap();
+        let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
         let mut client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
