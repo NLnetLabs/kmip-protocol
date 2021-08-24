@@ -9,8 +9,8 @@ use crate::{
     response::from_slice,
     types::{
         common::{
-            ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, CryptographicAlgorithm,
-            CryptographicUsageMask, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+            ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue,
+            CryptographicAlgorithm, CryptographicUsageMask, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, ManagedObject, MaximumResponseSize,
@@ -48,6 +48,7 @@ fn register_request() {
                     Attribute::ContactInformation("Joe".into()),
                     Attribute(
                         AttributeName("x-Purpose".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("demonstration".into()),
                     ),
                     Attribute::Name("Template1".into()),

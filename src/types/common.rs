@@ -17,7 +17,19 @@ impl std::cmp::PartialEq<str> for AttributeName {
     }
 }
 
-// KMIP spec 1.0 section 2.1.1 Attribute
+// KMIP spec 1.0 section 2.1.1 Attribute Index
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x420009")]
+pub struct AttributeIndex(pub i32);
+
+impl std::cmp::PartialEq<i32> for AttributeIndex {
+    fn eq(&self, other: &i32) -> bool {
+        &self.0 == other
+    }
+}
+
+// KMIP spec 1.0 section 2.1.1 Attribute Value
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename(serialize = "Override:0x42000B"))]

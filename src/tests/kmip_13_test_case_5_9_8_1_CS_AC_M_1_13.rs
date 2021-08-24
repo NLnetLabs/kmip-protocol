@@ -10,9 +10,9 @@ use crate::{
     response::from_slice,
     types::{
         common::{
-            AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength, CryptographicParameters,
-            CryptographicUsageMask, Data, HashingAlgorithm, KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType,
-            Operation, PaddingMethod, UniqueBatchItemID, UniqueIdentifier,
+            AttributeIndex, AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength,
+            CryptographicParameters, CryptographicUsageMask, Data, HashingAlgorithm, KeyCompressionType, KeyFormatType,
+            KeyMaterial, ObjectType, Operation, PaddingMethod, UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, KeyBlock, KeyValue, KeyWrappingData, ManagedObject,
@@ -85,6 +85,7 @@ fn register_request() {
                     ),
                     Attribute(
                         AttributeName("x-ID".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("CS-AC-M-1-13-prikey1".into()),
                     ),
                     Attribute::ActivationDate(TIMESTAMP),

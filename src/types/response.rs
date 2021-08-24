@@ -4,8 +4,8 @@ use enum_display_derive::Display;
 use std::fmt::Display;
 
 use super::common::{
-    AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType, KeyFormatType,
-    KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+    AttributeIndex, AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType,
+    KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
 // KMIP spec 1.0 section 2.1.3 Key Block
@@ -557,6 +557,9 @@ pub enum ResponsePayload {
 pub struct Attribute {
     #[serde(rename = "0x42000A")]
     pub name: AttributeName,
+
+    #[serde(rename = "0x420009")]
+    pub index: Option<AttributeIndex>,
 
     #[serde(rename = "0x42000B")]
     pub value: AttributeValue,

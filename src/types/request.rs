@@ -3,7 +3,7 @@ use serde_derive::Serialize;
 use std::fmt::Display;
 
 use super::common::{
-    ApplicationData, ApplicationNamespace, AttributeName, AttributeValue, CompromiseOccurrenceDate,
+    ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate,
     CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, Data, DataLength,
     KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
     Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
@@ -13,7 +13,11 @@ use super::common::{
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420008")]
-pub struct Attribute(pub AttributeName, pub AttributeValue);
+pub struct Attribute(
+    pub AttributeName,
+    #[serde(skip_serializing_if = "Option::is_none")] pub Option<AttributeIndex>,
+    pub AttributeValue,
+);
 
 /// Helper functions to simplifying including KMIP TemplateAttributes in requests.
 ///
@@ -27,6 +31,7 @@ impl Attribute {
     pub fn UniqueIdentifier(value: String) -> Self {
         Attribute(
             AttributeName("Unique Identifier".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::TextString(value),
         )
     }
@@ -36,6 +41,7 @@ impl Attribute {
     pub fn Name(value: String) -> Self {
         Attribute(
             AttributeName("Name".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::Name(NameValue(value), NameType::UninterpretedTextString),
         )
     }
@@ -45,6 +51,7 @@ impl Attribute {
     pub fn URI(value: String) -> Self {
         Attribute(
             AttributeName("Name".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::Name(NameValue(value), NameType::URI),
         )
     }
@@ -52,7 +59,11 @@ impl Attribute {
     /// KMIP spec 1.0 Section 3.3 Object Type
     #[allow(non_snake_case)]
     pub fn ObjectType(value: ObjectType) -> Self {
-        Attribute(AttributeName("Object Type".into()), AttributeValue::ObjectType(value))
+        Attribute(
+            AttributeName("Object Type".into()),
+            Option::<AttributeIndex>::None,
+            AttributeValue::ObjectType(value),
+        )
     }
 
     /// KMIP spec 1.0 Section 3.4 Cryptographic Algorithm
@@ -60,6 +71,7 @@ impl Attribute {
     pub fn CryptographicAlgorithm(value: CryptographicAlgorithm) -> Self {
         Attribute(
             AttributeName("Cryptographic Algorithm".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::CryptographicAlgorithm(value),
         )
     }
@@ -69,6 +81,7 @@ impl Attribute {
     pub fn CryptographicLength(value: i32) -> Self {
         Attribute(
             AttributeName("Cryptographic Length".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::Integer(value),
         )
     }
@@ -78,6 +91,7 @@ impl Attribute {
     pub fn CryptographicParameters(cryptographic_parameters: CryptographicParameters) -> Self {
         Attribute(
             AttributeName("Cryptographic Parameters".into()),
+            Option::<AttributeIndex>::None,
             cryptographic_parameters.into(),
         )
     }
@@ -87,6 +101,7 @@ impl Attribute {
     pub fn OperationPolicyName(value: String) -> Self {
         Attribute(
             AttributeName("Operation Policy Name".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::TextString(value),
         )
     }
@@ -96,6 +111,7 @@ impl Attribute {
     pub fn CryptographicUsageMask(value: CryptographicUsageMask) -> Self {
         Attribute(
             AttributeName("Cryptographic Usage Mask".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::Integer(value as i32),
         )
     }
@@ -103,13 +119,21 @@ impl Attribute {
     /// KMIP spec 1.0 Section 3.24 Activation Date
     #[allow(non_snake_case)]
     pub fn ActivationDate(value: u64) -> Self {
-        Attribute(AttributeName("Activation Date".into()), AttributeValue::DateTime(value))
+        Attribute(
+            AttributeName("Activation Date".into()),
+            Option::<AttributeIndex>::None,
+            AttributeValue::DateTime(value),
+        )
     }
 
     /// KMIP spec 1.0 Section 3.28 Object Group
     #[allow(non_snake_case)]
     pub fn ObjectGroup(value: String) -> Self {
-        Attribute(AttributeName("Object Group".into()), AttributeValue::TextString(value))
+        Attribute(
+            AttributeName("Object Group".into()),
+            Option::<AttributeIndex>::None,
+            AttributeValue::TextString(value),
+        )
     }
 
     /// KMIP spec 1.0 Section 3.29 Link
@@ -117,6 +141,7 @@ impl Attribute {
     pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
         Attribute(
             AttributeName("Link".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::Link(link_type, linked_object_identifier),
         )
     }
@@ -129,6 +154,7 @@ impl Attribute {
     ) -> Self {
         Attribute(
             AttributeName("Application Specific Information".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::ApplicationSpecificInformation(application_namespace, application_data),
         )
     }
@@ -138,6 +164,7 @@ impl Attribute {
     pub fn ContactInformation(value: String) -> Self {
         Attribute(
             AttributeName("Contact Information".into()),
+            Option::<AttributeIndex>::None,
             AttributeValue::ContactInformation(value),
         )
     }
@@ -472,7 +499,7 @@ pub enum RequestPayload {
     DeleteAttribute(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         AttributeName,
-        #[serde(skip_serializing_if = "Option::is_none")] Option<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")] Option<AttributeIndex>,
     ),
 
     // KMIP spec 1.0 section 4.18 Activate

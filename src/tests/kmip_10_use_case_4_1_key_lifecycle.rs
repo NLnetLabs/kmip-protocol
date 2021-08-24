@@ -7,9 +7,9 @@ use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
 
 use crate::types::{
     common::{
-        AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm, CryptographicUsageMask,
-        KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType, Operation, RevocationMessage, RevocationReasonCode,
-        State, UniqueBatchItemID, UniqueIdentifier,
+        AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm,
+        CryptographicUsageMask, KeyCompressionType, KeyFormatType, KeyMaterial, ObjectType, Operation,
+        RevocationMessage, RevocationReasonCode, State, UniqueBatchItemID, UniqueIdentifier,
     },
     request::{
         self, Attribute, Authentication, BatchCount, BatchItem, KeyWrappingSpecification, MaximumResponseSize,
@@ -814,6 +814,7 @@ fn client_a_add_attribute_batch_request() {
                     Some(UniqueIdentifier(KEY_ID.into())),
                     Attribute(
                         AttributeName("x-attribute1".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("Value1".into()),
                     ),
                 ),
@@ -825,6 +826,7 @@ fn client_a_add_attribute_batch_request() {
                     Some(UniqueIdentifier(KEY_ID.into())),
                     Attribute(
                         AttributeName("x-attribute2".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("Value2".into()),
                     ),
                 ),
@@ -950,6 +952,7 @@ fn client_a_modify_attribute_batch_request() {
                     Some(UniqueIdentifier(KEY_ID.into())),
                     Attribute(
                         AttributeName("x-attribute1".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("ModifiedValue1".into()),
                     ),
                 ),
@@ -961,6 +964,7 @@ fn client_a_modify_attribute_batch_request() {
                     Some(UniqueIdentifier(KEY_ID.into())),
                     Attribute(
                         AttributeName("x-attribute2".into()),
+                        Option::<AttributeIndex>::None,
                         AttributeValue::TextString("ModifiedValue2".into()),
                     ),
                 ),
@@ -1085,7 +1089,7 @@ fn client_a_delete_attribute_batch_request() {
                 RequestPayload::DeleteAttribute(
                     Some(UniqueIdentifier(KEY_ID.into())),
                     AttributeName("x-attribute1".into()),
-                    Option::<i32>::None,
+                    Option::<AttributeIndex>::None,
                 ),
             ),
             BatchItem(
@@ -1094,7 +1098,7 @@ fn client_a_delete_attribute_batch_request() {
                 RequestPayload::DeleteAttribute(
                     Some(UniqueIdentifier(KEY_ID.into())),
                     AttributeName("x-attribute2".into()),
-                    Option::<i32>::None,
+                    Option::<AttributeIndex>::None,
                 ),
             ),
         ],

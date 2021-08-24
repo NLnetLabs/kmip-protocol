@@ -6,6 +6,7 @@ mod kmip_10_use_case_8_1_create_key_pair;
 
 mod kmip_11_test_case_12_1_query;
 mod kmip_11_test_case_16_1_discover_versions;
+mod kmip_11_test_case_17_1_attribute_handling;
 
 #[allow(non_snake_case)]
 mod kmip_13_test_case_5_9_8_1_CS_AC_M_1_13;
