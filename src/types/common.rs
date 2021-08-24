@@ -426,19 +426,19 @@ pub struct CryptographicLength(pub i32);
 #[serde(rename = "0x42002B")]
 #[rustfmt::skip]
 pub struct CryptographicParameters {
-    #[serde(skip_serializing_if = "Option::is_none")] block_cipher_mode: Option<BlockCipherMode>,
-    #[serde(skip_serializing_if = "Option::is_none")] padding_method: Option<PaddingMethod>,
-    #[serde(skip_serializing_if = "Option::is_none")] hashing_algorithm: Option<HashingAlgorithm>,
-    #[serde(skip_serializing_if = "Option::is_none")] key_role_type: Option<KeyRoleType>,
-    #[serde(skip_serializing_if = "Option::is_none")] digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] random_iv: Option<RandomIV>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] iv_length: Option<IVLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] tag_length: Option<TagLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] counter_length: Option<CounterLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub block_cipher_mode: Option<BlockCipherMode>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub padding_method: Option<PaddingMethod>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub hashing_algorithm: Option<HashingAlgorithm>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub key_role_type: Option<KeyRoleType>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub random_iv: Option<RandomIV>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub iv_length: Option<IVLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub tag_length: Option<TagLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub counter_length: Option<CounterLength>, // KMIP 1.2
+    #[serde(skip_serializing_if = "Option::is_none")] pub initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
 }
 
 impl CryptographicParameters {
