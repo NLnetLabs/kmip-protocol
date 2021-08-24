@@ -209,14 +209,109 @@ pub enum KeyMaterial {
     #[serde(rename(serialize = "Transparent"))]
     Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
 
-    #[serde(rename(deserialize = "if 0x420042 >= 0x00000007"))] // Transparent types
-    Structure(TransparentKeyStructure),
+    #[serde(rename(deserialize = "if 0x420042 == 0x00000007"))]
+    TransparentSymmetricKey(TransparentSymmetricKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x00000008"))]
+    TransparentDSAPrivateKey(TransparentDSAPrivateKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x00000009"))]
+    TransparentDSAPublicKey(TransparentDSAPublicKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x0000000A"))]
+    TransparentRSAPrivateKey(TransparentRSAPrivateKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x0000000B"))]
+    TransparentRSAPublicKey(TransparentRSAPublicKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x0000000C"))]
+    TransparentDHPrivateKey(TransparentDHPrivateKey),
+
+    #[serde(rename(deserialize = "if 0x420042 == 0x0000000D"))]
+    TransparentDHPublicKey(TransparentDHPublicKey),
+
+    #[serde(rename(deserialize = "if 0x420042 >= 0x0000000E"))]
+    Structure(#[serde(with = "serde_bytes")] Vec<u8>), // All other transparent key types which we don't support yet
 }
 
-// KMIP spec 1.0 section 2.1.7 Transparent Key Structure
+// KMIP spec 1.0 section 2.1.7.1 Transparent Symmetric Key
 // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct TransparentKeyStructure(); // TODO
+#[serde(rename = "0x420043")]
+pub struct TransparentSymmetricKey {
+    #[serde(with = "serde_bytes")]
+    pub key: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.1.7.2 Transparent DSA Private Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentDSAPrivateKey {
+    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub q: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.1.7.3 Transparent DSA Public Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentDSAPublicKey {
+    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub q: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.1.7.4 Transparent RSA Private Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentRSAPrivateKey {
+    #[serde(with = "serde_bytes")] pub modulus: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub private_exponent: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub public_exponent: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub p: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub prime_exponent_p: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub prime_exponent_q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub crt_coefficient: Option<Vec<u8>>,
+}
+
+// KMIP spec 1.0 section 2.1.7.5 Transparent RSA Public Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentRSAPublicKey {
+    #[serde(with = "serde_bytes")] pub modulus: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub public_exponent: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.1.7.6 Transparent DH Private Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentDHPrivateKey {
+    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub j: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+}
+
+// KMIP spec 1.0 section 2.1.7.7 Transparent DH Public Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420043")]
+pub struct TransparentDHPublicKey {
+    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")] pub j: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")] pub y: Vec<u8>,
+}
 
 // KMIP spec 1.2 section 2.1.10 Data
 // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391

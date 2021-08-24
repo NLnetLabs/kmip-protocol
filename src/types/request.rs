@@ -321,12 +321,10 @@ pub struct KeyWrappingSpecification(
 pub enum ManagedObject {
     // Certificate(Certificate),
     // Not implemented
+    SymmetricKey(SymmetricKey),
 
-    // SymmetricKey(SymmetricKey),
-    // Not implemented
+    PublicKey(PublicKey),
 
-    // PublicKey(PublicKey),
-    // Not implemented
     PrivateKey(PrivateKey),
 
     // SplitKey(SplitKey),
@@ -339,8 +337,20 @@ pub enum ManagedObject {
     // Not implemented
 }
 
+// KMIP spec 1.0 section 2.2.2 Symmetric Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581165
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42008F")]
+pub struct SymmetricKey(pub KeyBlock);
+
+// KMIP spec 1.0 section 2.2.3 Public Key
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581166
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42006D")]
+pub struct PublicKey(pub KeyBlock);
+
 // KMIP spec 1.0 section 2.2.4 Private Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613475
+// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581167
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420064")]
 pub struct PrivateKey(pub KeyBlock);
