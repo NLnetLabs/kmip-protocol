@@ -238,8 +238,8 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
-    pub fn destroy_key(&mut self, private_key_id: &str) -> Result<()> {
-        let request = RequestPayload::Destroy(Some(UniqueIdentifier(private_key_id.to_owned())));
+    pub fn destroy_key(&mut self, key_id: &str) -> Result<()> {
+        let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
         let response = self.do_request(request)?;
