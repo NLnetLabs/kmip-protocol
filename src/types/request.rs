@@ -419,7 +419,7 @@ pub struct BatchCount(pub i32);
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000F")]
 pub struct BatchItem(
-    pub Operation,
+    pub Operation, // TODO: set this somehow automatically to RequestPayload::operation()
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<UniqueBatchItemID>,
     pub RequestPayload,
 );
