@@ -12,15 +12,15 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ClientBuilder<'a, T: Read + Write> {
+pub struct ClientBuilder<T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
-    stream: &'a mut T,
+    stream: T,
     reader_config: Config,
 }
 
-impl<'a, T: Read + Write> ClientBuilder<'a, T> {
-    pub fn new(stream: &'a mut T) -> Self {
+impl<T: Read + Write> ClientBuilder<T> {
+    pub fn new(stream: T) -> Self {
         Self {
             username: None,
             password: None,
@@ -40,7 +40,7 @@ impl<'a, T: Read + Write> ClientBuilder<'a, T> {
         self
     }
 
-    pub fn configure(self) -> Client<'a, T> {
+    pub fn configure(self) -> Client<T> {
         Client {
             username: self.username,
             password: self.password,
@@ -51,10 +51,10 @@ impl<'a, T: Read + Write> ClientBuilder<'a, T> {
 }
 
 #[derive(Debug)]
-pub struct Client<'a, T: Read + Write> {
+pub struct Client<T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
-    stream: &'a mut T,
+    stream: T,
     reader_config: Config,
 }
 
@@ -66,7 +66,7 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-impl<'a, T: Read + Write> Client<'a, T> {
+impl<T: Read + Write> Client<T> {
     fn auth(&self) -> Option<CredentialType> {
         if self.username.is_some() && self.password.is_some() {
             Some(CredentialType::UsernameAndPassword(
