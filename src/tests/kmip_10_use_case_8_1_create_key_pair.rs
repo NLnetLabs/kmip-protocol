@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822069
+//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/kmip-usecases-1.0.html#_Toc262822069
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -21,8 +21,12 @@ use crate::{
     },
 };
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 8.1 Use-case: Create a Key Pair
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn create_key_pair_request_rsa_1024() {
+fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -72,7 +76,7 @@ fn create_key_pair_request_rsa_1024() {
 }
 
 #[test]
-fn create_key_pair_response() {
+fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_response() {
     let use_case_response_hex = concat!(
         "42007B01000000E042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004B73C13A42000D0200000004000000010000000042000F010000008842",
@@ -109,7 +113,7 @@ fn create_key_pair_response() {
 }
 
 #[test]
-fn locate_request_public_key() {
+fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -147,7 +151,7 @@ fn locate_request_public_key() {
 }
 
 #[test]
-fn locate_response_public_key() {
+fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_response() {
     let use_case_response_hex = concat!(
         "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",
@@ -179,7 +183,7 @@ fn locate_response_public_key() {
 }
 
 #[test]
-fn locate_request_private_key() {
+fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -217,7 +221,7 @@ fn locate_request_private_key() {
 }
 
 #[test]
-fn locate_response_private_key() {
+fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_response() {
     let use_case_response_hex = concat!(
         "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",
@@ -249,7 +253,7 @@ fn locate_response_private_key() {
 }
 
 #[test]
-fn destroy_request_private_key() {
+fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -279,7 +283,7 @@ fn destroy_request_private_key() {
 }
 
 #[test]
-fn destroy_response_private_key() {
+fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_response() {
     let use_case_response_hex = concat!(
         "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",
@@ -308,7 +312,7 @@ fn destroy_response_private_key() {
 }
 
 #[test]
-fn destroy_request_public_key() {
+fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -338,7 +342,7 @@ fn destroy_request_public_key() {
 }
 
 #[test]
-fn destroy_response_public_key() {
+fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_response() {
     let use_case_response_hex = concat!(
         "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000000000000004200920900000008000000004B73C13B42000D0200000004000000010000000042000F010000005842",

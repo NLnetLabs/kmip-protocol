@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822080
+//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/kmip-usecases-1.0.html#_Toc262822080
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -19,8 +19,12 @@ use crate::{
     },
 };
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 11.1 Use-case: Credential, Operation Policy, Destroy Date
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn client_a_create_request_symmetric_key() {
+fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
     let credential = Some(CredentialType::UsernameAndPassword(
         auth::UsernameAndPasswordCredential::new("Fred".to_string(), Some("password1".to_string())),
     ));

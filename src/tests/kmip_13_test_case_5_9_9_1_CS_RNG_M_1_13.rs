@@ -15,8 +15,13 @@ use crate::types::{
     response::{ResponseMessage, ResponsePayload, ResultStatus},
 };
 
+// --------------------------------------------------------------------------------------------------------------------
+// 5.9.9 RNG Cryptographic Mandatory Test Cases KMIP v1.3
+// Test case 5.9.9.1 CS-RNG-M-1-13
+// --------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn rng_retrieve_request() {
+fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
@@ -47,7 +52,7 @@ fn rng_retrieve_request() {
 }
 
 #[test]
-fn rng_retrieve_response() {
+fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_response() {
     let use_case_generated_random_bytes_hex = "9c0bcd79d775998ddc52457bbbcfce2d4a194b039e20a3adacb63fb6561ba545";
 
     // Note: This hex was based on a successful response from a Kryptus KMIP server. It was adjusted by hand to exactly

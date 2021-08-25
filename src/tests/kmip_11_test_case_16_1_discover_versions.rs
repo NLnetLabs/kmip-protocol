@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/testcases/v1.1/cn01/kmip-testcases-v1.1-cn01.html#_Toc333488818
+//! See: https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html#_Toc333488818
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -14,8 +14,12 @@ use crate::types::{
     response::{ProtocolVersion, ResponseMessage, ResponsePayload, ResultStatus},
 };
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 16.1 Test Case: Discover Versions
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn discover_versions_request_no_versions_provided() {
+fn kmip_1_1_testcase_16_1_time_0_discover_versions_no_versions_provided_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -44,7 +48,7 @@ fn discover_versions_request_no_versions_provided() {
 }
 
 #[test]
-fn discover_versions_response_v11_v10() {
+fn kmip_1_1_testcase_16_1_time_0_discover_versions_v11_v10_response() {
     let use_case_response_hex = concat!(
         "42007B01000000D042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004ED73ED742000D0200000004000000010000000042000F010000007842",
@@ -80,7 +84,7 @@ fn discover_versions_response_v11_v10() {
 }
 
 #[test]
-fn discover_versions_request_with_v10() {
+fn kmip_1_1_testcase_16_1_time_1_discover_versionswith_v10_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -112,7 +116,7 @@ fn discover_versions_request_with_v10() {
 }
 
 #[test]
-fn discover_versions_response_v10() {
+fn kmip_1_1_testcase_16_1_time_1_discover_versions_v10_response() {
     let use_case_response_hex = concat!(
         "42007B01000000A842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004E04888242000D0200000004000000010000000042000F010000005042",
@@ -146,7 +150,7 @@ fn discover_versions_response_v10() {
 }
 
 #[test]
-fn discover_versions_request_with_v11() {
+fn kmip_1_1_testcase_16_1_time_2_discover_versions_with_v11_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -178,7 +182,7 @@ fn discover_versions_request_with_v11() {
 }
 
 #[test]
-fn discover_versions_response_v11() {
+fn kmip_1_1_testcase_16_1_time_2_discover_versions_v11_response() {
     let use_case_response_hex = concat!(
         "42007B01000000A842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004ED73ED742000D0200000004000000010000000042000F010000005042",
@@ -212,7 +216,7 @@ fn discover_versions_response_v11() {
 }
 
 #[test]
-fn discover_versions_request_with_v931() {
+fn kmip_1_1_testcase_16_1_time_3_discover_versions_with_v931_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -244,7 +248,7 @@ fn discover_versions_request_with_v931() {
 }
 
 #[test]
-fn discover_versions_response_no_versions() {
+fn kmip_1_1_testcase_16_1_time_3_discover_versions_no_versions_response() {
     let use_case_response_hex = concat!(
         "42007B010000008042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004ED73ED742000D0200000004000000010000000042000F010000002842",

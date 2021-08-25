@@ -1,5 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
-
+//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/kmip-usecases-1.0.html#_Toc262822060
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
@@ -21,8 +20,12 @@ use crate::types::{
 
 const KEY_ID: &'static str = "21d28b8a-06df-43c0-b72f-2a161633ada9";
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 4.1 Use-case: Revoke scenario
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn client_a_create_request_symmetric_key() {
+fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -64,7 +67,7 @@ fn client_a_create_request_symmetric_key() {
 }
 
 #[test]
-fn client_a_create_response() {
+fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -109,7 +112,7 @@ fn client_a_create_response() {
 }
 
 #[test]
-fn client_a_get_state_attribute_request() {
+fn kmip_1_0_usecase_4_1_step_2_client_a_get_attribute_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -142,7 +145,7 @@ fn client_a_get_state_attribute_request() {
 }
 
 #[test]
-fn client_a_get_state_attribute_response() {
+fn kmip_1_0_usecase_4_1_step_2_client_a_get_attribute_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -194,7 +197,7 @@ fn client_a_get_state_attribute_response() {
 }
 
 #[test]
-fn client_a_activate_request() {
+fn kmip_1_0_usecase_4_1_step_3_client_a_activate_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -208,7 +211,6 @@ fn client_a_activate_request() {
             RequestPayload::Activate(Some(UniqueIdentifier(KEY_ID.into()))),
         )],
     );
-
     let use_case_request_hex = concat!(
         "42007801000000904200770100000038420069010000002042006A0200000004000000010000000042006B02000000040",
         "00000000000000042000D0200000004000000010000000042000F010000004842005C0500000004000000120000000042",
@@ -224,7 +226,7 @@ fn client_a_activate_request() {
 }
 
 #[test]
-fn client_a_activate_response() {
+fn kmip_1_0_usecase_4_1_step_3_client_a_activate_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     //  Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //    Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -266,7 +268,7 @@ fn client_a_activate_response() {
 }
 
 #[test]
-fn client_a_get_state_attribute_request2() {
+fn kmip_1_0_usecase_4_1_step_4_client_a_get_attribute_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -299,7 +301,7 @@ fn client_a_get_state_attribute_request2() {
 }
 
 #[test]
-fn client_a_get_state_attribute_response2() {
+fn kmip_1_0_usecase_4_1_step_4_client_a_get_attribute_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -351,7 +353,7 @@ fn client_a_get_state_attribute_response2() {
 }
 
 #[test]
-fn client_b_locate_request_symmetric_key_by_name() {
+fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -385,7 +387,7 @@ fn client_b_locate_request_symmetric_key_by_name() {
 }
 
 #[test]
-fn client_b_locate_response() {
+fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -428,7 +430,7 @@ fn client_b_locate_response() {
 }
 
 #[test]
-fn client_b_get_request_symmetric_key() {
+fn kmip_1_0_usecase_4_1_step_6_client_b_get_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -462,7 +464,7 @@ fn client_b_get_request_symmetric_key() {
 }
 
 #[test]
-fn client_b_get_response_symmetric_key() {
+fn kmip_1_0_usecase_4_1_step_6_client_b_get_symmetric_key_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -527,7 +529,7 @@ fn client_b_get_response_symmetric_key() {
 }
 
 #[test]
-fn client_b_revoke_request_symmetric_key_compromised() {
+fn kmip_1_0_usecase_4_1_step_7_client_b_revoke_symmetric_key_compromised_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -560,7 +562,7 @@ fn client_b_revoke_request_symmetric_key_compromised() {
 }
 
 #[test]
-fn client_b_revoke_response_symmetric_key_compromised() {
+fn kmip_1_0_usecase_4_1_step_7_client_b_revoke_symmetric_key_compromised_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -602,7 +604,7 @@ fn client_b_revoke_response_symmetric_key_compromised() {
 }
 
 #[test]
-fn client_b_get_state_attribute_request() {
+fn kmip_1_0_usecase_4_1_step_8_client_b_get_attribute_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -635,7 +637,7 @@ fn client_b_get_state_attribute_request() {
 }
 
 #[test]
-fn client_b_get_state_attribute_response() {
+fn kmip_1_0_usecase_4_1_step_8_client_b_get_attribute_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -687,7 +689,7 @@ fn client_b_get_state_attribute_response() {
 }
 
 #[test]
-fn client_a_get_attribute_list_request() {
+fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -717,7 +719,7 @@ fn client_a_get_attribute_list_request() {
 }
 
 #[test]
-fn client_a_get_attribute_list_response() {
+fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822060
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -798,7 +800,7 @@ fn client_a_get_attribute_list_response() {
 // SKIP CLIENT A GET ATTRIBUTES AS IT IS IDENTICAL TO THE CLIENT B GET ATTRIBUTES REQUEST AND RESPONSE TEST ABOVE
 
 #[test]
-fn client_a_add_attribute_batch_request() {
+fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -853,7 +855,7 @@ fn client_a_add_attribute_batch_request() {
 }
 
 #[test]
-fn client_a_add_attribute_batch_response() {
+fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_response() {
     // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -936,7 +938,7 @@ fn client_a_add_attribute_batch_response() {
 }
 
 #[test]
-fn client_a_modify_attribute_batch_request() {
+fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -991,7 +993,7 @@ fn client_a_modify_attribute_batch_request() {
 }
 
 #[test]
-fn client_a_modify_attribute_batch_response() {
+fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_response() {
     // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -1074,7 +1076,7 @@ fn client_a_modify_attribute_batch_response() {
 }
 
 #[test]
-fn client_a_delete_attribute_batch_request() {
+fn kmip_1_0_usecase_4_1_step_13_client_a_delete_attribute_batch_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -1122,7 +1124,7 @@ fn client_a_delete_attribute_batch_request() {
 }
 
 #[test]
-fn client_a_delete_attribute_batch_response() {
+fn kmip_1_0_usecase_4_1_step_13_client_a_delete_attribute_batch_response() {
     // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -1207,7 +1209,7 @@ fn client_a_delete_attribute_batch_response() {
 // SKIP CLIENT A GET SYMMETRIC KEY AS IT IS IDENTICAL TO THE CLIENT B GET SYMMETRIC KEY REQUEST AND RESPONSE TEST ABOVE
 
 #[test]
-fn client_a_destroy_request_symmetric_key() {
+fn kmip_1_0_usecase_4_1_step_15_client_a_destroy_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -1237,7 +1239,7 @@ fn client_a_destroy_request_symmetric_key() {
 }
 
 #[test]
-fn client_a_destroy_response_symmetric_key() {
+fn kmip_1_0_usecase_4_1_step_15_client_a_destroy_symmetric_key_response() {
     // From: http://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822061
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:

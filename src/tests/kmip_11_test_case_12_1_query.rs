@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/testcases/v1.1/cn01/kmip-testcases-v1.1-cn01.html#_Toc333488803
+//! See: https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html#_Toc333488803
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -17,8 +17,12 @@ use crate::{
     },
 };
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 12.1 Use-case: Query, Maximum Response Size
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn query_request_operations_objects_max_response_size_256() {
+fn kmip_1_1_testcase_time_0_query_operations_objects_max_response_size_256_request() {
     #[rustfmt::skip]
     let use_case_request = 
         RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
@@ -60,7 +64,7 @@ fn query_request_operations_objects_max_response_size_256() {
 }
 
 #[test]
-fn query_response_operation_failed_response_too_large() {
+fn kmip_1_1_testcase_time_0_query_operation_failed_response_too_large_response() {
     let use_case_response_hex = concat!(
         "42007B01000000C842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A556B42000D0200000004000000010000000042000F010000007042",
@@ -87,7 +91,7 @@ fn query_response_operation_failed_response_too_large() {
 }
 
 #[test]
-fn query_request_operations_objects_max_response_size_2048() {
+fn kmip_1_1_testcase_time_1_query_operations_objects_max_response_size_2048_request() {
     #[rustfmt::skip]
     let use_case_request = 
         RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
@@ -131,7 +135,7 @@ fn query_request_operations_objects_max_response_size_2048() {
 }
 
 #[test]
-fn query_response_operation_succeeded() {
+fn kmip_1_1_testcase_time_1_query_operation_succeeded_response() {
     let use_case_response_hex = concat!(
         "42007B01000002C042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A556B42000D0200000004000000010000000042000F010000026842",

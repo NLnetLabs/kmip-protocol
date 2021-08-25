@@ -27,8 +27,13 @@ const TIMESTAMP: u64 = 0x000000004B7918AA;
 const TIMESTAMP_STR: &'static str = "000000004B7918AA";
 const UNIQUE_IDENTIFIER_0: &'static str = "$UNIQUE_IDENTIFIER_0";
 
+// --------------------------------------------------------------------------------------------------------------------
+// 5.9.8 Advanced Cryptographic Mandatory Test Cases KMIP v1.3
+// Test case 5.9.8.1 CS-AC-M-1-13
+// --------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn register_request() {
+fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
     // To get more insight into failed tests use a log implementation, e.g.:
     // SimpleLogger::new().init().unwrap();
 
@@ -155,7 +160,7 @@ fn register_request() {
 }
 
 #[test]
-fn register_response() {
+fn kmip_1_3_testcase_5_9_8_1_step_1_register_response() {
     // <ResponseMessage>
     //   <ResponseHeader>
     //     <ProtocolVersion>
@@ -218,7 +223,7 @@ fn register_response() {
 }
 
 #[test]
-fn sign_request() {
+fn kmip_1_3_testcase_5_9_8_1_step_2_sign_request() {
     let use_case_bytes_to_sign = "01020304050607080910111213141516";
 
     let use_case_request = RequestMessage(
@@ -270,7 +275,7 @@ fn sign_request() {
 }
 
 #[test]
-fn sign_response() {
+fn kmip_1_3_testcase_5_9_8_1_step_2_sign_response() {
     // <ResponseMessage>
     //   <ResponseHeader>
     //     <ProtocolVersion>

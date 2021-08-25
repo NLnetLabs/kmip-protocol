@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/testcases/v1.1/cn01/kmip-testcases-v1.1-cn01.html#_Toc333488820
+//! See: http://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html#_Toc333488820
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -23,8 +23,12 @@ use crate::{
 
 const KEY_ID: &'static str = "28c7bad1-bc9b-41df-b439-1ba04a6fd982";
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 17.1 Test Case: Handling of Attributes and Attribute Index Values
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn time_0_create_symmetric_key_request() {
+fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -73,7 +77,7 @@ fn time_0_create_symmetric_key_request() {
 }
 
 #[test]
-fn time_0_create_symmetric_key_response() {
+fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_response() {
     let use_case_response_hex = concat!(
         "42007B01000000C042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000006842",
@@ -102,7 +106,7 @@ fn time_0_create_symmetric_key_response() {
 }
 
 #[test]
-fn time_1_get_attributes_invalid_request() {
+fn kmip_1_1_testcase_17_1_time_1_get_attributes_invalid_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -139,7 +143,7 @@ fn time_1_get_attributes_invalid_request() {
 }
 
 #[test]
-fn time_1_get_attributes_response() {
+fn kmip_1_1_testcase_17_1_time_1_get_attributes_response() {
     let use_case_response_hex = concat!(
         "42007B01000000C842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000007042",
@@ -167,7 +171,7 @@ fn time_1_get_attributes_response() {
 }
 
 #[test]
-fn time_2_get_attributes_request() {
+fn kmip_1_1_testcase_17_1_time_2_get_attributes_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -200,7 +204,7 @@ fn time_2_get_attributes_request() {
 }
 
 #[test]
-fn time_2_get_attributes_response() {
+fn kmip_1_1_testcase_17_1_time_2_get_attributes_response() {
     let use_case_response_hex = concat!(
         "42007B01000000E042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000008842",
@@ -237,7 +241,7 @@ fn time_2_get_attributes_response() {
 }
 
 #[test]
-fn time_3_modify_attribute_request() {
+fn kmip_1_1_testcase_17_1_time_3_modify_attribute_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -275,7 +279,7 @@ fn time_3_modify_attribute_request() {
 }
 
 #[test]
-fn time_3_modify_attribute_response() {
+fn kmip_1_1_testcase_17_1_time_3_modify_attribute_response() {
     let use_case_response_hex = concat!(
         "42007B01000000F042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000009842",
@@ -309,7 +313,7 @@ fn time_3_modify_attribute_response() {
 }
 
 #[test]
-fn time_4_delete_attribute_request() {
+fn kmip_1_1_testcase_17_1_time_4_delete_attribute_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -343,7 +347,7 @@ fn time_4_delete_attribute_request() {
 }
 
 #[test]
-fn time_4_delete_attribute_response() {
+fn kmip_1_1_testcase_17_1_time_4_delete_attribute_response() {
     let use_case_response_hex = concat!(
         "42007B01000000F842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F01000000A042",
@@ -377,7 +381,7 @@ fn time_4_delete_attribute_response() {
 }
 
 #[test]
-fn time_5_destroy_request() {
+fn kmip_1_1_testcase_17_1_time_5_destroy_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
@@ -407,7 +411,7 @@ fn time_5_destroy_request() {
 }
 
 #[test]
-fn time_5_destroy_response() {
+fn kmip_1_1_testcase_17_1_time_5_destroy_response() {
     let use_case_response_hex = concat!(
         "42007B01000000B042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000005842",

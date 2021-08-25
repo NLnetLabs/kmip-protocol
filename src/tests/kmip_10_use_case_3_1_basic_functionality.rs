@@ -1,4 +1,4 @@
-//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
+//! See: https://docs.oasis-open.org/kmip/usecases/v1.0/kmip-usecases-1.0.html#_Toc262822054
 
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
@@ -24,8 +24,12 @@ use crate::{
 const UUID_ID: &'static str = "a6ebbb6f-4c54-4bbb-ad29-be6bad4ecad5";
 const KEY_ID: &'static str = "61b10614-d8b5-46f9-8d17-2fa6ea1d747a";
 
+/// -------------------------------------------------------------------------------------------------------------------
+/// 3.1.2 Use-case: Register / Create / Get attributes / Destroy
+/// -------------------------------------------------------------------------------------------------------------------
+
 #[test]
-fn register_request() {
+fn kmip_1_0_usecase_3_1_2_step_1_register_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -78,8 +82,8 @@ fn register_request() {
 }
 
 #[test]
-fn register_response() {
-    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
+fn kmip_1_0_usecase_3_1_2_step_1_register_response() {
+// From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
@@ -120,7 +124,7 @@ fn register_response() {
 }
 
 #[test]
-fn create_symmetric_key_request() {
+fn kmip_1_0_usecase_3_1_2_step_2_create_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -166,7 +170,7 @@ fn create_symmetric_key_request() {
 }
 
 #[test]
-fn create_response() {
+fn kmip_1_0_usecase_3_1_2_step_2_create_symmetric_key_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -211,7 +215,7 @@ fn create_response() {
 }
 
 #[test]
-fn get_attributes_request() {
+fn kmip_1_0_usecase_3_1_2_step_3_get_attributes_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -251,7 +255,7 @@ fn get_attributes_request() {
 }
 
 #[test]
-fn get_attributes_response() {
+fn kmip_1_0_usecase_3_1_2_step_3_get_attributes_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -331,7 +335,7 @@ fn get_attributes_response() {
 }
 
 #[test]
-fn destroy_symmetric_key_request() {
+fn kmip_1_0_usecase_3_1_2_step_4_destroy_symmetric_key_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -361,7 +365,7 @@ fn destroy_symmetric_key_request() {
 }
 
 #[test]
-fn destroy_symmetric_key_response() {
+fn kmip_1_0_usecase_3_1_2_step_4_destroy_symmetric_key_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
@@ -403,7 +407,7 @@ fn destroy_symmetric_key_response() {
 }
 
 #[test]
-fn destroy_uuid_template_request() {
+fn kmip_1_0_usecase_3_1_2_step_5_destroy_template_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
@@ -433,7 +437,7 @@ fn destroy_uuid_template_request() {
 }
 
 #[test]
-fn destroy_uuid_template_response() {
+fn kmip_1_0_usecase_3_1_2_step_5_destroy_template_response() {
     // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
