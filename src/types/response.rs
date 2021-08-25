@@ -462,6 +462,7 @@ pub struct BatchItem {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(clippy::large_enum_variant)]
 pub enum ResponsePayload {
     // KMIP spec 1.0 section 4.1 Create
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
