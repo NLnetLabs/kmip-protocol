@@ -1,9 +1,6 @@
-[![CI](https://github.com/NLnetLabs/krill-kmip-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/krill-kmip-protocol/actions/workflows/ci.yml)
+[![CI](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml)
 
-# krill-kmip-protocol - A library for (de)serializing KMIP protocol messages
-
-[Krill](https://nlnetlabs.nl/projects/rpki/krill/):
-> A free, open source RPKI Certificate Authority that lets you run delegated RPKI under one or multiple Regional Internet Registries (RIRs).
+# kmip - A client library for the KMIP protocol
 
 [KMIP](https://docs.oasis-open.org/kmip/spec/v1.0/kmip-spec-1.0.html):
 > The OASIS Key Management Interoperability Protocol specifications which define message formats for the manipulation of cryptographic material on a key management server.
@@ -14,7 +11,7 @@ This crate offers a **partial implementation** of (de)serialization of KMIP v1.0
 
 ### API Reference
 
-As this crate is not yet published to crates.io you cannot yet look at the rustdoc on docs.rs. A preview is available [here](https://nlnetlabs.github.io/krill-kmip-protocol/krill_kmip_protocol/index.html) however.
+As this crate is not yet published to crates.io you cannot yet look at the rustdoc on docs.rs. A preview is available [here](https://nlnetlabs.github.io/kmip/kmip/index.html) however.
 
 ### Scope
 
@@ -22,7 +19,7 @@ This crate is one of potentially several crates that will be implemented to add 
 
 ### Status
 
-This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/krill-kmip-protocol/issues/14)) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/krill-kmip-protocol/issues/15)) appears to work as expected.
+This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/kmip/issues/14)) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/kmip/issues/15)) appears to work as expected.
 
 ### Example Code
 
@@ -82,7 +79,7 @@ _Note: Supported operations may lack support for some attribute or managed objec
 
 Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to XML based.
 
-The subset of the TTLV/hex format test cases that this crate [demonstrates compliance with](https://github.com/NLnetLabs/krill-kmip-protocol/tree/main/src/tests) are represented below by ticked boxes:
+The subset of the TTLV/hex format test cases that this crate [demonstrates compliance with](https://github.com/NLnetLabs/kmip/tree/main/src/tests) are represented below by ticked boxes:
 
 **KMIP Use Cases [v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html)/[v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
 
@@ -115,7 +112,7 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 10 Archival
   - [ ] 10.1 Use-case: Create a Key, Archive and Recover it
 - 11 Access Control, Policies
-  - [ ] 11.1 Use-case: Credential, Operation Policy, Destroy Date _**(Partially implemented)**_
+  - [x] 11.1 Use-case: Credential, Operation Policy, Destroy Date _**(step 1 only for username/password auth test)**_
   - [ ] 11.2 Test Case: Device Credential, Operation Policy, Destroy Date _(Added in KMIP v1.1)_
 - 12 Query, Maximum Response Size
   - [x] 12.1 Use-case: Query, Maximum Response Size _**(Implemented for both KMIP v1.0 and v1.1 test variants)**_
@@ -135,12 +132,13 @@ The subset of the TTLV/hex format test cases that this crate [demonstrates compl
 - 16     Discover Versions _(Added in KMIP v1.1)_
   - [x] 16.1 Test Case: Discover Versions
 - 17     Attribute Handling _(Added in KMIP v1.1)_
-  - [ ] 17.1 Test Case: Handling of Attributes and Attribute Index Values
+  - [x] 17.1 Test Case: Handling of Attributes and Attribute Index Values
 - 18     Digest _(Added in KMIP v1.1)_
   - [ ] 18.1 Test Case: Digests of Symmetric Keys
   - [ ] 18.2 Test Case: Digests of RSA Private Keys
 
 **Other (partially) implemented KMIP test cases:**
 
-- https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml
-- https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml
+- [Advanced Cryptographic Mandatory Test Cases KMIP v1.3 5.9.8.1 CS-AC-M-1-13](https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml) _(steps 1 & 2 only for sign operation test)_
+- [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
+****

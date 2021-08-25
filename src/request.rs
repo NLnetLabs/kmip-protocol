@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-use krill_kmip_ttlv::error::Result;
+use kmip_ttlv::error::Result;
 
 pub fn to_vec(payload: RequestPayload, credential: Option<CredentialType>) -> Result<Vec<u8>> {
     let operation = payload.operation();
@@ -21,5 +21,5 @@ pub fn to_vec(payload: RequestPayload, credential: Option<CredentialType>) -> Re
         ),
         vec![BatchItem(operation, Option::<UniqueBatchItemID>::None, payload)],
     );
-    krill_kmip_ttlv::ser::to_vec(&request)
+    kmip_ttlv::ser::to_vec(&request)
 }

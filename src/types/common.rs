@@ -248,10 +248,14 @@ pub struct TransparentSymmetricKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDSAPrivateKey {
-    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub q: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub q: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub x: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.1.7.3 Transparent DSA Public Key
@@ -259,10 +263,14 @@ pub struct TransparentDSAPrivateKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDSAPublicKey {
-    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub q: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub q: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub x: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.1.7.4 Transparent RSA Private Key
@@ -270,14 +278,22 @@ pub struct TransparentDSAPublicKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPrivateKey {
-    #[serde(with = "serde_bytes")] pub modulus: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub private_exponent: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub public_exponent: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub p: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub prime_exponent_p: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub prime_exponent_q: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub crt_coefficient: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub modulus: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub private_exponent: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub public_exponent: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub p: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub prime_exponent_p: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub prime_exponent_q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub crt_coefficient: Option<Vec<u8>>,
 }
 
 // KMIP spec 1.0 section 2.1.7.5 Transparent RSA Public Key
@@ -285,8 +301,10 @@ pub struct TransparentRSAPrivateKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPublicKey {
-    #[serde(with = "serde_bytes")] pub modulus: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub public_exponent: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub modulus: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub public_exponent: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.1.7.6 Transparent DH Private Key
@@ -294,11 +312,16 @@ pub struct TransparentRSAPublicKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDHPrivateKey {
-    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub j: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub x: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub j: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub x: Vec<u8>,
 }
 
 // KMIP spec 1.0 section 2.1.7.7 Transparent DH Public Key
@@ -306,11 +329,16 @@ pub struct TransparentDHPrivateKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDHPublicKey {
-    #[serde(with = "serde_bytes")] pub p: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub q: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub g: Vec<u8>,
-    #[serde(with = "serde_bytes")] pub j: Option<Vec<u8>>,
-    #[serde(with = "serde_bytes")] pub y: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub p: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub q: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub g: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    pub j: Option<Vec<u8>>,
+    #[serde(with = "serde_bytes")]
+    pub y: Vec<u8>,
 }
 
 // KMIP spec 1.2 section 2.1.10 Data

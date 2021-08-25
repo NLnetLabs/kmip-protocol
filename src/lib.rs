@@ -9,7 +9,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! krill-kmip-protocol = "0.1.0"
+//! kmip = "0.1.0"
 //! ```
 //!
 //! # Usage
@@ -63,4 +63,4 @@ pub mod types;
 mod tests;
 
 pub use client::{Client, ClientBuilder};
-pub use krill_kmip_ttlv::Config;
+pub use kmip_ttlv::Config;

@@ -3,7 +3,7 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use krill_kmip_ttlv::ser::to_vec;
+use kmip_ttlv::ser::to_vec;
 
 use crate::{
     response::from_slice,
@@ -83,7 +83,7 @@ fn kmip_1_0_usecase_3_1_2_step_1_register_request() {
 
 #[test]
 fn kmip_1_0_usecase_3_1_2_step_1_register_response() {
-// From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
+    // From: https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html#_Toc262822054
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
     //   Tag: Response Header (0x42007A), Type: Structure (0x01), Data:
     //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:

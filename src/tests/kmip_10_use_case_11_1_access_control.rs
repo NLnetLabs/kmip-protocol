@@ -3,7 +3,7 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use krill_kmip_ttlv::ser::to_vec;
+use kmip_ttlv::ser::to_vec;
 
 use crate::{
     auth::{self, CredentialType},

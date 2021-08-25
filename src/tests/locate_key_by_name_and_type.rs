@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use krill_kmip_ttlv::ser::to_vec;
+use kmip_ttlv::ser::to_vec;
 
 use crate::types::common::{ObjectType, Operation, UniqueBatchItemID};
 use crate::types::request::{

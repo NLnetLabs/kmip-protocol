@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["krill_kmip_protocol"];
+window.ALL_CRATES = ["kmip"];

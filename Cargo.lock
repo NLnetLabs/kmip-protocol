@@ -182,13 +182,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "krill-kmip-protocol"
+name = "kmip"
 version = "0.1.0-dev"
 dependencies = [
  "enum-display-derive",
  "enum-flags",
  "hex",
- "krill-kmip-ttlv",
+ "kmip-ttlv",
  "log",
  "openssl",
  "pretty_assertions",
@@ -203,9 +203,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "krill-kmip-ttlv"
+name = "kmip-ttlv"
 version = "0.1.0-dev"
-source = "git+https://github.com/NLnetLabs/krill-kmip-ttlv.git?branch=main#4d9541536b8a6c3a68a335e913223523533f80df"
+source = "git+https://github.com/NLnetLabs/kmip-ttlv.git?branch=main#bce3f54480e88c5d66bba1654166a174e602f600"
 dependencies = [
  "hex",
  "log",

@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use krill_kmip_ttlv::Config;
+use kmip_ttlv::Config;
 
 use crate::{
     auth::{self, CredentialType},
@@ -88,11 +88,10 @@ impl<T: Read + Write> Client<T> {
         self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
 
         // Read and deserialize the response
-        let mut res: ResponseMessage =
-            krill_kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
-                eprintln!("Error: {:?}", e);
-                Error::Unknown
-            })?;
+        let mut res: ResponseMessage = kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
+            eprintln!("Error: {:?}", e);
+            Error::Unknown
+        })?;
         // TODO: Handle operation failed here.
         if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
@@ -261,7 +260,7 @@ mod test {
         sync::Arc,
     };
 
-    use krill_kmip_ttlv::Config;
+    use kmip_ttlv::Config;
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{

@@ -4,7 +4,7 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use krill_kmip_ttlv::{de::from_slice, ser::to_vec};
+use kmip_ttlv::{de::from_slice, ser::to_vec};
 
 use crate::types::{
     common::{DataLength, Operation, UniqueBatchItemID},
