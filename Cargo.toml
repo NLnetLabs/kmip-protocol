@@ -1,6 +1,6 @@
 [package]
 name = "kmip"
-version = "0.1.0-dev"
+version = "0.1.0"
 authors = ["The NLnet Labs RPKI Team <rpki-team@nlnetlabs.nl>"]
 edition = "2018"
 description = "KMIP client library"
@@ -9,11 +9,12 @@ license = "BSD-3-Clause"
 keywords = ["KMIP", "TTLV"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
 exclude = ["/.github"]
+readme = "README.md"
 
 [dependencies]
 enum-display-derive = "0.1.1"
 enum-flags = "0.1.6"
-kmip-ttlv = { version = "0.1.0-dev", git = "https://github.com/NLnetLabs/kmip-ttlv.git", branch = "main" }
+kmip-ttlv = "0.1.0"
 serde = "1.0.126"
 serde_derive = "1.0.126"
 serde_bytes = "0.11.5"

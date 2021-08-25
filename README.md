@@ -9,10 +9,6 @@
 
 This crate offers a **partial implementation** of (de)serialization of KMIP v1.0-1.2 protocol messages for use primarily by the [Krill](https://nlnetlabs.nl/projects/rpki/krill/) project.
 
-### API Reference
-
-As this crate is not yet published to crates.io you cannot yet look at the rustdoc on docs.rs. A preview is available [here](https://nlnetlabs.github.io/kmip/kmip/index.html) however.
-
 ### Scope
 
 This crate is one of potentially several crates that will be implemented to add the ability to Krill to interact with KMIP compliant servers. The current thinking is that the work consists of separate chunks for TTLV (de)serialization, KMIP business object definitions, client request/response API and the TCP+TLS client.

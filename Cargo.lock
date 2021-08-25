@@ -183,7 +183,7 @@ dependencies = [
 
 [[package]]
 name = "kmip"
-version = "0.1.0-dev"
+version = "0.1.0"
 dependencies = [
  "enum-display-derive",
  "enum-flags",
@@ -204,8 +204,9 @@ dependencies = [
 
 [[package]]
 name = "kmip-ttlv"
-version = "0.1.0-dev"
-source = "git+https://github.com/NLnetLabs/kmip-ttlv.git?branch=main#bce3f54480e88c5d66bba1654166a174e602f600"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a533f1c847f9ec849308ce0483ced828dcfdd2bea30db00a87b45d520992ecd"
 dependencies = [
  "hex",
  "log",

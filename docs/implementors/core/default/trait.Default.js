@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["kmip"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.54.0/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"kmip/types/common/struct.CryptographicParameters.html\" title=\"struct kmip::types::common::CryptographicParameters\">CryptographicParameters</a>","synthetic":false,"types":["kmip::types::common::CryptographicParameters"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
