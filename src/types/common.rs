@@ -206,7 +206,6 @@ pub enum AttributeValue {
 #[serde(rename = "0x420043")]
 pub enum KeyMaterial {
     #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
-    #[serde(rename(serialize = "Transparent"))]
     Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
 
     #[serde(rename(deserialize = "if 0x420042 == 0x00000007"))]
