@@ -608,10 +608,26 @@ impl RequestPayload {
             | RequestPayload::DeleteAttribute(..)
             | RequestPayload::Activate(..)
             | RequestPayload::Revoke(..)
-            | RequestPayload::Destroy(..)
-            | RequestPayload::Query(..)
-            | RequestPayload::DiscoverVersions(..) => ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
+            | RequestPayload::Destroy(..) => {
+                // These KMIP operations are defined in the KMIP 1.0 specification
+                ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0))
+            }
+            RequestPayload::DiscoverVersions(..) => {
+                // These KMIP operations are defined in the KMIP 1.1 specification
+                ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1))
+            }
             RequestPayload::Sign(..) | RequestPayload::RNGRetrieve(..) => {
+                // These KMIP operations are defined in the KMIP 1.2 specification
+                ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(2))
+            }
+            RequestPayload::Query(..) => {
+                // TODO: Although query is defined in the KMIP 1.0 specification, KMIP servers that support KMIP >1.0
+                // are required by the specification to "support backward compatibility with versions of the protocol
+                // with the same major version". A KMIP 1.2 server cannot respond to a Query request with KMIP tag
+                // numbers representing KMIP Operations that were only defined in a KMIP specification >1.0. Presumably
+                // therefore we must pass the highest version number that both we and the server support. Currently
+                // this is just dumb and passes the highest version number that we support, we should actually base
+                // it on the result of a previous attempt to use the KMIP 1.1 Discover Versions request.
                 ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(2))
             }
         }
