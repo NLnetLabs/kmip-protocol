@@ -204,9 +204,9 @@ dependencies = [
 
 [[package]]
 name = "kmip-ttlv"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a533f1c847f9ec849308ce0483ced828dcfdd2bea30db00a87b45d520992ecd"
+checksum = "ce13b6c07c81b0baf1c86feaeecfc67e2a77ae24802d2e078971fea821c4ad41"
 dependencies = [
  "hex",
  "log",
