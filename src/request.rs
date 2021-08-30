@@ -1,3 +1,5 @@
+//! Serialiation of KMIP requests.
+
 use crate::{
     auth::CredentialType,
     types::{

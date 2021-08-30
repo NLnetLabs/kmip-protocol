@@ -5,17 +5,18 @@
 //!
 //! [Oasis Key Management Interoperability Protocol]: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html
 //!
-//! To use this library add the following to your `Cargo.toml`:
+//! # Usage
+//!
+//! Add the following to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
 //! kmip-protocol = "0.1.0"
 //! ```
 //!
-//! # Usage
-//!
-//! For the details of how to create a TLS connection and instantiate the client to use it see the example code in the
-//! repository at `examples/cli-tool.rs`.
+//! This crate does not yet offer a TCP+TLS client for you to use. As such you will need to establish a connection
+//! yourself. Once the connection is established the [Client] struct can be used to send serialize requests to the KMIP
+//! server and to deserialize the response. The code might then look something like this:
 //!
 //! ```ignore
 //! let tls_client = create_tls_client(&opt)?;
@@ -23,9 +24,15 @@
 //! let mut tls_stream = tls_client.connect(&opt.host, tcp_stream)?;
 //! let mut client = create_kmip_client(&mut tls_stream, opt, password)?;
 //!
-//! if let Ok((private_key_id, public_key_id)) = client.create_rsa_key_pair(2048, "priv".into(), "pub".into()) {
+//! let bit_len = 2048;
+//! let private_key_name = "priv".to_string();
+//! let public_key_name = "pub".to_string();
+//! let some_bytes_to_sign = [1u8, 2u8, 3u8, 4u8, 5u8];
+//!
+//! if let Ok(res) = client.create_rsa_key_pair(bit_len, private_key_name, public_key_name) {
+//!     let (private_key_id, public_key_id) = res;
 //!     if client.activate_key(&private_key_id).is_ok() {
-//!         if let Ok(payload) = client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]) {
+//!         if let Ok(payload) = client.sign(&private_key_id, &some_bytes_to_sign) {
 //!             // ...
 //!         }
 //!         client.revoke_key(&private_key_id).ok();
@@ -35,10 +42,13 @@
 //! }
 //! ```
 //!
+//! For more details on how to create the TLS connection and instantiate the client to use it see the example code in
+//! the repository at `examples/cli-tool.rs` and the test cases in `client.rs`.
+//!
 //! # Advanced usage
 //!
-//! If none of the helper functions on the [Client] fit your needs you can use [Client::do_request] directly to handle
-//! the request construction and response parsing yourself, for example:
+//! If none of the helper functions offered by the [Client] struct fit your needs you can use [Client::do_request]
+//! directly to handle the request construction and response parsing yourself, for example:
 //!
 //! ```ignore
 //! let mut client = ClientBuilder::new(&mut stream).configure();

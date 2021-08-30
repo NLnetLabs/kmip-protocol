@@ -1,3 +1,4 @@
+//! Rust types common to both serialization of KMIP requests and deserialization KMIP responses.
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
@@ -5,8 +6,7 @@ use enum_display_derive::Display;
 use enum_flags::EnumFlags;
 use std::fmt::Display;
 
-// KMIP spec 1.0 section 2.1.1 Attribute
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+///  See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42000A")]
 pub struct AttributeName(pub String);
@@ -17,8 +17,7 @@ impl std::cmp::PartialEq<str> for AttributeName {
     }
 }
 
-// KMIP spec 1.0 section 2.1.1 Attribute Index
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+///  See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420009")]
 pub struct AttributeIndex(pub i32);
@@ -29,33 +28,32 @@ impl std::cmp::PartialEq<i32> for AttributeIndex {
     }
 }
 
-// KMIP spec 1.0 section 2.1.1 Attribute Value
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155
+///  See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename(serialize = "Override:0x42000B"))]
 #[non_exhaustive]
 pub enum AttributeValue {
-    // KMIP spec 1.0 section 3.1 Unique Identifier
+    // ///  See KMIP 1.0 section 3.1 Unique Identifier.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.2 Name
+    // ///  See KMIP 1.0 section 3.2 Name.
     #[serde(rename(deserialize = "if 0x42000A==Name"))]
     Name(NameValue, NameType),
 
-    // KMIP spec 1.0 section 3.3 Object Type
+    // ///  See KMIP 1.0 section 3.3 Object Type.
     #[serde(rename(deserialize = "if 0x42000A==Object Type"))]
     #[serde(rename(serialize = "Transparent"))]
     ObjectType(ObjectType),
 
-    // KMIP spec 1.0 section 3.4 Cryptographic Algorithm
+    // ///  See KMIP 1.0 section 3.4 Cryptographic Algorithm.
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Algorithm"))]
     #[serde(rename(serialize = "Transparent"))]
     CryptographicAlgorithm(CryptographicAlgorithm),
 
-    // KMIP spec 1.0 section 3.5 Cryptographic Length
+    // ///  See KMIP 1.0 section 3.5 Cryptographic Length.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.6 Cryptographic Parameters
+    // ///  See KMIP 1.0 section 3.6 Cryptographic Parameters.
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Parameters"))]
     CryptographicParameters(
         #[serde(skip_serializing_if = "Option::is_none")] Option<BlockCipherMode>,
@@ -73,92 +71,92 @@ pub enum AttributeValue {
         #[serde(skip_serializing_if = "Option::is_none")] Option<InitialCounterValue>,       // KMIP 1.2
     ),
 
-    // KMIP spec 1.0 section 3.7 Cryptographic Domain Parameters
+    // ///  See KMIP 1.0 section 3.7 Cryptographic Domain Parameters.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.8 Certificate Type
+    // ///  See KMIP 1.0 section 3.8 Certificate Type.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.9 Certificate Identifier
+    // ///  See KMIP 1.0 section 3.9 Certificate Identifier.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.10 Certificate Subject
+    // ///  See KMIP 1.0 section 3.10 Certificate Subject.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.11 Certificate Issuer
+    // ///  See KMIP 1.0 section 3.11 Certificate Issuer.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.12 Digest
+    // ///  See KMIP 1.0 section 3.12 Digest.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.13 Operation Policy Name
+    // ///  See KMIP 1.0 section 3.13 Operation Policy Name.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
+    // ///  See KMIP 1.0 section 3.14 Cryptographic Usage Mask.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.15 Lease Time
+    // ///  See KMIP 1.0 section 3.15 Lease Time.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.16 Usage Limits
+    // ///  See KMIP 1.0 section 3.16 Usage Limits.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.17 State
+    // ///  See KMIP 1.0 section 3.17 State.
     #[serde(rename(deserialize = "if 0x42000A==State"))]
     #[serde(rename(serialize = "Transparent"))]
     State(State),
 
-    // KMIP spec 1.0 section 3.18 Initial Date
+    // ///  See KMIP 1.0 section 3.18 Initial Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.19 Activation Date
+    // ///  See KMIP 1.0 section 3.19 Activation Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.20 Process Start Date
+    // ///  See KMIP 1.0 section 3.20 Process Start Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.21 Protect Stop Date
+    // ///  See KMIP 1.0 section 3.21 Protect Stop Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.22 Deactivation Date
+    // ///  See KMIP 1.0 section 3.22 Deactivation Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.23 Destroy Date
+    // ///  See KMIP 1.0 section 3.23 Destroy Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.24 Compromise Occurence Date
+    // ///  See KMIP 1.0 section 3.24 Compromise Occurence Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.25 Compromise Date
+    // ///  See KMIP 1.0 section 3.25 Compromise Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.26 Revocation Reason
+    // ///  See KMIP 1.0 section 3.26 Revocation Reason.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.27 Archive Date
+    // ///  See KMIP 1.0 section 3.27 Archive Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.28 Object Group
+    // ///  See KMIP 1.0 section 3.28 Object Group.
     #[serde(rename(deserialize = "if 0x42000A==Object Group"))]
     ObjectGroup(String),
 
-    // KMIP spec 1.0 section 3.29 Link
+    // ///  See KMIP 1.0 section 3.29 Link.
     #[serde(rename(deserialize = "if 0x42000A==Linked Object Identifier"))]
     Link(LinkType, LinkedObjectIdentifier),
 
-    // KMIP spec 1.0 section 3.30 Application Specific Information
+    // ///  See KMIP 1.0 section 3.30 Application Specific Information.
     #[serde(rename(deserialize = "if 0x42000A==Application Specific Information"))]
     ApplicationSpecificInformation(ApplicationNamespace, ApplicationData),
 
-    // KMIP spec 1.0 section 3.31 Contact Information
+    // ///  See KMIP 1.0 section 3.31 Contact Information.
     #[serde(rename(deserialize = "if 0x42000A==Contact Information"))]
     #[serde(rename(serialize = "Transparent"))]
     ContactInformation(String),
 
-    // KMIP spec 1.0 section 3.32 Last Change Date
+    // ///  See KMIP 1.0 section 3.32 Last Change Date.
     // Not implemented
 
-    // KMIP spec 1.0 section 3.33 Custom Attribute:
+    // ///  See KMIP 1.0 section 3.33 Custom Attribute:.
     //   "Any data type or structure. If a structure, then the structure SHALL NOT include sub structures"
     // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581207
 
@@ -200,8 +198,7 @@ pub enum AttributeValue {
     // Interval(??),
 }
 
-// KMIP spec 1.0 section 2.1.4 Key Value
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158
+///  See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub enum KeyMaterial {
@@ -234,8 +231,7 @@ pub enum KeyMaterial {
     Structure(#[serde(with = "serde_bytes")] Vec<u8>), // All other transparent key types which we don't support yet
 }
 
-// KMIP spec 1.0 section 2.1.7.1 Transparent Symmetric Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.1 [Transparent Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentSymmetricKey {
@@ -243,8 +239,7 @@ pub struct TransparentSymmetricKey {
     pub key: Vec<u8>,
 }
 
-// KMIP spec 1.0 section 2.1.7.2 Transparent DSA Private Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.2 [Transparent DSA Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDSAPrivateKey {
@@ -258,8 +253,7 @@ pub struct TransparentDSAPrivateKey {
     pub x: Vec<u8>,
 }
 
-// KMIP spec 1.0 section 2.1.7.3 Transparent DSA Public Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.3 [Transparent DSA Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDSAPublicKey {
@@ -273,8 +267,7 @@ pub struct TransparentDSAPublicKey {
     pub x: Vec<u8>,
 }
 
-// KMIP spec 1.0 section 2.1.7.4 Transparent RSA Private Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.4 [Transparent RSA Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPrivateKey {
@@ -296,8 +289,7 @@ pub struct TransparentRSAPrivateKey {
     pub crt_coefficient: Option<Vec<u8>>,
 }
 
-// KMIP spec 1.0 section 2.1.7.5 Transparent RSA Public Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.5 [Transparent RSA Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPublicKey {
@@ -307,8 +299,7 @@ pub struct TransparentRSAPublicKey {
     pub public_exponent: Vec<u8>,
 }
 
-// KMIP spec 1.0 section 2.1.7.6 Transparent DH Private Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.6 [Transparent DH Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDHPrivateKey {
@@ -324,8 +315,7 @@ pub struct TransparentDHPrivateKey {
     pub x: Vec<u8>,
 }
 
-// KMIP spec 1.0 section 2.1.7.7 Transparent DH Public Key
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161
+///  See KMIP 1.0 section 2.1.7.7 [Transparent DH Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentDHPublicKey {
@@ -341,21 +331,18 @@ pub struct TransparentDHPublicKey {
     pub y: Vec<u8>,
 }
 
-// KMIP spec 1.2 section 2.1.10 Data
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391
+///  See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename(deserialize = "0x4200C2"))]
 #[serde(rename(serialize = "Transparent:0x4200C2"))]
 pub struct Data(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
-// KMIP spec 1.2 section 2.1.11 Data Length
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467
+///  See KMIP 1.2 section 2.1.11 [Data Length](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467).
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200C4")]
 pub struct DataLength(pub i32);
 
-// KMIP spec 1.0 section 3.1 Unique Identifier
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482
+///  See KMIP 1.0 section 3.1 [Unique Identifier](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420094")]
 pub struct UniqueIdentifier(pub String);
@@ -374,8 +361,7 @@ impl std::cmp::PartialEq<str> for UniqueIdentifier {
     }
 }
 
-// KMIP spec 1.0 section 3.2 Name
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174
+///  See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420055")]
 pub struct NameValue(pub String);
@@ -386,13 +372,12 @@ impl std::fmt::Display for NameValue {
     }
 }
 
-// KMIP spec 1.0 section 3.3 Object Type
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175
+///  See KMIP 1.0 section 3.3 [Object Type](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420057")]
 #[non_exhaustive]
 pub enum ObjectType {
-    // KMIP spec 1.0 and 1.1 variants
+    // KMIP 1.0 and 1.1 variants
     #[serde(rename = "0x00000001")]
     Certificate,
 
@@ -417,13 +402,12 @@ pub enum ObjectType {
     #[serde(rename = "0x00000008")]
     OpaqueObject,
 
-    // KMIP spec 1.2 variants
+    // KMIP 1.2 variants
     #[serde(rename = "0x00000009")]
     PGPKey,
 }
 
-// KMIP spec 1.0 section 3.4 Cryptographic Algorithm Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176
+///  See KMIP 1.0 section 3.4 [Cryptographic Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420028")]
 #[non_exhaustive]
@@ -442,14 +426,12 @@ pub enum CryptographicAlgorithm {
     RSA,
 }
 
-// KMIP spec 1.0 section 3.5 Cryptographic Length
-// See: htts://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177
+///  See KMIP 1.0 section 3.5 [Cryptographic Length](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42002A")]
 pub struct CryptographicLength(pub i32);
 
-// KMIP spec 1.0 section 3.6 Cryptographic Parameters
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487
+///  See KMIP 1.0 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42002B")]
 #[rustfmt::skip]
@@ -582,36 +564,42 @@ impl From<CryptographicParameters> for AttributeValue {
     }
 }
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200C5")]
 pub struct RandomIV(pub bool);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CD")]
 pub struct IVLength(pub i32);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CE")]
 pub struct TagLength(pub i32);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CF")]
 pub struct FixedFieldLength(pub i32);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D2")]
 pub struct InvocationFieldLength(pub i32);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D0")]
 pub struct CounterLength(pub i32);
 
+///  See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D1")]
 pub struct InitialCounterValue(pub i32);
 
-// KMIP spec 1.0 section 3.14 Cryptographic Usage Mask
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188
+///  See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
 // Note: This enum value is stored in a u32 but is serialized as an i32.
 #[repr(u32)]
 #[derive(EnumFlags, Clone, Copy, Deserialize, Serialize, Display, PartialEq, Eq)]
@@ -640,38 +628,32 @@ pub enum CryptographicUsageMask {
     TranslateUnwrap                 = 0x00080000,
 }
 
-// KMIP spec 1.0 section 3.24 Compromise Occurrence Date
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198
+///  See KMIP 1.0 section 3.24 [Compromise Occurrence Date](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198).
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420021")]
 pub struct CompromiseOccurrenceDate(pub u64);
 
-// KMIP spec 1.0 section 3.26 Revocation Reason
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200
+///  See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420080")]
 pub struct RevocationMessage(pub String);
 
-// KMIP spec 1.0 section 3.29 Linked Object Identifier
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203
+///  See KMIP 1.0 section 3.29 [Linked Object Identifier](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
 
-// KMIP spec 1.0 section 3.30 Application Namespace
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204
+///  See KMIP 1.0 section 3.30 [Application Namespace](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420003")]
 pub struct ApplicationNamespace(pub String);
 
-// KMIP spec 1.0 section 3.30 Application Data
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204
+///  See KMIP 1.0 section 3.30 [Application Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420002")]
 pub struct ApplicationData(pub String);
 
-// KMIP spec 1.0 section 6.4 Unique Batch Item ID
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242
+///  See KMIP 1.0 section 6.4 [Unique Batch Item ID](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename(serialize = "Transparent:0x420093"))]
 pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
@@ -682,8 +664,7 @@ impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
     }
 }
 
-// KMIP spec 1.0 section 9.1.3.2.2 Key Compression Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856
+///  See KMIP 1.0 section 9.1.3.2.2 [Key Compression Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420041")]
 #[non_exhaustive]
@@ -701,8 +682,7 @@ pub enum KeyCompressionType {
     ECPUblicKeyTypeX962Hybrid,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.3 Key Format Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241992670
+///  See KMIP 1.0 section 9.1.3.2.3 [Key Format Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241992670).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420042")]
 #[non_exhaustive]
@@ -765,8 +745,7 @@ pub enum KeyFormatType {
     TransparentECMQVPublicKey,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.6 Certificate Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296
+///  See KMIP 1.0 section 9.1.3.2.6 [Certificate Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42001D")]
 #[non_exhaustive]
@@ -778,8 +757,7 @@ pub enum CertificateType {
     PGP,
 }
 
-// KMIP spec 1.2 section 9.1.3.2.7 Digital Signature Algorithm Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Ref306812211
+///  See KMIP 1.2 section 9.1.3.2.7 [Digital Signature Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Ref306812211).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x4200AE")]
 #[non_exhaustive]
@@ -834,8 +812,7 @@ pub enum DigitalSignatureAlgorithm {
     ECDSAWithSHA512,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.10 Name Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060
+///  See KMIP 1.0 section 9.1.3.2.10 [Name Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420054")]
 #[non_exhaustive]
@@ -847,8 +824,7 @@ pub enum NameType {
     URI,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.13 Block Cipher Mode Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497881
+///  See KMIP 1.0 section 9.1.3.2.13 [Block Cipher Mode Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497881).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420011")]
 #[non_exhaustive]
@@ -906,8 +882,7 @@ pub enum BlockCipherMode {
     X9_102_AKW2,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.14 Padding Method Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497882
+///  See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497882).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42005F")]
 #[non_exhaustive]
@@ -944,8 +919,7 @@ pub enum PaddingMethod {
     PSS,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.15 Hashing Algorithm Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883
+///  See KMIP 1.0 section 9.1.3.2.15 [Hashing Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420038")]
 #[non_exhaustive]
@@ -985,8 +959,7 @@ pub enum HashingAlgorithm {
     Whirlpool,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.15 Key Role TypeEnumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497884
+///  See KMIP 1.0 section 9.1.3.2.15 [Key Role Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497884).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420083")]
 #[non_exhaustive]
@@ -1056,8 +1029,7 @@ pub enum KeyRoleType {
     PVKOTH,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.17 State
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582066
+///  See KMIP 1.0 section 9.1.3.2.17 [State Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582066).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42008D")]
 #[non_exhaustive]
@@ -1081,8 +1053,7 @@ pub enum State {
     DestroyedCompromised,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.18 Revocation Reason Code
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241996204
+///  See KMIP 1.0 section 9.1.3.2.18 [Revocation Reason Code Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241996204).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420082")]
 #[non_exhaustive]
@@ -1109,8 +1080,7 @@ pub enum RevocationReasonCode {
     PrivilegeWithdrawn,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.19 Link Type Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069
+///  See KMIP 1.0 section 9.1.3.2.19 [Link Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42004B")]
 #[non_exhaustive]
@@ -1137,13 +1107,12 @@ pub enum LinkType {
     ReplacedObjectLink,
 }
 
-// KMIP spec 1.0 section 9.1.3.2.26 Operation Enumeration
-// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582076
+///  See KMIP 1.0 section 9.1.3.2.26 [Operation Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582076).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
 pub enum Operation {
-    // KMIP spec 1.0 operations
+    // KMIP 1.0 operations
     #[serde(rename = "0x00000001")]
     Create = 1,
 
@@ -1228,14 +1197,14 @@ pub enum Operation {
     #[serde(rename = "0x0000001C")]
     Put,
 
-    // KMIP spec 1.1 operations
+    // KMIP 1.1 operations
     #[serde(rename = "0x0000001D")]
     RekeyKeyPair,
 
     #[serde(rename = "0x0000001E")]
     DiscoverVersions,
 
-    // KMIP spec 1.2 operations
+    // KMIP 1.2 operations
     #[serde(rename = "0x0000001F")]
     Encrypt,
 

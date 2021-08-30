@@ -1,3 +1,5 @@
+//! Support for KMIP username and password authentication.
+
 use crate::types::request::{self, Authentication, Credential, CredentialValue, Password, Username};
 
 #[derive(Debug)]

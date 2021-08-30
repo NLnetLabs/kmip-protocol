@@ -1,3 +1,5 @@
+//! Deserialiation of KMIP responses.
+
 use serde::Deserialize;
 
 use kmip_ttlv::error::Result;

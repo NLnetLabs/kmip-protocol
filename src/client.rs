@@ -1,3 +1,5 @@
+//! A high level KMIP "operation" oriented client interface for request/response construction & (de)serialization.
+
 use std::{
     io::{Read, Write},
     ops::Deref,
@@ -11,6 +13,7 @@ use crate::{
     types::{common::*, request, request::*, response::*},
 };
 
+/// Use this builder to construct a [Client] struct.
 #[derive(Debug)]
 pub struct ClientBuilder<T: Read + Write> {
     username: Option<String>,
@@ -20,6 +23,15 @@ pub struct ClientBuilder<T: Read + Write> {
 }
 
 impl<T: Read + Write> ClientBuilder<T> {
+    /// Build a [Client] struct that will read/write from/to the given stream.
+    ///
+    /// Creates a [ClientBuilder] which can be used to create a [Client] which will read/write from/to the given
+    /// stream. The stream is expected to be a type which can read from and write to an established TCP connection to
+    /// the KMIP server. In production the stream should also perform TLS de/encryption on the data read from/written
+    /// to the stream.
+    ///
+    /// The `stream` argument must implement the [std::io::Read] and [std::io::Write] traits which the [Client] will
+    /// use to read/write from/to the stream.
     pub fn new(stream: T) -> Self {
         Self {
             username: None,
@@ -29,17 +41,20 @@ impl<T: Read + Write> ClientBuilder<T> {
         }
     }
 
+    /// Configure the [Client] to do include username/password authentication credentials in KMIP requests.
     pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
         self.username = Some(username);
         self.password = password;
         self
     }
 
+    /// Configure the [Client] to use the given reader [Config].
     pub fn with_reader_config(mut self, reader_config: Config) -> Self {
         self.reader_config = reader_config;
         self
     }
 
+    /// Build the configured [Client] struct instance.
     pub fn build(self) -> Client<T> {
         Client {
             username: self.username,
@@ -50,6 +65,7 @@ impl<T: Read + Write> ClientBuilder<T> {
     }
 }
 
+/// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 #[derive(Debug)]
 pub struct Client<T: Read + Write> {
     username: Option<String>,
@@ -58,6 +74,7 @@ pub struct Client<T: Read + Write> {
     reader_config: Config,
 }
 
+/// TODO: Enrich me.
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum Error {
@@ -77,6 +94,21 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
+    /// Serialize the given request to the stream and deserialize the response.
+    ///
+    /// Automatically constructs the request message wrapper around the payload including the [RequestHeader] and
+    /// [BatchItem].
+    ///
+    /// Only supports a single batch item.
+    ///
+    /// Sets the request operation to [RequestPayload::operation()].
+    ///
+    /// # Errors
+    ///
+    /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
+    /// the response or if the response does not indicate operation success or contains more than one batch item.
+    ///
+    /// Currently always returns [Error::Unknown] even though richer cause information is available.
     pub fn do_request(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
         let operation = payload.operation();
 
@@ -106,6 +138,9 @@ impl<T: Read + Write> Client<T> {
         Err(Error::Unknown)
     }
 
+    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
+    ///
+    /// See also: [do_request()](Self::do_request())
     pub fn query(&mut self) -> Result<QueryResponsePayload> {
         // Setup the request
         let wanted_info = vec![
@@ -126,7 +161,14 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
-    // Returns the private and public unique key identifiers.
+    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
+    /// Creates an RSA key pair.
+    ///
+    /// To create keys of other types or with other parameters you must compose the Create Key Pair request manually
+    /// and pass it to [do_request()](Self::do_request()) directly.
     pub fn create_rsa_key_pair(
         &mut self,
         key_length: i32,
@@ -163,6 +205,11 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
+    /// Serialize a KMIP 1.2 [Rng Retrieve](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562)
+    /// operation to retrieve a number of random bytes.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
     pub fn rng_retrieve(&mut self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
@@ -177,8 +224,11 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
-    // Takes the bytes to sign and the id of the private key to sign them with.
-    // Returns the signed bytes.
+    /// Serialize a KMIP 1.2 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558)
+    /// operation to sign the given bytes with the given private key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
     pub fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
@@ -202,6 +252,13 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
+    /// Serialize a KMIP 1.0 [Activate](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226)
+    /// operation to activate a given private key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
+    /// To activate other kinds of managed object you must compose the Activate request manually and pass it to
+    /// [do_request()](Self::do_request()) directly.
     pub fn activate_key(&mut self, private_key_id: &str) -> Result<()> {
         let request = RequestPayload::Activate(Some(UniqueIdentifier(private_key_id.to_owned())));
 
@@ -216,6 +273,13 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
+    /// Serialize a KMIP 1.0 [Revoke](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227)
+    /// operation to deactivate a given private key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
+    /// To deactivate other kinds of managed object you must compose the Revoke request manually and pass it to
+    /// [do_request()](Self::do_request()) directly.
     pub fn revoke_key(&mut self, private_key_id: &str) -> Result<()> {
         let request = RequestPayload::Revoke(
             Some(UniqueIdentifier(private_key_id.to_owned())),
@@ -237,6 +301,13 @@ impl<T: Read + Write> Client<T> {
         }
     }
 
+    /// Serialize a KMIP 1.0 [Destroy](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228)
+    /// operation to destroy a given private key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
+    /// To destroy other kinds of managed object you must compose the Destroy request manually and pass it to
+    /// [do_request()](Self::do_request()) directly.
     pub fn destroy_key(&mut self, key_id: &str) -> Result<()> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
@@ -313,7 +384,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).configure();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client.query().unwrap();
 
@@ -335,7 +406,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).configure();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client
             .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -361,7 +432,7 @@ mod test {
 
         let mut client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-            .configure();
+            .build();
 
         let response_payload = client.query().unwrap();
 
@@ -505,7 +576,7 @@ mod test {
 
         let mut client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-            .configure();
+            .build();
 
         let response_payload = client.query().unwrap();
 
@@ -529,7 +600,7 @@ mod test {
                 Some(std::env::var("KRYPTUS_PASS").unwrap()),
             )
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-            .configure();
+            .build();
 
         let response_payload = client.query().unwrap();
 
@@ -553,7 +624,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).configure();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let result = client
             .do_request(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
