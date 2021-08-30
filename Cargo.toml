@@ -14,7 +14,7 @@ readme = "README.md"
 [dependencies]
 enum-display-derive = "0.1.1"
 enum-flags = "0.1.6"
-kmip-ttlv = "0.1.1"
+kmip-ttlv = "0.1.2"
 serde = "1.0.126"
 serde_derive = "1.0.126"
 serde_bytes = "0.11.5"

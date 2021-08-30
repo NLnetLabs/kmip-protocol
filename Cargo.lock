@@ -182,7 +182,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kmip"
+name = "kmip-protocol"
 version = "0.1.0"
 dependencies = [
  "enum-display-derive",
@@ -204,12 +204,13 @@ dependencies = [
 
 [[package]]
 name = "kmip-ttlv"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce13b6c07c81b0baf1c86feaeecfc67e2a77ae24802d2e078971fea821c4ad41"
+checksum = "271ccf2f8e6c377f652f58bde3c8869b94ae083271ec3a3eefa403e06d8ba2e5"
 dependencies = [
  "hex",
  "log",
+ "rustc_version",
  "serde",
 ]
 
@@ -371,6 +372,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "rustls"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -401,6 +411,21 @@ dependencies = [
  "ring",
  "untrusted",
 ]
+
+[[package]]
+name = "semver"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
+dependencies = [
+ "semver-parser",
+]
+
+[[package]]
+name = "semver-parser"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
