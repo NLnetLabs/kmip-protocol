@@ -10,6 +10,7 @@ keywords = ["KMIP", "TTLV", "serde", "serialization"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
 exclude = ["/.github"]
 readme = "README.md"
+build = "build.rs"
 
 [dependencies]
 enum-display-derive = "0.1.1"
@@ -18,6 +19,9 @@ kmip-ttlv = "0.1.2"
 serde = "1.0.126"
 serde_derive = "1.0.126"
 serde_bytes = "0.11.5"
+
+[build-dependencies]
+rustc_version   = "0.2.3"
 
 [dev-dependencies]
 hex = "0.4.3"

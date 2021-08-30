@@ -192,6 +192,7 @@ dependencies = [
  "log",
  "openssl",
  "pretty_assertions",
+ "rustc_version",
  "rustls",
  "rustls-pemfile",
  "serde",

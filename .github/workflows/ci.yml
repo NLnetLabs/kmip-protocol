@@ -11,9 +11,13 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        # Test against Rust 1.47.0 because in build.rs we say that is the oldest supported version.
+        # Test against beta Rust to get early warning of any problems that might occur with the upcoming Rust release.
+        # Order: oldest Rust to newest Rust.
+        rust: [1.47.0, stable, beta]
     steps:
     - uses: actions/checkout@v2
     - name: Build
