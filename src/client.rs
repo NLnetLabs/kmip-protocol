@@ -40,7 +40,7 @@ impl<T: Read + Write> ClientBuilder<T> {
         self
     }
 
-    pub fn configure(self) -> Client<T> {
+    pub fn build(self) -> Client<T> {
         Client {
             username: self.username,
             password: self.password,

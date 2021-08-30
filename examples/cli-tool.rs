@@ -106,7 +106,7 @@ fn create_kmip_client<'a>(
     if let Some(username) = opt.username {
         client = client.with_credentials(username, password);
     }
-    client.configure()
+    client.build()
 }
 
 fn create_tls_client(opt: &Opt) -> SslConnector {
