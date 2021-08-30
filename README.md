@@ -34,11 +34,9 @@ may be promoted to optional functionality offered by the crate behind a feature 
 ### Status
 
 This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface
-stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be
-depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with
-[PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/kmip-protocol/issues/14)) and
-[Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/kmip-protocol/issues/15))
-appears to work as expected.
+stability is made at this time. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/)
+([results](https://github.com/NLnetLabs/kmip-protocol/issues/14)) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/)
+([results](https://github.com/NLnetLabs/kmip-protocol/issues/15)) appears to work as expected.
 
 ### Example Code
 
