@@ -9,7 +9,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! kmip = "0.1.0"
+//! kmip-protocol = "0.1.0"
 //! ```
 //!
 //! # Usage

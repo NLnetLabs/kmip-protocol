@@ -1,6 +1,6 @@
 use std::{net::TcpStream, path::PathBuf};
 
-use kmip::{Client, ClientBuilder};
+use kmip_protocol::{Client, ClientBuilder};
 use log::{error, info};
 use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslStream, SslVerifyMode};
 use stderrlog::Timestamp;
@@ -46,7 +46,7 @@ fn main() {
 
     stderrlog::new()
         .module(module_path!())
-        .module("kmip")
+        .module("kmip_protocol")
         .module("kmip_ttlv")
         .quiet(opt.quiet)
         .verbosity(opt.verbose + 2) // show INFO level logging by default, use -q to silence this

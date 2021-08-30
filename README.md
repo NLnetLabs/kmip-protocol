@@ -1,6 +1,6 @@
 [![CI](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml)
 
-# kmip - A client library for the KMIP protocol
+# kmip-protocol - A library for (de)serializing KMIP protocol objects
 
 [KMIP](https://docs.oasis-open.org/kmip/spec/v1.0/kmip-spec-1.0.html):
 > The OASIS Key Management Interoperability Protocol specifications which define message formats for the manipulation of cryptographic material on a key management server.
@@ -15,7 +15,12 @@ This crate is one of potentially several crates that will be implemented to add 
 
 ### Status
 
-This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with [PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/kmip/issues/14)) and [Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/kmip/issues/15)) appears to work as expected.
+This is a work-in-progress. The interface offered by this library is expected to change and no guarantee of interface
+stability is made at this time. The intention is publish this crate in the near future to https://crates.io/ to be
+depended on by Krill like any other Rust crate dependency. At the time of writing limited manual testing with
+[PyKMIP](https://pykmip.readthedocs.io/) ([results](https://github.com/NLnetLabs/kmip-protocol/issues/14)) and
+[Kryptus HSM](https://kryptus.com/en/cloud-hsm/) ([results](https://github.com/NLnetLabs/kmip-protocol/issues/15))
+appears to work as expected.
 
 ### Example Code
 
@@ -75,7 +80,9 @@ _Note: Supported operations may lack support for some attribute or managed objec
 
 Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to XML based.
 
-The subset of the TTLV/hex format test cases that this crate [demonstrates compliance with](https://github.com/NLnetLabs/kmip/tree/main/src/tests) are represented below by ticked boxes:
+The subset of the TTLV/hex format test cases that this crate
+[demonstrates compliance with](https://github.com/NLnetLabs/kmip-protocol/tree/main/src/tests) are represented below by
+ticked boxes:
 
 **KMIP Use Cases [v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html)/[v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
 
