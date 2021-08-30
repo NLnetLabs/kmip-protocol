@@ -39,7 +39,7 @@ _Note: Supported operations may lack support for some attribute or managed objec
 | 1.0 | Derive Key           |  |
 | 1.0 | Certify              |  |
 | 1.0 | Re-certify           |  |
-| 1.0 | Locate               | :heavy_check_mark: _(lacks Maximum Items and Storate Status Mask support)_ |
+| 1.0 | Locate               | :heavy_check_mark: _(lacks Maximum Items and Storage Status Mask support)_ |
 | 1.0 | Check                |  |
 | 1.0 | Get                  | :heavy_check_mark: _(lacks Key Wrapping Specification, TransparentXXX, SplitKey, Template, SecretData and OpaqueObject support)_ |
 | 1.0 | Get Attributes       | :heavy_check_mark: _(lacks Big Integer and Interval support)_ |
