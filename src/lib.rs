@@ -63,11 +63,11 @@
 //!     panic!("Expected query response!");
 //! }
 //! ```
-//! 
+//!
 //! # KMIP Operations Supported
-//! 
+//!
 //! _Note: Supported operations may lack support for some attribute or managed object types. Vendor specific extensions are ignored._
-//! 
+//!
 //! | KMIP Version | Operation | Support |
 //! |---|---|---|
 //! | 1.0 | Create               | &check; |
@@ -109,21 +109,21 @@
 //! | 1.2 | Hash                 |  |
 //! | 1.2 | Create Split Key     |  |
 //! | 1.2 | Join Split Key       |  |
-//! 
+//!
 //! # KMIP Use/Test Case Coverage
-//! 
+//!
 //! Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP
 //! 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is
 //! broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal
 //! representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to
 //! XML based.
-//! 
+//!
 //! The subset of the TTLV/hex format test cases that this crate
 //! [demonstrates compliance with](https://github.com/NLnetLabs/kmip-protocol/tree/main/src/tests) are represented below by
 //! ticked boxes:
-//! 
+//!
 //! **KMIP Use Cases [v1.0](https://docs.oasis-open.org/kmip/usecases/v1.0/cs01/kmip-usecases-1.0-cs-01.html)/[v1.1](https://docs.oasis-open.org/kmip/testcases/v1.1/kmip-testcases-v1.1.html):**
-//! 
+//!
 //! - 3 Centralized Management
 //!   - 3.1 Basic Functionality
 //!     - [ ] 3.1.1 Use-case: Create / Destroy
@@ -177,9 +177,9 @@
 //! - 18     Digest _(Added in KMIP v1.1)_
 //!   - [ ] 18.1 Test Case: Digests of Symmetric Keys
 //!   - [ ] 18.2 Test Case: Digests of RSA Private Keys
-//! 
+//!
 //! **Other (partially) implemented KMIP test cases:**
-//! 
+//!
 //! - [Advanced Cryptographic Mandatory Test Cases KMIP v1.3 5.9.8.1 CS-AC-M-1-13](https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml) _(steps 1 & 2 only for sign operation test)_
 //! - [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
 pub mod auth;
