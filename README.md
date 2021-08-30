@@ -1,17 +1,31 @@
-[![CI](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/kmip/actions/workflows/ci.yml)
+[![CI](https://github.com/NLnetLabs/kmip-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/kmip-protocol/actions/workflows/ci.yml)
 
 # kmip-protocol - A library for (de)serializing KMIP protocol objects
 
 [KMIP](https://docs.oasis-open.org/kmip/spec/v1.0/kmip-spec-1.0.html):
-> The OASIS Key Management Interoperability Protocol specifications which define message formats for the manipulation of cryptographic material on a key management server.
+> The OASIS Key Management Interoperability Protocol specifications which define message formats for the manipulation
+> of cryptographic material on a key management server.
 
 ### Welcome
 
-This crate offers a **partial implementation** of (de)serialization of KMIP v1.0-1.2 protocol messages for use primarily by the [Krill](https://nlnetlabs.nl/projects/rpki/krill/) project.
+This crate offers a **partial implementation** of (de)serialization of KMIP v1.0-1.2 protocol messages for use
+primarily by the [Krill](https://nlnetlabs.nl/projects/rpki/krill/) project. The interface offered is based on the
+popular Rust [Serde](https://serde.rs/) (de)serialization framework for decorating arbitrary high level Rust "business 
+object" structs with attributes that guide the (de)serialization process.
 
 ### Scope
 
-This crate is one of potentially several crates that will be implemented to add the ability to Krill to interact with KMIP compliant servers. The current thinking is that the work consists of separate chunks for TTLV (de)serialization, KMIP business object definitions, client request/response API and the TCP+TLS client.
+This crate consists of:
+  - Many Serde attributed Rust type definitions that represent KMIP request and response business objects.
+  - A `Client` struct that uses the `kmip-ttlv` crate to serialize entire KMIP requests (composed from business object
+    types) to a writer and deserialize the responses from a reader.
+
+The "operations" supported by the `Client` (such as create key, sign data, etc.) is a work in progress and reflects
+the needs of the [Krill](https://nlnetlabs.nl/projects/rpki/krill/) project.
+
+This crate is one of potentially several crates that will be implemented to add the ability to Krill to interact with
+KMIP compliant servers. This crate includes an example demonstrating how to connect over TCP+TLS to a KMIP server. This
+may be promoted to optional functionality offered by the crate behind a feature flag.
 
 ### Status
 
@@ -78,7 +92,11 @@ _Note: Supported operations may lack support for some attribute or managed objec
 
 ### KMIP Use/Test Case Coverage
 
-Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to XML based.
+Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP
+1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is
+broken down into its constituent TTLV parts with the matching numeric values and an accompanying hexadecimal
+representation of the serialized form. From v1.2 onwards the test case representation was changed from TTLV/hex based to
+XML based.
 
 The subset of the TTLV/hex format test cases that this crate
 [demonstrates compliance with](https://github.com/NLnetLabs/kmip-protocol/tree/main/src/tests) are represented below by
@@ -144,4 +162,3 @@ ticked boxes:
 
 - [Advanced Cryptographic Mandatory Test Cases KMIP v1.3 5.9.8.1 CS-AC-M-1-13](https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml) _(steps 1 & 2 only for sign operation test)_
 - [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
-****
