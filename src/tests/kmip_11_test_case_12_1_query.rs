@@ -215,7 +215,7 @@ fn kmip_1_1_testcase_time_1_query_operation_succeeded_response() {
             payload.vendor_identification,
             Some("IBM test server, not-TKLM 2.0.1.1 KMIP 2.0.0.1".into())
         );
-        assert!(payload.server_information.is_some());
+        assert!(payload.server_information.is_none());
     } else {
         panic!("Wrong payload");
     }

@@ -15,7 +15,7 @@ build = "build.rs"
 [dependencies]
 enum-display-derive = "0.1.1"
 enum-flags = "0.1.6"
-kmip-ttlv = "0.1.2"
+kmip-ttlv = { git = "https://github.com/NLnetLabs/kmip-ttlv", branch = "main", version = "0.1.3-dev" }
 serde = "1.0.126"
 serde_derive = "1.0.126"
 serde_bytes = "0.11.5"
