@@ -1,4 +1,5 @@
 use std::{
+    fs::OpenOptions,
     net::{TcpStream, ToSocketAddrs},
     path::PathBuf,
     time::Duration,
@@ -9,6 +10,8 @@ use log::{error, info};
 use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslStream, SslVerifyMode};
 use stderrlog::Timestamp;
 use structopt::StructOpt;
+
+const SSLKEYLOGFILE_ENV_VAR_NAME: &'static str = "SSLKEYLOGFILE";
 
 /// A StructOpt example
 #[derive(StructOpt, Debug)]
@@ -189,6 +192,16 @@ fn create_tls_client(opt: &Opt) -> Result<SslConnector, openssl::error::ErrorSta
     }
     if let Some(path) = &opt.client_key_path {
         connector.set_private_key_file(path, SslFiletype::PEM)?;
+    }
+    if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
+        connector.set_keylog_callback(|_, line| {
+            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
+                if let Ok(mut file) = OpenOptions::new().write(true).append(true).open(path) {
+                    use std::io::Write;
+                    writeln!(file, "{}", line).ok();
+                }
+            }
+        });
     }
     Ok(connector.build())
 }
