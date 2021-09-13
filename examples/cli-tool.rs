@@ -1,4 +1,8 @@
-use std::{net::TcpStream, path::PathBuf};
+use std::{
+    net::{TcpStream, ToSocketAddrs},
+    path::PathBuf,
+    time::Duration,
+};
 
 use kmip_protocol::{Client, ClientBuilder};
 use log::{error, info};
@@ -39,9 +43,19 @@ struct Opt {
 
     #[structopt(short = "k", long = "client-key", parse(from_os_str), help = "Path to the client certifcate key file in PEM format")]
     client_key_path: Option<PathBuf>,
+
+    /// TCP timeouts
+    #[structopt(long = "connect-timeout", default_value = "2")]
+    connect_timeout: u64,
+
+    #[structopt(long = "read-timeout", default_value = "2")]
+    read_timeout: u64,
+
+    #[structopt(long = "write-timeout", default_value = "2")]
+    write_timeout: u64,
 }
 
-fn main() {
+fn main() -> kmip_protocol::client::Result<()> {
     let opt = Opt::from_args();
 
     stderrlog::new()
@@ -52,49 +66,104 @@ fn main() {
         .verbosity(opt.verbose + 2) // show INFO level logging by default, use -q to silence this
         .timestamp(Timestamp::Second)
         .init()
-        .unwrap();
+        .expect("Failed to initialize logging");
+
+    let addr = format!("{}:{}", opt.host, opt.port)
+        .to_socket_addrs()
+        .expect("Error parsing host and port")
+        .next()
+        .expect("Internal error fetching parsed host and port from iterator");
 
     let password = std::env::var("HSM_PASSWORD").ok();
-    let tls_client = create_tls_client(&opt);
-    let tcp_stream = TcpStream::connect(format!("{}:{}", opt.host, opt.port)).unwrap();
-    let tls_stream = tls_client.connect(&opt.host, tcp_stream).unwrap();
+
+    info!("Establishing TLS connection to server..");
+
+    let tcp_stream = TcpStream::connect_timeout(&addr, Duration::new(opt.connect_timeout, 0))
+        .expect("Failed to connect to host with timeout");
+    tcp_stream
+        .set_read_timeout(Some(Duration::new(opt.read_timeout, 0)))
+        .expect("Failed to set read timeout on TCP connection");
+    tcp_stream
+        .set_write_timeout(Some(Duration::new(opt.write_timeout, 0)))
+        .expect("Failed to set write timeout on TCP connection");
+
+    let tls_client = create_tls_client(&opt).expect("Failed to create TLS client");
+
+    let tls_stream = tls_client
+        .connect(&opt.host, tcp_stream)
+        .expect("Failed to establish TLS connection");
+
     let mut client = create_kmip_client(tls_stream, opt, password);
 
     info!("Querying server properties..");
-    info!("{:?}", client.query().unwrap());
+    let server_props = client.query()?;
+    info!(
+        "Server identification: {}",
+        server_props.vendor_identification.unwrap_or("Not available".into())
+    );
+    info!(
+        "Server supported operations: {}",
+        server_props
+            .operations
+            .unwrap_or(Vec::new())
+            .iter()
+            .map(|op| op.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
+    info!(
+        "Server supported object types: {}",
+        server_props
+            .object_types
+            .unwrap_or(Vec::new())
+            .iter()
+            .map(|obj_typ| obj_typ.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
 
-    if let Ok((private_key_id, public_key_id)) =
-        client.create_rsa_key_pair(2048, "my_private_key".into(), "my_public_key".into())
-    {
-        info!("Created key pair:");
-        info!("  Private key ID: {}", private_key_id);
-        info!("  Public key ID : {}", public_key_id);
+    info!("Creating RSA key pair");
+    match client.create_rsa_key_pair(2048, "my_private_key".into(), "my_public_key".into()) {
+        Err(err) => error!("{}", err),
+        Ok((private_key_id, public_key_id)) => {
+            info!("Created key pair:");
+            info!("  Private key ID: {}", private_key_id);
+            info!("  Public key ID : {}", public_key_id);
 
-        info!("Activating private key..");
-        if client.activate_key(&private_key_id).is_ok() {
-            info!("Signing with private key..");
-            if let Ok(payload) = client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]) {
-                info!("{}", hex::encode_upper(payload.signature_data));
-            } else {
-                error!("Signing failed");
+            info!("Activating private key..");
+            match client.activate_key(&private_key_id) {
+                Err(err) => error!("{}", err),
+                Ok(()) => {
+                    info!("Signing with private key..");
+                    match client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]) {
+                        Err(err) => error!("{}", err),
+                        Ok(payload) => info!("{}", hex::encode_upper(payload.signature_data)),
+                    }
+
+                    info!("Revoking private key..");
+                    client.revoke_key(&private_key_id).ok();
+                }
             }
-            info!("Revoking private key..");
-            client.revoke_key(&private_key_id).ok();
+
+            info!("Deleting public key..");
+            if let Err(err) = client.destroy_key(&public_key_id) {
+                error!("{}", err);
+            }
+
+            info!("Deleting private key..");
+            if let Err(err) = client.destroy_key(&private_key_id) {
+                error!("{}", err);
+            }
         }
-
-        info!("Deleting public key..");
-        client.destroy_key(&public_key_id).ok();
-
-        info!("Deleting private key..");
-        client.destroy_key(&private_key_id).ok();
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(payload) = client.rng_retrieve(32) {
-        info!("{}", hex::encode_upper(payload.data));
-    } else {
-        error!("Request for 32 random bytes failed");
+    match client.rng_retrieve(32) {
+        Err(err) => error!("{}", err),
+        Ok(payload) => info!("{}", hex::encode_upper(payload.data)),
     }
+
+    Ok(())
 }
 
 fn create_kmip_client<'a>(
@@ -109,17 +178,17 @@ fn create_kmip_client<'a>(
     client.build()
 }
 
-fn create_tls_client(opt: &Opt) -> SslConnector {
-    let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
+fn create_tls_client(opt: &Opt) -> Result<SslConnector, openssl::error::ErrorStack> {
+    let mut connector = SslConnector::builder(SslMethod::tls())?;
     connector.set_verify(SslVerifyMode::NONE);
     if opt.insecure {
         connector.set_verify(SslVerifyMode::NONE);
     }
     if let Some(path) = &opt.client_cert_path {
-        connector.set_certificate_file(path, SslFiletype::PEM).unwrap();
+        connector.set_certificate_file(path, SslFiletype::PEM)?;
     }
     if let Some(path) = &opt.client_key_path {
-        connector.set_private_key_file(path, SslFiletype::PEM).unwrap();
+        connector.set_private_key_file(path, SslFiletype::PEM)?;
     }
-    connector.build()
+    Ok(connector.build())
 }

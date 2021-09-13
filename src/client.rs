@@ -5,7 +5,7 @@ use std::{
     ops::Deref,
 };
 
-use kmip_ttlv::Config;
+use kmip_ttlv::{error::ErrorKind, Config};
 
 use crate::{
     auth::{self, CredentialType},
@@ -78,7 +78,21 @@ pub struct Client<T: Read + Write> {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum Error {
+    IoError(String),
+    ServerError(String),
+    InternalError(String),
     Unknown,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::IoError(e) => f.write_fmt(format_args!("I/O error: {}", e)),
+            Error::ServerError(e) => f.write_fmt(format_args!("Server error: {}", e)),
+            Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
+            Error::Unknown => f.write_str("Unknown error"),
+        }
+    }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -113,29 +127,63 @@ impl<T: Read + Write> Client<T> {
         let operation = payload.operation();
 
         // Serialize and write the request
-        let req_bytes = to_vec(payload, self.auth()).map_err(|e| {
-            eprintln!("{}", e);
-            Error::Unknown
+        let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
+            ErrorKind::IoError(e) => Error::IoError(e.to_string()),
+            _ => Error::InternalError(err.to_string()),
         })?;
-        self.stream.write_all(&req_bytes).map_err(|_| Error::Unknown)?;
+
+        self.stream
+            .write_all(&req_bytes)
+            .map_err(|e| Error::IoError(e.to_string()))?;
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|e| {
-            eprintln!("Error: {:?}", e);
-            Error::Unknown
-        })?;
-        // TODO: Handle operation failed here.
+        let mut res: ResponseMessage =
+            kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|err| match err.kind() {
+                ErrorKind::IoError(e) => Error::IoError(e.to_string()),
+                ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
+                    Error::ServerError(err.to_string())
+                }
+                _ => Error::InternalError(err.to_string()),
+            })?;
+
         if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
 
-            if item.result_status == ResultStatus::Success && item.operation == Some(operation) {
-                if let Some(payload) = item.payload.take() {
-                    return Ok(payload);
+            match item.result_status {
+                ResultStatus::OperationFailed => Err(Error::ServerError(format!(
+                    "Operation {:?} failed: {}",
+                    operation,
+                    item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                ))),
+                ResultStatus::OperationPending => Err(Error::InternalError(
+                    "Result status operation pending is not supported".into(),
+                )),
+                ResultStatus::OperationUndone => Err(Error::InternalError(
+                    "Result status operation undone is not supported".into(),
+                )),
+                ResultStatus::Success => {
+                    if item.operation == Some(operation) {
+                        if let Some(payload) = item.payload.take() {
+                            Ok(payload)
+                        } else {
+                            Err(Error::InternalError(
+                                "Unable to process response payload due to wrong deserialized type!".into(),
+                            ))
+                        }
+                    } else {
+                        Err(Error::InternalError(format!(
+                            "Response operation {:?} does not match request operation {}",
+                            item.operation, operation
+                        )))
+                    }
                 }
             }
+        } else {
+            Err(Error::ServerError(format!(
+                "Expected one batch item in response but received {}",
+                res.batch_items.len()
+            )))
         }
-
-        Err(Error::Unknown)
     }
 
     /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
