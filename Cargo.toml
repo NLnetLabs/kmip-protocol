@@ -15,7 +15,8 @@ build = "build.rs"
 [dependencies]
 enum-display-derive = "0.1.1"
 enum-flags = "0.1.6"
-kmip-ttlv = "0.2.0"
+kmip-ttlv = "0.3.0"
+log = "0.4.14"
 serde = "1.0.126"
 serde_derive = "1.0.126"
 serde_bytes = "0.11.5"
@@ -37,7 +38,7 @@ webpki = "0.21.4"
 
 # for examples/cli-tool
 log = "0.4.14"
-stderrlog = "0.5.1"
+simple-logging = "2.0.2"
 structopt = "0.3.22"
 
 # [patch.crates-io]

@@ -1,17 +1,54 @@
 //! A high level KMIP "operation" oriented client interface for request/response construction & (de)serialization.
 
 use std::{
+    cell::RefCell,
     io::{Read, Write},
-    ops::Deref,
+    ops::{Deref, DerefMut},
+    sync::{Arc, Mutex, PoisonError},
 };
 
-use kmip_ttlv::{error::ErrorKind, Config};
+use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
+use log::trace;
 
 use crate::{
     auth::{self, CredentialType},
     request::to_vec,
+    tag_map,
     types::{common::*, request, request::*, response::*},
 };
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    SerializeError(String),
+    RequestSendError(String),
+    ResponseReadError(String),
+    DeserializeError(String),
+    ServerError(String),
+    InternalError(String),
+    Unknown(String),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::SerializeError(e) => f.write_fmt(format_args!("Serialize error: {}", e)),
+            Error::RequestSendError(e) => f.write_fmt(format_args!("Request send error: {}", e)),
+            Error::ResponseReadError(e) => f.write_fmt(format_args!("Response read error: {}", e)),
+            Error::DeserializeError(e) => f.write_fmt(format_args!("Deserialize error: {}", e)),
+            Error::ServerError(e) => f.write_fmt(format_args!("Server error: {}", e)),
+            Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
+            Error::Unknown(e) => f.write_fmt(format_args!("Unknown error: {}", e)),
+        }
+    }
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl<T> From<PoisonError<T>> for Error {
+    fn from(err: PoisonError<T>) -> Self {
+        Error::InternalError(err.to_string())
+    }
+}
 
 /// Use this builder to construct a [Client] struct.
 #[derive(Debug)]
@@ -56,11 +93,18 @@ impl<T: Read + Write> ClientBuilder<T> {
 
     /// Build the configured [Client] struct instance.
     pub fn build(self) -> Client<T> {
+        let mut pretty_printer = PrettyPrinter::new();
+        pretty_printer.with_tag_prefix("4200".into());
+        pretty_printer.with_tag_map(tag_map::make_kmip_tag_map());
+
         Client {
             username: self.username,
             password: self.password,
-            stream: self.stream,
+            stream: Arc::new(Mutex::new(self.stream)),
             reader_config: self.reader_config,
+            last_req_diag_str: RefCell::new(None),
+            last_res_diag_str: RefCell::new(None),
+            pretty_printer,
         }
     }
 }
@@ -70,32 +114,26 @@ impl<T: Read + Write> ClientBuilder<T> {
 pub struct Client<T: Read + Write> {
     username: Option<String>,
     password: Option<String>,
-    stream: T,
+    stream: Arc<Mutex<T>>,
     reader_config: Config,
+    last_req_diag_str: RefCell<Option<String>>,
+    last_res_diag_str: RefCell<Option<String>>,
+    pretty_printer: PrettyPrinter,
 }
 
-/// TODO: Enrich me.
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum Error {
-    IoError(String),
-    ServerError(String),
-    InternalError(String),
-    Unknown,
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::IoError(e) => f.write_fmt(format_args!("I/O error: {}", e)),
-            Error::ServerError(e) => f.write_fmt(format_args!("Server error: {}", e)),
-            Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
-            Error::Unknown => f.write_str("Unknown error"),
+impl<T: Read + Write> Clone for Client<T> {
+    fn clone(&self) -> Self {
+        Self {
+            username: self.username.clone(),
+            password: self.password.clone(),
+            stream: self.stream.clone(),
+            reader_config: self.reader_config.clone(),
+            last_req_diag_str: self.last_req_diag_str.clone(),
+            last_res_diag_str: self.last_res_diag_str.clone(),
+            pretty_printer: self.pretty_printer.clone(),
         }
     }
 }
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T: Read + Write> Client<T> {
     fn auth(&self) -> Option<CredentialType> {
@@ -123,73 +161,104 @@ impl<T: Read + Write> Client<T> {
     /// the response or if the response does not indicate operation success or contains more than one batch item.
     ///
     /// Currently always returns [Error::Unknown] even though richer cause information is available.
-    pub fn do_request(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
+    pub fn do_request(&self, payload: RequestPayload) -> Result<ResponsePayload> {
+        fn send_and_receive<T>(
+            operation: Operation,
+            reader_config: &Config,
+            req_bytes: &[u8],
+            stream: Arc<Mutex<T>>,
+        ) -> Result<ResponsePayload>
+        where
+            T: Read + Write,
+        {
+            let mut lock = stream.lock()?;
+            let stream = lock.deref_mut();
+            stream
+                .write_all(req_bytes)
+                .map_err(|e| Error::RequestSendError(e.to_string()))?;
+
+            // Read and deserialize the response
+            let mut res: ResponseMessage =
+                kmip_ttlv::from_reader(stream, reader_config).map_err(|err| match err.kind() {
+                    ErrorKind::IoError(e) => Error::ResponseReadError(e.to_string()),
+                    ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
+                        Error::DeserializeError(err.to_string())
+                    }
+                    _ => Error::InternalError(err.to_string()),
+                })?;
+
+            if res.header.batch_count == 1 && res.batch_items.len() == 1 {
+                let item = &mut res.batch_items[0];
+
+                match item.result_status {
+                    ResultStatus::OperationFailed => Err(Error::ServerError(format!(
+                        "Operation {:?} failed: {}",
+                        operation,
+                        item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                    ))),
+                    ResultStatus::OperationPending => Err(Error::InternalError(
+                        "Result status operation pending is not supported".into(),
+                    )),
+                    ResultStatus::OperationUndone => Err(Error::InternalError(
+                        "Result status operation undone is not supported".into(),
+                    )),
+                    ResultStatus::Success => {
+                        if item.operation == Some(operation) {
+                            if let Some(payload) = item.payload.take() {
+                                Ok(payload)
+                            } else {
+                                Err(Error::InternalError(
+                                    "Unable to process response payload due to wrong deserialized type!".into(),
+                                ))
+                            }
+                        } else {
+                            Err(Error::InternalError(format!(
+                                "Response operation {:?} does not match request operation {}",
+                                item.operation, operation
+                            )))
+                        }
+                    }
+                }
+            } else {
+                Err(Error::ServerError(format!(
+                    "Expected one batch item in response but received {}",
+                    res.batch_items.len()
+                )))
+            }
+        }
+
+        *self.last_req_diag_str.borrow_mut() = None;
+        *self.last_res_diag_str.borrow_mut() = None;
+
         let operation = payload.operation();
 
         // Serialize and write the request
         let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
-            ErrorKind::IoError(e) => Error::IoError(e.to_string()),
+            ErrorKind::IoError(e) => Error::SerializeError(e.to_string()),
             _ => Error::InternalError(err.to_string()),
         })?;
 
-        self.stream
-            .write_all(&req_bytes)
-            .map_err(|e| Error::IoError(e.to_string()))?;
-
-        // Read and deserialize the response
-        let mut res: ResponseMessage =
-            kmip_ttlv::from_reader(&mut self.stream, &self.reader_config).map_err(|err| match err.kind() {
-                ErrorKind::IoError(e) => Error::IoError(e.to_string()),
-                ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
-                    Error::ServerError(err.to_string())
-                }
-                _ => Error::InternalError(err.to_string()),
-            })?;
-
-        if res.header.batch_count == 1 && res.batch_items.len() == 1 {
-            let item = &mut res.batch_items[0];
-
-            match item.result_status {
-                ResultStatus::OperationFailed => Err(Error::ServerError(format!(
-                    "Operation {:?} failed: {}",
-                    operation,
-                    item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                ))),
-                ResultStatus::OperationPending => Err(Error::InternalError(
-                    "Result status operation pending is not supported".into(),
-                )),
-                ResultStatus::OperationUndone => Err(Error::InternalError(
-                    "Result status operation undone is not supported".into(),
-                )),
-                ResultStatus::Success => {
-                    if item.operation == Some(operation) {
-                        if let Some(payload) = item.payload.take() {
-                            Ok(payload)
-                        } else {
-                            Err(Error::InternalError(
-                                "Unable to process response payload due to wrong deserialized type!".into(),
-                            ))
-                        }
-                    } else {
-                        Err(Error::InternalError(format!(
-                            "Response operation {:?} does not match request operation {}",
-                            item.operation, operation
-                        )))
-                    }
-                }
-            }
-        } else {
-            Err(Error::ServerError(format!(
-                "Expected one batch item in response but received {}",
-                res.batch_items.len()
-            )))
+        if self.reader_config.has_buf() {
+            let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
+            trace!("KMIP TTLV request: {}", &diag_str);
+            self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
+
+        let res = send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone());
+
+        if let Some(buf) = self.reader_config.read_buf() {
+            let diag_str = self.pretty_printer.to_diag_string(&buf);
+            trace!("KMIP TTLV response: {}", &diag_str);
+            self.last_res_diag_str.borrow_mut().replace(diag_str);
+        }
+
+        res
     }
 
     /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
     ///
     /// See also: [do_request()](Self::do_request())
-    pub fn query(&mut self) -> Result<QueryResponsePayload> {
+    pub fn query(&self) -> Result<QueryResponsePayload> {
         // Setup the request
         let wanted_info = vec![
             QueryFunction::QueryOperations,
@@ -205,7 +274,10 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::Query(payload) = response {
             Ok(payload)
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected Query response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -218,7 +290,7 @@ impl<T: Read + Write> Client<T> {
     /// To create keys of other types or with other parameters you must compose the Create Key Pair request manually
     /// and pass it to [do_request()](Self::do_request()) directly.
     pub fn create_rsa_key_pair(
-        &mut self,
+        &self,
         key_length: i32,
         private_key_name: String,
         public_key_name: String,
@@ -249,7 +321,10 @@ impl<T: Read + Write> Client<T> {
                 payload.public_key_unique_identifier.deref().clone(),
             ))
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected CreateKeyPair response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -258,7 +333,7 @@ impl<T: Read + Write> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    pub fn rng_retrieve(&mut self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
+    pub fn rng_retrieve(&self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
@@ -268,7 +343,10 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::RNGRetrieve(payload) = response {
             Ok(payload)
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected RngRetrieve response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -277,7 +355,7 @@ impl<T: Read + Write> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    pub fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
+    pub fn sign(&self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             Some(
@@ -296,7 +374,10 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::Sign(payload) = response {
             Ok(payload)
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected Sign response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -307,7 +388,7 @@ impl<T: Read + Write> Client<T> {
     ///
     /// To activate other kinds of managed object you must compose the Activate request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
-    pub fn activate_key(&mut self, private_key_id: &str) -> Result<()> {
+    pub fn activate_key(&self, private_key_id: &str) -> Result<()> {
         let request = RequestPayload::Activate(Some(UniqueIdentifier(private_key_id.to_owned())));
 
         // Execute the request and capture the response
@@ -317,7 +398,10 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::Activate(_) = response {
             Ok(())
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected Activate response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -328,7 +412,7 @@ impl<T: Read + Write> Client<T> {
     ///
     /// To deactivate other kinds of managed object you must compose the Revoke request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
-    pub fn revoke_key(&mut self, private_key_id: &str) -> Result<()> {
+    pub fn revoke_key(&self, private_key_id: &str) -> Result<()> {
         let request = RequestPayload::Revoke(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             RevocationReason(
@@ -345,7 +429,10 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::Revoke(_) = response {
             Ok(())
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected Revoke response payload but got: {:?}",
+                response
+            )))
         }
     }
 
@@ -356,7 +443,7 @@ impl<T: Read + Write> Client<T> {
     ///
     /// To destroy other kinds of managed object you must compose the Destroy request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
-    pub fn destroy_key(&mut self, key_id: &str) -> Result<()> {
+    pub fn destroy_key(&self, key_id: &str) -> Result<()> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
@@ -366,8 +453,21 @@ impl<T: Read + Write> Client<T> {
         if let ResponsePayload::Destroy(_) = response {
             Ok(())
         } else {
-            Err(Error::Unknown)
+            Err(Error::InternalError(format!(
+                "Expected Destroy response payload but got: {:?}",
+                response
+            )))
         }
+    }
+
+    /// Get a clone of the client's last req diag str.
+    pub fn last_req_diag_str(&self) -> Option<String> {
+        self.last_req_diag_str.borrow().to_owned()
+    }
+
+    /// Get a clone of the client's last res diag str.
+    pub fn last_res_diag_str(&self) -> Option<String> {
+        self.last_res_diag_str.borrow().to_owned()
     }
 }
 
@@ -432,7 +532,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).build();
+        let client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client.query().unwrap();
 
@@ -454,7 +554,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).build();
+        let client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client
             .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -478,7 +578,7 @@ mod test {
         let stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = connector.connect("localhost", stream).unwrap();
 
-        let mut client = ClientBuilder::new(&mut tls)
+        let client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
             .build();
 
@@ -622,7 +722,7 @@ mod test {
         let mut stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
-        let mut client = ClientBuilder::new(&mut tls)
+        let client = ClientBuilder::new(&mut tls)
             .with_reader_config(Config::default().with_max_bytes(64 * 1024))
             .build();
 
@@ -642,7 +742,7 @@ mod test {
         let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
         let mut tls = connector.connect(&host, stream).unwrap();
 
-        let mut client = ClientBuilder::new(&mut tls)
+        let client = ClientBuilder::new(&mut tls)
             .with_credentials(
                 std::env::var("KRYPTUS_USER").unwrap(),
                 Some(std::env::var("KRYPTUS_PASS").unwrap()),
@@ -672,7 +772,7 @@ mod test {
             response: Cursor::new(response_bytes),
         };
 
-        let mut client = ClientBuilder::new(&mut stream).build();
+        let client = ClientBuilder::new(&mut stream).build();
 
         let result = client
             .do_request(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
