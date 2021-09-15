@@ -36,10 +36,7 @@ rustls = "0.19.1"
 rustls-pemfile = "0.2.1"
 webpki = "0.21.4"
 
-# for examples/cli-tool
+# for examples/demo
 log = "0.4.14"
 simple-logging = "2.0.2"
 structopt = "0.3.22"
-
-# [patch.crates-io]
-# kmip-ttlv = { path = "../krill-kmip-ttlv", version = "0.1.3-dev" }

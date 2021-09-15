@@ -40,8 +40,8 @@ stability is made at this time. At the time of writing limited manual testing wi
 
 ### Example Code
 
-See [`examples/cli-tool.rs`](examples/cli-tool.rs). For more information about running the example see:
+See [`examples/demo/`](examples/demo/). For more information about running the example see:
 
 ```bash
- cargo run --example cli-tool -- --help
+ cargo run --example demo -- --help
 ```

@@ -43,7 +43,7 @@
 //! ```
 //!
 //! For more details on how to create the TLS connection and instantiate the client to use it see the example code in
-//! the repository at `examples/cli-tool.rs` and the test cases in `client.rs`.
+//! the repository at `examples/demo/` and the test cases in `src/client.rs`.
 //!
 //! # Advanced usage
 //!
