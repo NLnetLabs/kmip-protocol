@@ -151,14 +151,6 @@ fn init_logging(opt: &Opt) {
         _ => log::LevelFilter::Info,
     };
     simple_logging::log_to_stderr(level);
-        // .module(module_path!())
-        // .module("kmip_protocol")
-        // .module("kmip_ttlv")
-        // .quiet(opt.quiet)
-        // .verbosity(opt.verbose + 2) // show INFO level logging by default, use -q to silence this
-        // .timestamp(Timestamp::Second)
-        // .init()
-        // .expect("Failed to initialize logging");
 }
 
 fn connect(opt: Opt) -> Client<SslStream<TcpStream>> {
