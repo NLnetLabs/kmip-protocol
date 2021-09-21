@@ -182,15 +182,37 @@
 //!
 //! - [Advanced Cryptographic Mandatory Test Cases KMIP v1.3 5.9.8.1 CS-AC-M-1-13](https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml) _(steps 1 & 2 only for sign operation test)_
 //! - [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
+#![forbid(unsafe_code)]
+
+#[cfg(all(
+    feature = "sync",
+    any(feature = "async-with-async-std", feature = "async-with-tokio")
+))]
+compile_error!("feature \"sync\" cannot be enabled at the same time as either of the \"async-with-async-std\" or \"async-with-tokio\" features");
+
+#[cfg(all(feature = "async-std", not(feature = "async-with-async-std")))]
+compile_error!("do not enable the \"async-std\" feature directly, instead enable the \"async-with-async-std\" feature");
+
+#[cfg(all(feature = "tokio", not(feature = "async-with-tokio")))]
+compile_error!("do not enable the \"tokio\" feature directly, instead enable the \"async-with-tokio\" feature");
+
 pub mod auth;
-pub mod client;
 pub mod request;
 pub mod response;
 pub mod tag_map;
+
+#[cfg(any(
+    feature = "tls-with-async-tls",
+    feature = "tls-with-openssl",
+    feature = "tls-with-tokio-native-tls"
+))]
+pub mod tls;
+
 pub mod types;
 
 #[cfg(test)]
 mod tests;
 
-pub use client::{Client, ClientBuilder};
+mod util;
+
 pub use kmip_ttlv::Config;

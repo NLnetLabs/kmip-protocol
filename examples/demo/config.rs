@@ -2,8 +2,6 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-pub(crate) const SSLKEYLOGFILE_ENV_VAR_NAME: &'static str = "SSLKEYLOGFILE";
-
 /// A StructOpt example
 #[derive(StructOpt, Debug)]
 #[structopt()]
@@ -32,11 +30,20 @@ pub(crate) struct Opt {
     #[structopt(short = "i", long = "insecure", help = "Disable verification of the server certificate")]
     pub(crate) insecure: bool,
 
-    #[structopt(short = "c", long = "client-cert", parse(from_os_str), help = "Path to the client certificate file in PEM format")]
+    #[structopt(long = "client-cert", parse(from_os_str), help = "Path to the client certificate file in PEM format")]
     pub(crate) client_cert_path: Option<PathBuf>,
 
-    #[structopt(short = "k", long = "client-key", parse(from_os_str), help = "Path to the client certifcate key file in PEM format")]
+    #[structopt(long = "client-key", parse(from_os_str), help = "Path to the client certificate key file in PEM format")]
     pub(crate) client_key_path: Option<PathBuf>,
+
+    #[structopt(long = "client-cert-and-key", parse(from_os_str), help = "Path to the client certificate and key file in PKCS#12 format")]
+    pub(crate) client_pkcs12_path: Option<PathBuf>,
+
+    #[structopt(long = "server-cert", parse(from_os_str), help = "Path to the server certificate file in PEM format")]
+    pub(crate) server_cert_path: Option<PathBuf>,
+
+    #[structopt(long = "ca-cert", parse(from_os_str), help = "Path to the CA certificate file in PEM format")]
+    pub(crate) ca_cert_path: Option<PathBuf>,
 
     /// TCP timeouts
     #[structopt(long = "connect-timeout", default_value = "5")]
