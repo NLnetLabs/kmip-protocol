@@ -486,7 +486,9 @@ dependencies = [
 
 [[package]]
 name = "kmip-ttlv"
-version = "0.3.1-dev"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4829d1eaf141b0fd93402d9e219a2453984106931de6e0cdbd8ca02bec58f2bc"
 dependencies = [
  "async-std",
  "cfg-if",

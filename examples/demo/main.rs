@@ -1,3 +1,6 @@
+#[cfg(not(any(feature = "tls-with-openssl", feature = "tls-with-rustls", feature = "tls-with-tokio-native", feature = "tls-with-tokio-rustls", feature = "tls-with-async-tls")))]
+compile_error!("This demo requires one of the tls-with-xxx features to be enabled.");
+
 mod config;
 mod util;
 

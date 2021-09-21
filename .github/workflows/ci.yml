@@ -21,11 +21,11 @@ jobs:
         args: [
           "",
           "--features sync",
-          "--features tls-with-openssl",
-          "--features tls-with-rustls",
+          "--features tls-with-openssl --example demo",
+          "--features tls-with-rustls --example demo",
           "--no-default-features --features sync",
-          "--no-default-features --example demo --features async-with-tokio",
-          "--no-default-features --example demo --features async-with-async-std",
+          "--no-default-features --features async-with-tokio",
+          "--no-default-features --features async-with-async-std",
           "--no-default-features --example demo --features tls-with-openssl",
           "--no-default-features --example demo --features tls-with-rustls",
           "--no-default-features --example demo --features tls-with-tokio-native-tls",
@@ -38,15 +38,5 @@ jobs:
     - name: Build
       run: cargo build ${{ matrix.args }} --locked --verbose
 
-  # Don't run the tests without --tests as it then tries to compile the demo example which only works if the correct
-  # accompanying features are enabled.
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [1.47.0, stable, beta]
-    steps:
-    - uses: actions/checkout@v2
-
     - name: Run tests
-      run: cargo test --tests --locked --verbose
+      run: cargo test ${{ matrix.args }} --locked --verbose
