@@ -1,5 +1,5 @@
 [![CI](https://github.com/NLnetLabs/kmip-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NLnetLabs/kmip-protocol/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/kmip-protocol)](crates.io/crates/kmip-protocol)
+[![Crate](https://img.shields.io/crates/v/kmip-protocol)](https://crates.io/crates/kmip-protocol)
 [![Docs](https://img.shields.io/docsrs/kmip-protocol)](https://docs.rs/kmip-protocol/)
 
 # kmip-protocol - A library for (de)serializing KMIP protocol objects
