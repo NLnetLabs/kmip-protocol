@@ -1,7 +1,7 @@
 #[cfg(not(any(
     feature = "tls-with-openssl",
     feature = "tls-with-rustls",
-    feature = "tls-with-tokio-native",
+    feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
     feature = "tls-with-async-tls"
 )))]
