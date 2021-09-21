@@ -16,10 +16,8 @@ use crate::{
     util::{SelfLoggingError, ToCsvString},
 };
 
-// See: writing a library that can be reused across many runtimes (https://github.com/rust-lang/wg-async-foundations/issues/45)
-
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-rustls"))]
-fn main() -> kmip_protocol::tls::Result<()> {
+fn main() {
     let opt = Opt::from_args();
 
     init_logging(&opt);
@@ -45,38 +43,30 @@ fn main() -> kmip_protocol::tls::Result<()> {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
-    Ok(())
 }
 
-#[cfg(feature = "tls-with-tokio-native-tls")]
+#[cfg(any(
+    feature = "tls-with-async-tls",
+    feature = "tls-with-tokio-native-tls",
+    feature = "tls-with-tokio-rustls",
+))]
 #[tokio::main]
 async fn main() {
     let opt = Opt::from_args();
 
     init_logging(&opt);
 
-    eprintln!("Connecting...");
-    let client = kmip_protocol::tls::tokio_native_tls::connect(opt.into()).await;
-    eprintln!("Connected");
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "tls-with-async-tls")] {
+            let client = kmip_protocol::tls::async_tls::connect(opt.into()).await;
+        } else if #[cfg(feature = "tls-with-tokio-native-tls")] {
+            let client = kmip_protocol::tls::tokio_native_tls::connect(opt.into()).await;
+        } else if #[cfg(feature = "tls-with-tokio-rustls")] {
+            let client = kmip_protocol::tls::tokio_rustls::connect(opt.into()).await;
+        }
+    }
+
     exec_test_requests(client, "test").await.unwrap();
-
-    eprintln!("Finished");
-}
-
-#[cfg(feature = "tls-with-async-tls")]
-#[async_std::main]
-async fn main() {
-    let opt = Opt::from_args();
-
-    init_logging(&opt);
-
-    eprintln!("Connecting...");
-    let client = kmip_protocol::tls::async_tls::connect(opt.into()).await;
-    eprintln!("Connected");
-    exec_test_requests(client, "test").await.unwrap();
-
-    eprintln!("Finished");
 }
 
 #[maybe_async::maybe_async]

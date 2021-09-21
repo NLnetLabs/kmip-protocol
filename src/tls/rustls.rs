@@ -18,7 +18,7 @@ pub fn connect(config: Config) -> Client<StreamOwned<ClientSession, TcpStream>> 
         .expect("Internal error fetching parsed host and port from iterator");
 
     info!("Establishing TLS connection to server..");
-    let rustls_config: ClientConfig = create_rustls_config(&config).expect("Failed to create TLS connector");
+    let rustls_config: ClientConfig = create_rustls_config(&config).expect("Failed to create RustLS config");
     let hostname = webpki::DNSNameRef::try_from_ascii_str(&config.host)
         .expect(&format!("Failed to parse hostname '{}'", config.host));
     let sess = rustls::ClientSession::new(&Arc::new(rustls_config), hostname);

@@ -1,6 +1,14 @@
 use std::{io::BufReader, sync::Arc};
 
-use rustls::{KeyLogFile, ServerCertVerifier};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "tls-with-tokio-rustls")] {
+        use tokio_rustls::rustls::{Certificate, ClientConfig, KeyLogFile, PrivateKey, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError};
+        use tokio_rustls::webpki::DNSNameRef;
+    } else {
+        use rustls::{Certificate, ClientConfig, KeyLogFile, PrivateKey, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError};
+        use webpki::DNSNameRef;
+    }
+}
 
 use super::{
     config::{ClientCertificate, Config},
@@ -12,20 +20,20 @@ pub(crate) struct InsecureCertVerifier();
 impl ServerCertVerifier for InsecureCertVerifier {
     fn verify_server_cert(
         &self,
-        _roots: &rustls::RootCertStore,
-        _presented_certs: &[rustls::Certificate],
-        _dns_name: webpki::DNSNameRef,
+        _roots: &RootCertStore,
+        _presented_certs: &[Certificate],
+        _dns_name: DNSNameRef,
         _ocsp_response: &[u8],
-    ) -> Result<rustls::ServerCertVerified, rustls::TLSError> {
-        Ok(rustls::ServerCertVerified::assertion())
+    ) -> Result<ServerCertVerified, TLSError> {
+        Ok(ServerCertVerified::assertion())
     }
 }
 
 pub(crate) fn create_rustls_config<T>(config: &Config) -> Result<T, ()>
 where
-    T: From<rustls::ClientConfig>,
+    T: From<ClientConfig>,
 {
-    let mut rustls_config = rustls::ClientConfig::new();
+    let mut rustls_config = ClientConfig::new();
 
     if config.insecure {
         rustls_config
@@ -77,11 +85,11 @@ where
     Ok(rustls_config.into())
 }
 
-fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>> {
+fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<Certificate>> {
     let cert_chain = rustls_pemfile::read_all(&mut BufReader::new(bytes))?
         .iter()
         .map(|i: &rustls_pemfile::Item| match i {
-            rustls_pemfile::Item::X509Certificate(bytes) => rustls::Certificate(bytes.clone()),
+            rustls_pemfile::Item::X509Certificate(bytes) => Certificate(bytes.clone()),
             rustls_pemfile::Item::RSAKey(_) => panic!("Expected an X509 certificate, got an RSA key"),
             rustls_pemfile::Item::PKCS8Key(_) => panic!("Expected an X509 certificate, got a PKCS8 key"),
         })
@@ -89,12 +97,12 @@ fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>
     Ok(cert_chain)
 }
 
-fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<rustls::PrivateKey> {
+fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<PrivateKey> {
     let private_key = rustls_pemfile::read_one(&mut BufReader::new(bytes))?
         .map(|i: rustls_pemfile::Item| match i {
             rustls_pemfile::Item::X509Certificate(_) => panic!("Expected a PKCS8 key, got an X509 certificate"),
             rustls_pemfile::Item::RSAKey(_) => panic!("Expected a PKCS8 key, got an RSA key"),
-            rustls_pemfile::Item::PKCS8Key(bytes) => rustls::PrivateKey(bytes.clone()),
+            rustls_pemfile::Item::PKCS8Key(bytes) => PrivateKey(bytes.clone()),
         })
         .unwrap();
     Ok(private_key)

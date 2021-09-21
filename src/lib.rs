@@ -199,7 +199,8 @@ pub mod tag_map;
     feature = "tls-with-async-tls",
     feature = "tls-with-openssl",
     feature = "tls-with-rustls",
-    feature = "tls-with-tokio-native-tls"
+    feature = "tls-with-tokio-native-tls",
+    feature = "tls-with-tokio-rustls",
 ))]
 pub mod tls;
 
