@@ -221,6 +221,4 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-mod util;
-
 pub use kmip_ttlv::Config;
