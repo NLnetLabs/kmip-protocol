@@ -8,6 +8,7 @@ mod client;
     feature = "tls-with-tokio-rustls"
 ))]
 mod rustls_common;
+mod util;
 
 #[cfg(any(
     feature = "tls-with-openssl",

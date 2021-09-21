@@ -1,10 +1,9 @@
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
-use crate::Config as KmipConfig;
-
 use crate::tls::rustls_common::create_rustls_config;
-use crate::tls::{config::Config, Client, ClientBuilder};
+use crate::tls::util::create_kmip_client;
+use crate::tls::{config::Config, Client};
 
 use log::info;
 use tokio::net::TcpStream;
@@ -21,8 +20,8 @@ pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
 
     info!("Establishing TLS connection to server..");
     let host_str = config.host.clone();
-    let hostname = DNSNameRef::try_from_ascii_str(&host_str)
-        .expect(&format!("Failed to parse hostname '{}'", config.host));
+    let hostname =
+        DNSNameRef::try_from_ascii_str(&host_str).expect(&format!("Failed to parse hostname '{}'", config.host));
     let connect_timeout = config.connect_timeout.clone();
 
     let do_conn = async {
@@ -47,19 +46,4 @@ pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
     } else {
         do_conn.await
     }
-}
-
-fn create_kmip_client(tls_stream: TlsStream<TcpStream>, config: Config) -> Client<TlsStream<TcpStream>> {
-    let mut client = ClientBuilder::new(tls_stream);
-
-    if let Some(username) = config.username {
-        client = client.with_credentials(username, config.password);
-    }
-
-    if let Some(max_bytes) = config.max_response_bytes {
-        let reader_config = KmipConfig::default().with_max_bytes(max_bytes).with_read_buf();
-        client = client.with_reader_config(reader_config);
-    };
-
-    client.build()
 }

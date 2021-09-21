@@ -3,11 +3,11 @@ use std::{
     net::{TcpStream, ToSocketAddrs},
 };
 
-use crate::Config as KmipConfig;
+use crate::tls::util::create_kmip_client;
 
 use crate::tls::{
     config::{ClientCertificate, Config},
-    Client, ClientBuilder, SSLKEYLOGFILE_ENV_VAR_NAME,
+    Client, SSLKEYLOGFILE_ENV_VAR_NAME,
 };
 
 use log::info;
@@ -42,21 +42,6 @@ pub fn connect(config: Config) -> Client<SslStream<TcpStream>> {
         .expect("Failed to establish TLS connection");
 
     create_kmip_client(tls_stream, config)
-}
-
-fn create_kmip_client(tls_stream: SslStream<TcpStream>, config: Config) -> Client<SslStream<TcpStream>> {
-    let mut client = ClientBuilder::new(tls_stream);
-
-    if let Some(username) = config.username {
-        client = client.with_credentials(username, config.password);
-    }
-
-    if let Some(max_bytes) = config.max_response_bytes {
-        let reader_config = KmipConfig::default().with_max_bytes(max_bytes).with_read_buf();
-        client = client.with_reader_config(reader_config);
-    };
-
-    client.build()
 }
 
 fn create_tls_client(config: &Config) -> Result<SslConnector, openssl::error::ErrorStack> {

@@ -3,9 +3,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::{tls::rustls_common::create_rustls_config, Config as KmipConfig};
+use crate::tls::{rustls_common::create_rustls_config, util::create_kmip_client};
 
-use crate::tls::{config::Config, Client, ClientBuilder};
+use crate::tls::{config::Config, Client};
 
 use log::info;
 use rustls::{ClientConfig, ClientSession, StreamOwned};
@@ -26,22 +26,4 @@ pub fn connect(config: Config) -> Client<StreamOwned<ClientSession, TcpStream>> 
     let tls_stream = StreamOwned::new(sess, tcp_stream);
 
     create_kmip_client(tls_stream, config)
-}
-
-fn create_kmip_client(
-    tls_stream: StreamOwned<ClientSession, TcpStream>,
-    config: Config,
-) -> Client<StreamOwned<ClientSession, TcpStream>> {
-    let mut client = ClientBuilder::new(tls_stream);
-
-    if let Some(username) = config.username {
-        client = client.with_credentials(username, config.password);
-    }
-
-    if let Some(max_bytes) = config.max_response_bytes {
-        let reader_config = KmipConfig::default().with_max_bytes(max_bytes).with_read_buf();
-        client = client.with_reader_config(reader_config);
-    };
-
-    client.build()
 }

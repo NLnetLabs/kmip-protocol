@@ -1,8 +1,8 @@
 use std::net::ToSocketAddrs;
 
-use crate::Config as KmipConfig;
-
-use crate::tls::{config::Config, Client, ClientBuilderrustls_common::create_rustls_config};
+use crate::tls::rustls_common::create_rustls_config;
+use crate::tls::util::create_kmip_client;
+use crate::tls::{config::Config, Client};
 
 use log::info;
 
@@ -39,19 +39,4 @@ pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
     } else {
         do_conn.await.expect("Failed to connect to host")
     }
-}
-
-fn create_kmip_client(tls_stream: TlsStream<TcpStream>, config: Config) -> Client<TlsStream<TcpStream>> {
-    let mut client = ClientBuilder::new(tls_stream);
-
-    if let Some(username) = config.username {
-        client = client.with_credentials(username, config.password);
-    }
-
-    if let Some(max_bytes) = config.max_response_bytes {
-        let reader_config = KmipConfig::default().with_max_bytes(max_bytes).with_read_buf();
-        client = client.with_reader_config(reader_config);
-    };
-
-    client.build()
 }

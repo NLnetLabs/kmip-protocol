@@ -1,10 +1,9 @@
 use std::net::ToSocketAddrs;
 
-use crate::Config as KmipConfig;
-
+use crate::tls::util::create_kmip_client;
 use crate::tls::{
     config::{ClientCertificate, Config},
-    Client, ClientBuilder,
+    Client,
 };
 
 use log::info;
@@ -45,21 +44,6 @@ pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
     } else {
         do_conn.await
     }
-}
-
-fn create_kmip_client(tls_stream: TlsStream<TcpStream>, config: Config) -> Client<TlsStream<TcpStream>> {
-    let mut client = ClientBuilder::new(tls_stream);
-
-    if let Some(username) = config.username {
-        client = client.with_credentials(username, config.password);
-    }
-
-    if let Some(max_bytes) = config.max_response_bytes {
-        let reader_config = KmipConfig::default().with_max_bytes(max_bytes).with_read_buf();
-        client = client.with_reader_config(reader_config);
-    };
-
-    client.build()
 }
 
 fn create_tls_connector(config: &Config) -> Result<TlsConnector, tokio_native_tls::native_tls::Error> {

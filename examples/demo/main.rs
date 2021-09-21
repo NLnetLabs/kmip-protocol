@@ -45,11 +45,19 @@ fn main() {
     }
 }
 
-#[cfg(any(
-    feature = "tls-with-async-tls",
-    feature = "tls-with-tokio-native-tls",
-    feature = "tls-with-tokio-rustls",
-))]
+#[cfg(feature = "tls-with-async-tls")]
+#[async_std::main]
+async fn main() {
+    let opt = Opt::from_args();
+
+    init_logging(&opt);
+
+    let client = kmip_protocol::tls::async_tls::connect(opt.into()).await;
+
+    exec_test_requests(client, "test").await.unwrap();
+}
+
+#[cfg(any(feature = "tls-with-tokio-native-tls", feature = "tls-with-tokio-rustls",))]
 #[tokio::main]
 async fn main() {
     let opt = Opt::from_args();
@@ -57,9 +65,7 @@ async fn main() {
     init_logging(&opt);
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "tls-with-async-tls")] {
-            let client = kmip_protocol::tls::async_tls::connect(opt.into()).await;
-        } else if #[cfg(feature = "tls-with-tokio-native-tls")] {
+        if #[cfg(feature = "tls-with-tokio-native-tls")] {
             let client = kmip_protocol::tls::tokio_native_tls::connect(opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
             let client = kmip_protocol::tls::tokio_rustls::connect(opt.into()).await;
