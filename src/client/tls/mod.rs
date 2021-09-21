@@ -56,7 +56,7 @@
 //!
 //! ```ignore
 //! async fn some_function() -> ... {
-//!      let client = kmip_protocol::client::tls::rustls::connect(settings)?;
+//!      let client = kmip_protocol::client::tls::tokio_rustls::connect(settings)?;
 //!      client.create_rsa_key_pair(2048, "pubkey".into(), "privkey".into()).await?;
 //! }
 //! ```
