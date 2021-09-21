@@ -13,7 +13,6 @@ readme = "README.md"
 build = "build.rs"
 
 [package.metadata.docs.rs]
-all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
