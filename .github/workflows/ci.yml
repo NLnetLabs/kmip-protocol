@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build_and_test_with_default_features:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,9 +18,21 @@ jobs:
         # Test against beta Rust to get early warning of any problems that might occur with the upcoming Rust release.
         # Order: oldest Rust to newest Rust.
         rust: [1.47.0, stable, beta]
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: cargo build --locked --verbose
+
+    - name: Run tests
+      run: cargo test --locked --verbose
+
+  build_and_test_with_extra_features:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable]
         args: [
-          "",
-          "--features sync",
           "--features tls-with-openssl --example demo",
           "--features tls-with-rustls --example demo",
           "--no-default-features --features sync",
