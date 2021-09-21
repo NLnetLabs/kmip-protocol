@@ -72,7 +72,7 @@
 //!
 //! # Selecting a TLS plugin to use
 //!
-//! See the [client::`tls] module for information about selecting a TLS plugin to use.
+//! See the [client::tls] module for information about selecting a TLS plugin to use.
 //!
 //! # KMIP operations supported
 //!
