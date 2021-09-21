@@ -18,13 +18,19 @@ use crate::{
 
 // See: writing a library that can be reused across many runtimes (https://github.com/rust-lang/wg-async-foundations/issues/45)
 
-#[cfg(feature = "tls-with-openssl")]
+#[cfg(any(feature = "tls-with-openssl", feature = "tls-with-rustls"))]
 fn main() -> kmip_protocol::tls::Result<()> {
     let opt = Opt::from_args();
 
     init_logging(&opt);
 
-    let client = kmip_protocol::tls::openssl::connect(opt.into());
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "tls-with-openssl")] {
+            let client = kmip_protocol::tls::openssl::connect(opt.into());
+        } else if #[cfg(feature = "tls-with-rustls")] {
+            let client = kmip_protocol::tls::rustls::connect(opt.into());
+        }
+    }
 
     let mut thread_handles = vec![];
 

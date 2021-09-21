@@ -13,7 +13,8 @@ readme = "README.md"
 build = "build.rs"
 
 [package.metadata.docs.rs]
-features = ["sync"]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 async-std = { version = "1.10.0", features = ["attributes"], optional = true }
@@ -42,7 +43,7 @@ sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio"]
 async-with-async-std = ["kmip-ttlv/high-level", "async-std", "rustls", "kmip-ttlv/async-with-async-std"]
 tls-with-openssl = ["sync", "openssl"]
-# todo: add tls-with-rustls = ["sync", "rustls"]
+tls-with-rustls = ["sync", "rustls", "rustls-pemfile", "webpki"]
 tls-with-tokio-native-tls = ["async-with-tokio", "tokio-native-tls"]
 # todo: add tls-with-tokio-rustls
 tls-with-async-tls = ["async-with-async-std", "async-tls", "rustls-pemfile", "webpki" ]

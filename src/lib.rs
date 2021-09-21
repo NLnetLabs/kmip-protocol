@@ -190,12 +190,6 @@
 ))]
 compile_error!("feature \"sync\" cannot be enabled at the same time as either of the \"async-with-async-std\" or \"async-with-tokio\" features");
 
-#[cfg(all(feature = "async-std", not(feature = "async-with-async-std")))]
-compile_error!("do not enable the \"async-std\" feature directly, instead enable the \"async-with-async-std\" feature");
-
-#[cfg(all(feature = "tokio", not(feature = "async-with-tokio")))]
-compile_error!("do not enable the \"tokio\" feature directly, instead enable the \"async-with-tokio\" feature");
-
 pub mod auth;
 pub mod request;
 pub mod response;
@@ -204,6 +198,7 @@ pub mod tag_map;
 #[cfg(any(
     feature = "tls-with-async-tls",
     feature = "tls-with-openssl",
+    feature = "tls-with-rustls",
     feature = "tls-with-tokio-native-tls"
 ))]
 pub mod tls;
