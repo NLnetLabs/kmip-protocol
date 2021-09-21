@@ -3,66 +3,62 @@ use std::{
     net::{TcpStream, ToSocketAddrs},
 };
 
-use crate::tls::impls::common::util::create_kmip_client;
+use crate::client::tls::common::util::create_kmip_client;
 
-use crate::tls::{
-    config::{ClientCertificate, Config},
-    impls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
-    Client,
-};
+use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings};
 
 use log::info;
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub fn connect(config: Config) -> Client<SslStream<TcpStream>> {
-    let addr = format!("{}:{}", config.host, config.port)
+pub fn connect(conn_settings: ConnectionSettings) -> Client<SslStream<TcpStream>> {
+    let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
         .next()
         .expect("Internal error fetching parsed host and port from iterator");
 
     info!("Establishing TLS connection to server..");
-    let tcp_stream = if let Some(timeout) = config.connect_timeout {
+    let tcp_stream = if let Some(timeout) = conn_settings.connect_timeout {
         TcpStream::connect_timeout(&addr, timeout).expect("Failed to connect to host with timeout")
     } else {
         TcpStream::connect(&addr).expect("Failed to connect to host")
     };
 
     tcp_stream
-        .set_read_timeout(config.read_timeout)
+        .set_read_timeout(conn_settings.read_timeout)
         .expect("Failed to set read timeout on TCP connection");
     tcp_stream
-        .set_write_timeout(config.write_timeout)
+        .set_write_timeout(conn_settings.write_timeout)
         .expect("Failed to set write timeout on TCP connection");
 
-    let tls_client = create_tls_client(&config).expect("Failed to create TLS client");
+    let tls_client = create_tls_client(&conn_settings).expect("Failed to create TLS client");
 
     let tls_stream = tls_client
-        .connect(&config.host, tcp_stream)
+        .connect(&conn_settings.host, tcp_stream)
         .expect("Failed to establish TLS connection");
 
-    create_kmip_client(tls_stream, config)
+    create_kmip_client(tls_stream, conn_settings)
 }
 
-fn create_tls_client(config: &Config) -> Result<SslConnector, openssl::error::ErrorStack> {
+fn create_tls_client(conn_settings: &ConnectionSettings) -> Result<SslConnector, openssl::error::ErrorStack> {
     let mut connector = SslConnector::builder(SslMethod::tls())?;
 
-    if config.insecure {
+    if conn_settings.insecure {
         connector.set_verify(SslVerifyMode::NONE);
     } else {
-        if let Some(cert_bytes) = &config.server_cert {
+        if let Some(cert_bytes) = &conn_settings.server_cert {
             let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)?;
             connector.cert_store_mut().add_cert(x509_cert)?;
         }
 
-        if let Some(cert_bytes) = &config.ca_cert {
+        if let Some(cert_bytes) = &conn_settings.ca_cert {
             let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)?;
             connector.cert_store_mut().add_cert(x509_cert)?;
         }
     }
 
-    if let Some(cert) = &config.client_cert {
+    if let Some(cert) = &conn_settings.client_cert {
         match cert {
             ClientCertificate::CombinedPkcs12 { .. } => {
                 /*return Err(... */

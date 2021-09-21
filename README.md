@@ -23,13 +23,8 @@ This crate consists of:
   - Many Serde attributed Rust type definitions that represent KMIP request and response business objects.
   - A `Client` struct that uses the `kmip-ttlv` crate to serialize entire KMIP requests (composed from business object
     types) to a writer and deserialize the responses from a reader.
-
-The "operations" supported by the `Client` (such as create key, sign data, etc.) is a work in progress and reflects
-the needs of the [Krill](https://nlnetlabs.nl/projects/rpki/krill/) project.
-
-This crate is one of potentially several crates that will be implemented to add the ability to Krill to interact with
-KMIP compliant servers. This crate includes an example demonstrating how to connect over TCP+TLS to a KMIP server. This
-may be promoted to optional functionality offered by the crate behind a feature flag.
+  - Optional sample sync and async TLS implementations showing how the `Client` can be used to communicate with a KMIP
+    server.
 
 ### Status
 
@@ -43,5 +38,5 @@ stability is made at this time. At the time of writing limited manual testing wi
 See [`examples/demo/`](examples/demo/). For more information about running the example see:
 
 ```bash
- cargo run --example demo -- --help
+cargo run --example demo --features tls-with-rustls -- --help
 ```

@@ -1,4 +1,8 @@
 //! Serialiation of KMIP requests.
+//!
+//! See the [Client] module for a higher level interface.
+//!
+//! [Client]: crate::client::Client
 
 use crate::{
     auth::CredentialType,

@@ -1,9 +1,6 @@
 use std::{io::BufReader, sync::Arc};
 
-use crate::tls::{
-    config::{ClientCertificate, Config},
-    impls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
-};
+use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientCertificate, ConnectionSettings};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "tls-with-tokio-rustls")] {
@@ -29,25 +26,25 @@ impl ServerCertVerifier for InsecureCertVerifier {
     }
 }
 
-pub(crate) fn create_rustls_config<T>(config: &Config) -> Result<T, ()>
+pub(crate) fn create_rustls_config<T>(conn_settings: &ConnectionSettings) -> Result<T, ()>
 where
     T: From<ClientConfig>,
 {
     let mut rustls_config = ClientConfig::new();
 
-    if config.insecure {
+    if conn_settings.insecure {
         rustls_config
             .dangerous()
             .set_certificate_verifier(Arc::new(InsecureCertVerifier()));
     } else {
-        if let Some(cert_bytes) = config.server_cert.as_ref() {
+        if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
             rustls_config
                 .root_store
                 .add_pem_file(&mut BufReader::new(cert_bytes.as_slice()))
                 .expect("Failed to parse PEM bytes for server certificate");
         }
 
-        if let Some(cert_bytes) = config.ca_cert.as_ref() {
+        if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
             rustls_config
                 .root_store
                 .add_pem_file(&mut BufReader::new(cert_bytes.as_slice()))
@@ -55,7 +52,7 @@ where
         }
     }
 
-    if let Some(cert) = &config.client_cert {
+    if let Some(cert) = &conn_settings.client_cert {
         match cert {
             ClientCertificate::SeparatePem {
                 cert_bytes,

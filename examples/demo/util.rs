@@ -1,4 +1,5 @@
-use kmip_protocol::tls::{Client, ReadWrite};
+use kmip_protocol::client::Client;
+use kmip_protocol::types::traits::ReadWrite;
 use log::error;
 
 use crate::config::Opt;
@@ -34,7 +35,7 @@ pub(crate) trait SelfLoggingError<T: ReadWrite, U> {
     fn log_error(self, client: &Client<T>) -> Self;
 }
 
-impl<T: ReadWrite, U> SelfLoggingError<T, U> for kmip_protocol::tls::Result<U> {
+impl<T: ReadWrite, U> SelfLoggingError<T, U> for kmip_protocol::client::Result<U> {
     fn log_error(self, client: &Client<T>) -> Self {
         if let Err(err) = &self {
             error!(

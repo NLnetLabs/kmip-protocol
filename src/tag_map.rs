@@ -1,3 +1,4 @@
+//! Pre-defined TTLV tag code to name mappings for improved diagnostic reporting.
 use std::collections::HashMap;
 
 use kmip_ttlv::types::TtlvTag;

@@ -1,5 +1,6 @@
 #[cfg(not(any(
     feature = "tls-with-openssl",
+    feature = "tls-with-openssl-vendored",
     feature = "tls-with-rustls",
     feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
@@ -12,10 +13,8 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::tls::{
-    config::{ClientCertificate, Config as TlsConfig},
-    Client, ReadWrite,
-};
+use kmip_protocol::client::{Client, ClientCertificate, ConnectionSettings};
+use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
 use util::init_logging;
@@ -25,17 +24,21 @@ use crate::{
     util::{SelfLoggingError, ToCsvString},
 };
 
-#[cfg(any(feature = "tls-with-openssl", feature = "tls-with-rustls"))]
+#[cfg(any(
+    feature = "tls-with-openssl",
+    feature = "tls-with-openssl-vendored",
+    feature = "tls-with-rustls"
+))]
 fn main() {
     let opt = Opt::from_args();
 
     init_logging(&opt);
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "tls-with-openssl")] {
-            let client = kmip_protocol::tls::impls::openssl::connect(opt.into());
+        if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
+            let client = kmip_protocol::client::tls::openssl::connect(opt.into());
         } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::tls::impls::rustls::connect(opt.into());
+            let client = kmip_protocol::client::tls::rustls::connect(opt.into());
         }
     }
 
@@ -61,7 +64,7 @@ async fn main() {
 
     init_logging(&opt);
 
-    let client = kmip_protocol::tls::impls::async_tls::connect(opt.into()).await;
+    let client = kmip_protocol::client::tls::async_tls::connect(opt.into()).await;
 
     exec_test_requests(client, "test").await.unwrap();
 }
@@ -75,9 +78,9 @@ async fn main() {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::tls::impls::tokio_native_tls::connect(opt.into()).await;
+            let client = kmip_protocol::client::tls::tokio_native_tls::connect(opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::tls::impls::tokio_rustls::connect(opt.into()).await;
+            let client = kmip_protocol::client::tls::tokio_rustls::connect(opt.into()).await;
         }
     }
 
@@ -88,7 +91,7 @@ async fn main() {
 async fn exec_test_requests<T: ReadWrite>(
     client: Client<T>,
     key_name_prefix: &str,
-) -> Result<(), kmip_protocol::tls::Error> {
+) -> Result<(), kmip_protocol::client::Error> {
     query_server_properties(&client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
@@ -144,7 +147,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &Client<T>) -> Result<(), kmip_protocol::tls::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &Client<T>) -> Result<(), kmip_protocol::client::Error> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
@@ -166,7 +169,7 @@ fn load_binary_file(path: &std::path::PathBuf) -> Vec<u8> {
     bytes
 }
 
-impl From<Opt> for TlsConfig {
+impl From<Opt> for ConnectionSettings {
     fn from(opt: Opt) -> Self {
         let password = std::env::var("HSM_PASSWORD").ok();
 
@@ -200,7 +203,7 @@ impl From<Opt> for TlsConfig {
         let read_timeout = Some(Duration::from_secs(opt.read_timeout));
         let write_timeout = Some(Duration::from_secs(opt.write_timeout));
 
-        TlsConfig {
+        ConnectionSettings {
             host: opt.host,
             port: opt.port,
             username: opt.username,

@@ -1,10 +1,7 @@
 use std::net::ToSocketAddrs;
 
-use crate::tls::impls::common::util::create_kmip_client;
-use crate::tls::{
-    config::{ClientCertificate, Config},
-    Client,
-};
+use crate::client::tls::common::util::create_kmip_client;
+use crate::client::{Client, ClientCertificate, ConnectionSettings};
 
 use log::info;
 
@@ -12,29 +9,29 @@ use tokio::net::TcpStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
 
-pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
-    let addr = format!("{}:{}", config.host, config.port)
+pub async fn connect(conn_settings: ConnectionSettings) -> Client<TlsStream<TcpStream>> {
+    let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
         .next()
         .expect("Internal error fetching parsed host and port from iterator");
 
     info!("Establishing TLS connection to server..");
-    let connect_timeout = config.connect_timeout.clone();
+    let connect_timeout = conn_settings.connect_timeout.clone();
 
     let do_conn = async {
         let tcp_stream = TcpStream::connect(&addr).await.expect("Failed to connect to host");
 
-        let tls_connector = create_tls_connector(&config).expect("Failed to create TLS connector");
+        let tls_connector = create_tls_connector(&conn_settings).expect("Failed to create TLS connector");
 
         let tls_client = tokio_native_tls::TlsConnector::from(tls_connector);
 
         let tls_stream = tls_client
-            .connect(&config.host, tcp_stream)
+            .connect(&conn_settings.host, tcp_stream)
             .await
             .expect("Failed to establish TLS connection");
 
-        create_kmip_client(tls_stream, config)
+        create_kmip_client(tls_stream, conn_settings)
     };
 
     if let Some(timeout) = connect_timeout {
@@ -46,27 +43,29 @@ pub async fn connect(config: Config) -> Client<TlsStream<TcpStream>> {
     }
 }
 
-fn create_tls_connector(config: &Config) -> Result<TlsConnector, tokio_native_tls::native_tls::Error> {
+fn create_tls_connector(
+    conn_settings: &ConnectionSettings,
+) -> Result<TlsConnector, tokio_native_tls::native_tls::Error> {
     let mut connector = TlsConnector::builder();
 
-    if config.insecure {
+    if conn_settings.insecure {
         connector.danger_accept_invalid_certs(true);
         connector.danger_accept_invalid_hostnames(true);
     } else {
         connector.min_protocol_version(Some(Protocol::Tlsv12));
 
-        if let Some(cert_bytes) = config.server_cert.as_ref() {
+        if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
             let cert = Certificate::from_pem(&cert_bytes).expect("Failed to parse PEM bytes for server certificate");
             connector.add_root_certificate(cert);
         }
 
-        if let Some(cert_bytes) = config.ca_cert.as_ref() {
+        if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
             let cert = Certificate::from_pem(&cert_bytes).expect("Failed to parse PEM bytes for server CA certificate");
             connector.add_root_certificate(cert);
         }
     }
 
-    if let Some(cert) = &config.client_cert {
+    if let Some(cert) = &conn_settings.client_cert {
         match cert {
             ClientCertificate::SeparatePem { .. } => {
                 // From: https://docs.rs/tokio-native-tls/0.3.0/tokio_native_tls/native_tls/struct.Identity.html

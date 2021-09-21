@@ -8,6 +8,7 @@ pub(crate) mod util;
 
 #[cfg(any(
     feature = "tls-with-openssl",
+    feature = "tls-with-openssl-vendored",
     feature = "tls-with-async-tls",
     feature = "tls-with-rustls",
     feature = "tls-with-tokio-rustls",

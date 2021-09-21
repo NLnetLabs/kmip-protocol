@@ -1,28 +1,40 @@
 //! KMIP protocol library
 //!
-//! This library provides strongly-typed interfaces for a subset of the [Oasis Key Management Interoperability Protocol]
-//! aka KMIP.
+//! This library provides:
 //!
+//!   - Strongly-typed interfaces for a subset of the [Oasis Key Management Interoperability Protocol] aka KMIP.
+//!   - A pluggable [Client] interface for sending KMIP TTLV requests to and receiving responses from a KMIP server.
+//!   - Sample "plugins" for the [Client] interface for connecting to the KMIP server (a)synchronously via TCP+TLS.
+//!
+//! **WARNING:**
+//! Although this crate aims to offer a production quality KMIP client capability it is still immature and being
+//! constantly evolved and improved. The provided TLS "plugins" are intended primarily for use by the [example demo]
+//! to demonstrate that the library can be successfully integrated with sample client code. Please submit any feedback
+//! regarding this crate to the project [issue tracker]. Use of this code is at your own risk.
+//!
+//! [Client]: client::Client
 //! [Oasis Key Management Interoperability Protocol]: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html
+//! [example demo]: https://github.com/NLnetLabs/kmip-protocol/tree/main/examples/demo
+//! [issue tracker]: https://github.com/NLnetLabs/kmip-protocol/issues/
 //!
 //! # Usage
 //!
-//! Add the following to your `Cargo.toml`:
+//! The exact features to use depend on your needs, read below to learn more about the available features. In this
+//! example the [Client] interface will read & write messages synchronously to/from a [Rustls] managed TCP+TLS
+//! connection:
 //!
 //! ```toml
 //! [dependencies]
-//! kmip-protocol = "0.1.0"
+//! kmip-protocol = { version = "0.2.0", features = ["tls-with-rustls"] }
 //! ```
 //!
-//! This crate does not yet offer a TCP+TLS client for you to use. As such you will need to establish a connection
-//! yourself. Once the connection is established the [Client] struct can be used to send serialize requests to the KMIP
-//! server and to deserialize the response. The code might then look something like this:
+//! [Rustls]: https://github.com/rustls/rustls
+//!
+//! Using this library you can then connect to a KMIP server and send a KMIP request something like this:
 //!
 //! ```ignore
-//! let tls_client = create_tls_client(&opt)?;
-//! let tcp_stream = TcpStream::connect(format!("{}:{}", opt.host, opt.port))?;
-//! let mut tls_stream = tls_client.connect(&opt.host, tcp_stream)?;
-//! let mut client = create_kmip_client(&mut tls_stream, opt, password)?;
+//! // Where 'settings' defines the hostname, port number, and other settings needed to establish a connection.
+//! let client = kmip_protocol::client::tls::rustls::connect(settings)?;
 //!
 //! let bit_len = 2048;
 //! let private_key_name = "priv".to_string();
@@ -42,29 +54,27 @@
 //! }
 //! ```
 //!
-//! For more details on how to create the TLS connection and instantiate the client to use it see the example code in
-//! the repository at `examples/demo/` and the test cases in `src/client.rs`.
-//!
 //! # Advanced usage
 //!
 //! If none of the helper functions offered by the [Client] struct fit your needs you can use [Client::do_request]
 //! directly to handle the request construction and response parsing yourself, for example:
 //!
 //! ```ignore
-//! let mut client = ClientBuilder::new(&mut stream).configure();
-//!
-//! let result = client
-//!     .do_request(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
-//!     .unwrap();
+//! let payload = RequestPayload::Query(vec![QueryFunction::QueryOperations]);
+//! let result = client.do_request(payload)?;
 //!
 //! if let ResponsePayload::Query(payload) = result {
-//!     dbg!(payload);
-//! } else {
-//!     panic!("Expected query response!");
+//!     ...
 //! }
 //! ```
 //!
-//! # KMIP Operations Supported
+//! [Client::do_request]: client::Client::do_request
+//!
+//! # Selecting a TLS plugin to use
+//!
+//! See the [client::`tls] module for information about selecting a TLS plugin to use.
+//!
+//! # KMIP operations supported
 //!
 //! _Note: Supported operations may lack support for some attribute or managed object types. Vendor specific extensions are ignored._
 //!
@@ -110,7 +120,7 @@
 //! | 1.2 | Create Split Key     |  |
 //! | 1.2 | Join Split Key       |  |
 //!
-//! # KMIP Use/Test Case Coverage
+//! # KMIP use/test case coverage
 //!
 //! Each KMIP specification document is accompanied by a separate document that defines a set of use cases, renamed in KMIP
 //! 1.1 to test cases. These show complete KMIP requests and responses. In the v1.0 and v1.1 versions each test case is
@@ -198,11 +208,13 @@ pub mod tag_map;
 #[cfg(any(
     feature = "tls-with-async-tls",
     feature = "tls-with-openssl",
+    feature = "tls-with-openssl-vendored",
     feature = "tls-with-rustls",
     feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
+    doc
 ))]
-pub mod tls;
+pub mod client;
 
 pub mod types;
 

@@ -44,6 +44,7 @@ async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio
 async-with-async-std = ["kmip-ttlv/high-level", "async-std", "rustls", "kmip-ttlv/async-with-async-std"]
 tls = []
 tls-with-openssl = ["tls", "sync", "openssl"]
+tls-with-openssl-vendored = ["tls", "sync", "openssl/vendored"]
 tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki"]
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile"]

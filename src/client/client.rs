@@ -1,5 +1,4 @@
 //! A high level KMIP "operation" oriented client interface for request/response construction & (de)serialization.
-
 use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
@@ -9,31 +8,14 @@ use std::{
 use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
 use log::trace;
 
-use trait_set::trait_set;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "sync")] {
-        trait_set! {
-            pub trait ReadWrite = std::io::Read + std::io::Write;
-        }
-    } else if #[cfg(feature = "async-with-tokio")] {
-        trait_set! {
-            pub trait ReadWrite = tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin;
-        }
-    } else if #[cfg(feature = "async-with-async-std")] {
-        trait_set! {
-            pub trait ReadWrite = async_std::io::ReadExt + async_std::io::WriteExt + std::marker::Unpin;
-        }
-    }
-}
-
 use crate::{
     auth::{self, CredentialType},
     request::to_vec,
     tag_map,
-    types::{common::*, request, request::*, response::*},
+    types::{common::*, request, request::*, response::*, traits::*},
 };
 
+/// There was a problem sending/receiving a KMIP request/response.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     SerializeError(String),
@@ -59,6 +41,7 @@ impl std::fmt::Display for Error {
     }
 }
 
+/// The successful or failed outcome resulting from sending a request to a KMIP server.
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<PoisonError<T>> for Error {
@@ -84,8 +67,8 @@ impl<T> ClientBuilder<T> {
     /// the KMIP server. In production the stream should also perform TLS de/encryption on the data read from/written
     /// to the stream.
     ///
-    /// The `stream` argument must implement the [std::io::Read] and [std::io::Write] traits which the [Client] will
-    /// use to read/write from/to the stream.
+    /// The `stream` argument must implement the read and write traits which the [Client] will use to read/write
+    /// from/to the stream.
     pub fn new(stream: T) -> Self {
         Self {
             username: None,
@@ -127,6 +110,8 @@ impl<T> ClientBuilder<T> {
 }
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
+///
+/// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
 pub struct Client<T> {
     username: Option<String>,
