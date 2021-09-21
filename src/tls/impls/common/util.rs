@@ -1,6 +1,6 @@
-use super::{config::Config, Client, ClientBuilder};
-
 use kmip_ttlv::Config as KmipConfig;
+
+use crate::tls::{config::Config, Client, ClientBuilder};
 
 pub(crate) fn create_kmip_client<T>(tls_stream: T, config: Config) -> Client<T> {
     let mut client = ClientBuilder::new(tls_stream);

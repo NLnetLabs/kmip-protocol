@@ -1,5 +1,10 @@
 use std::{io::BufReader, sync::Arc};
 
+use crate::tls::{
+    config::{ClientCertificate, Config},
+    impls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
+};
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "tls-with-tokio-rustls")] {
         use tokio_rustls::rustls::{Certificate, ClientConfig, KeyLogFile, PrivateKey, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError};
@@ -9,11 +14,6 @@ cfg_if::cfg_if! {
         use webpki::DNSNameRef;
     }
 }
-
-use super::{
-    config::{ClientCertificate, Config},
-    SSLKEYLOGFILE_ENV_VAR_NAME,
-};
 
 pub(crate) struct InsecureCertVerifier();
 

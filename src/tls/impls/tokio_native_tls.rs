@@ -1,6 +1,6 @@
 use std::net::ToSocketAddrs;
 
-use crate::tls::util::create_kmip_client;
+use crate::tls::impls::common::util::create_kmip_client;
 use crate::tls::{
     config::{ClientCertificate, Config},
     Client,

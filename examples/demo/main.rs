@@ -33,9 +33,9 @@ fn main() {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-openssl")] {
-            let client = kmip_protocol::tls::openssl::connect(opt.into());
+            let client = kmip_protocol::tls::impls::openssl::connect(opt.into());
         } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::tls::rustls::connect(opt.into());
+            let client = kmip_protocol::tls::impls::rustls::connect(opt.into());
         }
     }
 
@@ -61,7 +61,7 @@ async fn main() {
 
     init_logging(&opt);
 
-    let client = kmip_protocol::tls::async_tls::connect(opt.into()).await;
+    let client = kmip_protocol::tls::impls::async_tls::connect(opt.into()).await;
 
     exec_test_requests(client, "test").await.unwrap();
 }
@@ -75,9 +75,9 @@ async fn main() {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::tls::tokio_native_tls::connect(opt.into()).await;
+            let client = kmip_protocol::tls::impls::tokio_native_tls::connect(opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::tls::tokio_rustls::connect(opt.into()).await;
+            let client = kmip_protocol::tls::impls::tokio_rustls::connect(opt.into()).await;
         }
     }
 

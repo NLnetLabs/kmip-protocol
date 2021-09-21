@@ -3,11 +3,12 @@ use std::{
     net::{TcpStream, ToSocketAddrs},
 };
 
-use crate::tls::util::create_kmip_client;
+use crate::tls::impls::common::util::create_kmip_client;
 
 use crate::tls::{
     config::{ClientCertificate, Config},
-    Client, SSLKEYLOGFILE_ENV_VAR_NAME,
+    impls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
+    Client,
 };
 
 use log::info;

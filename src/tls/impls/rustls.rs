@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::tls::{rustls_common::create_rustls_config, util::create_kmip_client};
+use crate::tls::impls::common::{rustls::create_rustls_config, util::create_kmip_client};
 
 use crate::tls::{config::Config, Client};
 
