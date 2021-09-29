@@ -42,6 +42,8 @@ fn main() {
         }
     }
 
+    let client = client.expect("Failed to establish TLS connection");
+
     let mut thread_handles = vec![];
 
     for i in 0..=1 {
@@ -66,6 +68,8 @@ async fn main() {
 
     let client = kmip_protocol::client::tls::async_tls::connect(&opt.into()).await;
 
+    let client = client.expect("Failed to establish TLS connection");
+
     exec_test_requests(client, "test").await.unwrap();
 }
 
@@ -83,6 +87,8 @@ async fn main() {
             let client = kmip_protocol::client::tls::tokio_rustls::connect(&opt.into()).await;
         }
     }
+
+    let client = client.expect("Failed to establish TLS connection");
 
     exec_test_requests(client, "test").await.unwrap();
 }

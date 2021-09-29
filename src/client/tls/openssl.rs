@@ -5,80 +5,94 @@ use std::{
 
 use crate::client::tls::common::util::create_kmip_client;
 
-use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings};
+use crate::client::{
+    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings, Error, Result,
+};
 
 use log::info;
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub fn connect(conn_settings: &ConnectionSettings) -> Client<SslStream<TcpStream>> {
-    connect_with_tcpstream_factory(conn_settings, |addr, settings| {
-        if let Some(timeout) = settings.connect_timeout {
-            TcpStream::connect_timeout(addr, timeout).expect("Failed to connect to host with timeout")
+pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<SslStream<TcpStream>>> {
+    connect_with_tcp_stream_factory(conn_settings, |addr, settings| {
+        let tcp_stream = if let Some(timeout) = settings.connect_timeout {
+            TcpStream::connect_timeout(addr, timeout)?
         } else {
-            TcpStream::connect(addr).expect("Failed to connect to host")
-        }
+            TcpStream::connect(addr)?
+        };
+        Ok(tcp_stream)
     })
 }
 
-pub fn connect_with_tcpstream_factory<F>(
+pub fn connect_with_tcp_stream_factory<F>(
     conn_settings: &ConnectionSettings,
-    tcpstream_factory: F,
-) -> Client<SslStream<TcpStream>>
+    tcp_stream_factory: F,
+) -> Result<Client<SslStream<TcpStream>>>
 where
-    F: Fn(&SocketAddr, &ConnectionSettings) -> TcpStream,
+    F: Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>,
 {
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
-        .to_socket_addrs()
-        .expect("Error parsing host and port")
+        .to_socket_addrs()?
         .next()
-        .expect("Internal error fetching parsed host and port from iterator");
+        .ok_or(Error::ConfigurationError(
+            "Failed to parse KMIP server address:port".to_string(),
+        ))?;
 
     info!("Establishing TLS connection to server..");
-    let tcp_stream = (tcpstream_factory)(&addr, conn_settings);
+    let tcp_stream = (tcp_stream_factory)(&addr, conn_settings)?;
 
-    tcp_stream
-        .set_read_timeout(conn_settings.read_timeout)
-        .expect("Failed to set read timeout on TCP connection");
-    tcp_stream
-        .set_write_timeout(conn_settings.write_timeout)
-        .expect("Failed to set write timeout on TCP connection");
+    tcp_stream.set_read_timeout(conn_settings.read_timeout)?;
+    tcp_stream.set_write_timeout(conn_settings.write_timeout)?;
 
-    let tls_client = create_tls_client(&conn_settings).expect("Failed to create TLS client");
+    let tls_connector = create_tls_connector(&conn_settings)
+        .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
-    let tls_stream = tls_client
+    let tls_stream = tls_connector
         .connect(&conn_settings.host, tcp_stream)
-        .expect("Failed to establish TLS connection");
+        .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
-    create_kmip_client(tls_stream, conn_settings)
+    Ok(create_kmip_client(tls_stream, conn_settings))
 }
 
-fn create_tls_client(conn_settings: &ConnectionSettings) -> Result<SslConnector, openssl::error::ErrorStack> {
-    let mut connector = SslConnector::builder(SslMethod::tls())?;
+fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnector> {
+    let mut tls_connector = SslConnector::builder(SslMethod::tls())
+        .map_err(|err| Error::ConfigurationError(format!("Failed to intialize TLS Connector: {}", err)))?;
 
     if conn_settings.insecure {
-        connector.set_verify(SslVerifyMode::NONE);
+        tls_connector.set_verify(SslVerifyMode::NONE);
     } else {
         if let Some(cert_bytes) = &conn_settings.server_cert {
-            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)?;
-            connector.cert_store_mut().add_cert(x509_cert)?;
+            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+                .map_err(|err| Error::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
+            tls_connector
+                .cert_store_mut()
+                .add_cert(x509_cert)
+                .map_err(|err| Error::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
         }
 
         if let Some(cert_bytes) = &conn_settings.ca_cert {
-            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)?;
-            connector.cert_store_mut().add_cert(x509_cert)?;
+            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+                .map_err(|err| Error::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
+            tls_connector
+                .cert_store_mut()
+                .add_cert(x509_cert)
+                .map_err(|err| Error::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
         }
     }
 
     if let Some(cert) = &conn_settings.client_cert {
         match cert {
             ClientCertificate::CombinedPkcs12 { .. } => {
-                /*return Err(... */
-                panic!("PKCS#12 client certificate format is not supported")
+                return Err(Error::ConfigurationError(
+                    "PKCS#12 client certificate format is not supported".to_string(),
+                ));
             }
             ClientCertificate::SeparatePem { cert_bytes, key_bytes } => {
-                let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)?;
-                connector.set_certificate(&x509_cert)?;
+                let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+                    .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
+                tls_connector
+                    .set_certificate(&x509_cert)
+                    .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
 
                 if let Some(key_bytes) = key_bytes {
                     // Quoting RFC-5246 Transport Layer Security (TLS) Protocol Version 1.2
@@ -95,15 +109,19 @@ fn create_tls_client(conn_settings: &ConnectionSettings) -> Result<SslConnector,
                     //
                     // So, the client certificate private key is used to sign the
                     // CertificateVerify message sent from client to server.
-                    let pkey = openssl::pkey::PKey::private_key_from_pem(&key_bytes)?;
-                    connector.set_private_key(&pkey)?;
+                    let pkey = openssl::pkey::PKey::private_key_from_pem(&key_bytes).map_err(|err| {
+                        Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
+                    })?;
+                    tls_connector.set_private_key(&pkey).map_err(|err| {
+                        Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
+                    })?;
                 }
             }
         }
     }
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
-        connector.set_keylog_callback(|_, line| {
+        tls_connector.set_keylog_callback(|_, line| {
             if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
                 if let Ok(mut file) = OpenOptions::new().write(true).append(true).open(path) {
                     use std::io::Write;
@@ -113,5 +131,5 @@ fn create_tls_client(conn_settings: &ConnectionSettings) -> Result<SslConnector,
         });
     }
 
-    Ok(connector.build())
+    Ok(tls_connector.build())
 }

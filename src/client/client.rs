@@ -18,8 +18,9 @@ use crate::{
 /// There was a problem sending/receiving a KMIP request/response.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
+    ConfigurationError(String),
     SerializeError(String),
-    RequestSendError(String),
+    RequestWriteError(String),
     ResponseReadError(String),
     DeserializeError(String),
     ServerError(String),
@@ -27,11 +28,20 @@ pub enum Error {
     Unknown(String),
 }
 
+impl std::error::Error for Error {}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::ServerError(format!("I/O error: {}", err))
+    }
+}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Error::ConfigurationError(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
             Error::SerializeError(e) => f.write_fmt(format_args!("Serialize error: {}", e)),
-            Error::RequestSendError(e) => f.write_fmt(format_args!("Request send error: {}", e)),
+            Error::RequestWriteError(e) => f.write_fmt(format_args!("Request send error: {}", e)),
             Error::ResponseReadError(e) => f.write_fmt(format_args!("Response read error: {}", e)),
             Error::DeserializeError(e) => f.write_fmt(format_args!("Deserialize error: {}", e)),
             Error::ServerError(e) => f.write_fmt(format_args!("Server error: {}", e)),
@@ -135,12 +145,10 @@ impl<T: ReadWrite> Client<T> {
         let mut lock = stream.lock()?;
         let stream = lock.deref_mut();
 
-        trace!("About to write");
-
         stream
             .write_all(req_bytes)
             .await
-            .map_err(|e| Error::RequestSendError(e.to_string()))?;
+            .map_err(|e| Error::RequestWriteError(e.to_string()))?;
 
         // Read and deserialize the response
         let mut res: ResponseMessage = kmip_ttlv::from_reader(stream, reader_config)
