@@ -2,7 +2,10 @@
 use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
-    sync::{Arc, Mutex, PoisonError},
+    sync::{
+        atomic::{AtomicU8, Ordering},
+        Arc, Mutex, PoisonError,
+    },
 };
 
 use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
@@ -26,6 +29,13 @@ pub enum Error {
     ServerError(String),
     InternalError(String),
     Unknown(String),
+}
+
+impl Error {
+    pub fn is_connection_error(&self) -> bool {
+        use Error::*;
+        matches!(self, ConfigurationError(_) | RequestWriteError(_) | ResponseReadError(_))
+    }
 }
 
 impl std::error::Error for Error {}
@@ -112,6 +122,7 @@ impl<T> ClientBuilder<T> {
             password: self.password,
             stream: Arc::new(Mutex::new(self.stream)),
             reader_config: self.reader_config,
+            connection_error_count: AtomicU8::new(0),
             last_req_diag_str: RefCell::new(None),
             last_res_diag_str: RefCell::new(None),
             pretty_printer,
@@ -128,6 +139,7 @@ pub struct Client<T> {
     password: Option<String>,
     stream: Arc<Mutex<T>>,
     reader_config: Config,
+    connection_error_count: AtomicU8,
     last_req_diag_str: RefCell<Option<String>>,
     last_res_diag_str: RefCell<Option<String>>,
     pretty_printer: PrettyPrinter,
@@ -235,9 +247,17 @@ impl<T: ReadWrite> Client<T> {
             self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
 
+        let incr_err_count = |err: Error| {
+            if err.is_connection_error() {
+                let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
+            }
+            Err(err)
+        };
+
         let res = self
             .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
-            .await;
+            .await
+            .or_else(incr_err_count);
 
         if let Some(buf) = self.reader_config.read_buf() {
             let diag_str = self.pretty_printer.to_diag_string(&buf);
@@ -468,6 +488,7 @@ impl<T> Clone for Client<T> {
             password: self.password.clone(),
             stream: self.stream.clone(),
             reader_config: self.reader_config.clone(),
+            connection_error_count: AtomicU8::new(self.connection_error_count()),
             last_req_diag_str: self.last_req_diag_str.clone(),
             last_res_diag_str: self.last_res_diag_str.clone(),
             pretty_printer: self.pretty_printer.clone(),
@@ -494,6 +515,11 @@ impl<T> Client<T> {
     /// Get a clone of the client's last res diag str.
     pub fn last_res_diag_str(&self) -> Option<String> {
         self.last_res_diag_str.borrow().to_owned()
+    }
+
+    /// Get the count of connection errors experienced by this Client.
+    pub fn connection_error_count(&self) -> u8 {
+        self.connection_error_count.load(Ordering::SeqCst)
     }
 }
 
