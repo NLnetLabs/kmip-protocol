@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
 
-pub async fn connect(conn_settings: ConnectionSettings) -> Client<TlsStream<TcpStream>> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> Client<TlsStream<TcpStream>> {
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
@@ -22,7 +22,7 @@ pub async fn connect(conn_settings: ConnectionSettings) -> Client<TlsStream<TcpS
     let do_conn = async {
         let tcp_stream = TcpStream::connect(&addr).await.expect("Failed to connect to host");
 
-        let tls_connector = create_tls_connector(&conn_settings).expect("Failed to create TLS connector");
+        let tls_connector = create_tls_connector(conn_settings).expect("Failed to create TLS connector");
 
         let tls_client = tokio_native_tls::TlsConnector::from(tls_connector);
 

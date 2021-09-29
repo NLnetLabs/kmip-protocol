@@ -11,7 +11,7 @@ use tokio_rustls::client::TlsStream;
 use tokio_rustls::webpki::DNSNameRef;
 use tokio_rustls::TlsConnector;
 
-pub async fn connect(conn_settings: ConnectionSettings) -> Client<TlsStream<TcpStream>> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> Client<TlsStream<TcpStream>> {
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
@@ -27,7 +27,7 @@ pub async fn connect(conn_settings: ConnectionSettings) -> Client<TlsStream<TcpS
     let do_conn = async {
         let tcp_stream = TcpStream::connect(&addr).await.expect("Failed to connect to host");
 
-        let rustls_config = create_rustls_config(&conn_settings).expect("Failed to create RustLS config");
+        let rustls_config = create_rustls_config(conn_settings).expect("Failed to create RustLS config");
 
         let tls_connector = TlsConnector::from(Arc::new(rustls_config));
 

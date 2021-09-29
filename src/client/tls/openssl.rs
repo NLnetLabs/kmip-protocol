@@ -11,7 +11,7 @@ use log::info;
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub fn connect(conn_settings: ConnectionSettings) -> Client<SslStream<TcpStream>> {
+pub fn connect(conn_settings: &ConnectionSettings) -> Client<SslStream<TcpStream>> {
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
