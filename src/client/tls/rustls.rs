@@ -38,7 +38,6 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    info!("Establishing TLS connection to server..");
     let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
     let hostname = webpki::DNSNameRef::try_from_ascii_str(&conn_settings.host).map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))

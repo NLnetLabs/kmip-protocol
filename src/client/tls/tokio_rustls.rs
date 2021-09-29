@@ -35,7 +35,6 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    info!("Establishing TLS connection to server..");
     let host_str = conn_settings.host.clone();
     let hostname = DNSNameRef::try_from_ascii_str(&host_str).map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))

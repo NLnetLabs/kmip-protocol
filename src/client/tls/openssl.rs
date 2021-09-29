@@ -38,7 +38,6 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    info!("Establishing TLS connection to server..");
     let tcp_stream = (tcp_stream_factory)(&addr, conn_settings)?;
 
     tcp_stream.set_read_timeout(conn_settings.read_timeout)?;

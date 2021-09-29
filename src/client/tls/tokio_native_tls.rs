@@ -33,7 +33,6 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    info!("Establishing TLS connection to server..");
     let connect_timeout = conn_settings.connect_timeout.clone();
 
     let connect = async { (tcpstream_factory)(addr, conn_settings).await };
