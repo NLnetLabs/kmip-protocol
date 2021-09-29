@@ -1,4 +1,5 @@
-use std::net::ToSocketAddrs;
+use std::future::Future;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 use crate::client::tls::common::{rustls::create_rustls_config, util::create_kmip_client};
 use crate::client::{Client, ConnectionSettings};
@@ -8,7 +9,22 @@ use log::info;
 use async_std::net::TcpStream;
 use async_tls::{client::TlsStream, TlsConnector};
 
-pub async fn connect(conn_settings: &ConnectionSettings) -> Client<TlsStream<TcpStream>> {
+async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> TcpStream {
+    TcpStream::connect(addr).await.expect("Failed to connect to host")
+}
+
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Client<TlsStream<TcpStream>> {
+    connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
+}
+
+pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
+    conn_settings: &'a ConnectionSettings,
+    tcpstream_factory: F,
+) -> Client<TlsStream<TcpStream>>
+where
+    F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
+    Fut: Future<Output = TcpStream>,
+{
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
@@ -19,7 +35,7 @@ pub async fn connect(conn_settings: &ConnectionSettings) -> Client<TlsStream<Tcp
     let connect_timeout = conn_settings.connect_timeout.clone();
 
     let do_conn = async {
-        let tcp_stream = TcpStream::connect(&addr).await.expect("Failed to connect to host");
+        let tcp_stream = (tcpstream_factory)(addr, conn_settings).await;
 
         let tls_connector: TlsConnector = create_rustls_config(conn_settings).expect("Failed to create TLS connector");
 

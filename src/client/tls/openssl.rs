@@ -1,6 +1,6 @@
 use std::{
     fs::OpenOptions,
-    net::{TcpStream, ToSocketAddrs},
+    net::{SocketAddr, TcpStream, ToSocketAddrs},
 };
 
 use crate::client::tls::common::util::create_kmip_client;
@@ -12,6 +12,22 @@ use log::info;
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
 pub fn connect(conn_settings: &ConnectionSettings) -> Client<SslStream<TcpStream>> {
+    connect_with_tcpstream_factory(conn_settings, |addr, settings| {
+        if let Some(timeout) = settings.connect_timeout {
+            TcpStream::connect_timeout(addr, timeout).expect("Failed to connect to host with timeout")
+        } else {
+            TcpStream::connect(addr).expect("Failed to connect to host")
+        }
+    })
+}
+
+pub fn connect_with_tcpstream_factory<F>(
+    conn_settings: &ConnectionSettings,
+    tcpstream_factory: F,
+) -> Client<SslStream<TcpStream>>
+where
+    F: Fn(&SocketAddr, &ConnectionSettings) -> TcpStream,
+{
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
@@ -19,11 +35,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Client<SslStream<TcpStream
         .expect("Internal error fetching parsed host and port from iterator");
 
     info!("Establishing TLS connection to server..");
-    let tcp_stream = if let Some(timeout) = conn_settings.connect_timeout {
-        TcpStream::connect_timeout(&addr, timeout).expect("Failed to connect to host with timeout")
-    } else {
-        TcpStream::connect(&addr).expect("Failed to connect to host")
-    };
+    let tcp_stream = (tcpstream_factory)(&addr, conn_settings);
 
     tcp_stream
         .set_read_timeout(conn_settings.read_timeout)

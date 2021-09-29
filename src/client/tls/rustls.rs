@@ -1,5 +1,5 @@
 use std::{
-    net::{TcpStream, ToSocketAddrs},
+    net::{SocketAddr, TcpStream, ToSocketAddrs},
     sync::Arc,
 };
 
@@ -11,6 +11,22 @@ use log::info;
 use rustls::{ClientConfig, ClientSession, StreamOwned};
 
 pub fn connect(conn_settings: &ConnectionSettings) -> Client<StreamOwned<ClientSession, TcpStream>> {
+    connect_with_tcpstream_factory(conn_settings, |addr, settings| {
+        if let Some(timeout) = settings.connect_timeout {
+            TcpStream::connect_timeout(addr, timeout).expect("Failed to connect to host with timeout")
+        } else {
+            TcpStream::connect(addr).expect("Failed to connect to host")
+        }
+    })
+}
+
+pub fn connect_with_tcpstream_factory<F>(
+    conn_settings: &ConnectionSettings,
+    tcpstream_factory: F,
+) -> Client<StreamOwned<ClientSession, TcpStream>>
+where
+    F: Fn(&SocketAddr, &ConnectionSettings) -> TcpStream,
+{
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()
         .expect("Error parsing host and port")
@@ -22,7 +38,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Client<StreamOwned<ClientS
     let hostname = webpki::DNSNameRef::try_from_ascii_str(&conn_settings.host)
         .expect(&format!("Failed to parse hostname '{}'", conn_settings.host));
     let sess = rustls::ClientSession::new(&Arc::new(rustls_config), hostname);
-    let tcp_stream = TcpStream::connect(&addr).expect("Failed to connect to host");
+    let tcp_stream = (tcpstream_factory)(&addr, conn_settings);
     let tls_stream = StreamOwned::new(sess, tcp_stream);
 
     create_kmip_client(tls_stream, conn_settings)
