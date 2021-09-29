@@ -5,7 +5,7 @@
 //! Every "plugin" can be used by passing a [ConnectionSettings] instance to it:
 //!
 //! ```ignore
-//! let client = kmip_protocol::client::tls::<MODULE>::connect(settings)?;
+//! let client = kmip_protocol::client::tls::<MODULE>::connect(&settings)?;
 //! ```
 //!
 //! This will cause a TCP+TLS connection to be established with the server defined by the settings, if possible.
