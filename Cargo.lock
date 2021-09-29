@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "kmip-protocol"
-version = "0.2.2-dev"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "async-tls",
