@@ -9,8 +9,6 @@ use crate::client::{
     tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings, Error, Result,
 };
 
-use log::info;
-
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
 pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<SslStream<TcpStream>>> {
