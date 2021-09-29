@@ -482,6 +482,35 @@ impl<T: ReadWrite> Client<T> {
             )))
         }
     }
+
+    /// Serialize a KMIP 1.0 [ModifyAttribute](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222)
+    /// operation to rename a given key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    ///
+    /// To modify other attributes of managed objects you must compose the Modify Attribute request manually and pass
+    /// it to [do_request()](Self::do_request()) directly.
+    #[maybe_async::maybe_async]
+    pub async fn rename_key(&self, key_id: &str, new_name: String) -> Result<ModifyAttributeResponsePayload> {
+        // Setup the request
+        let request = RequestPayload::ModifyAttribute(
+            Some(UniqueIdentifier(key_id.to_string())),
+            request::Attribute::Name(new_name),
+        );
+
+        // Execute the request and capture the response
+        let response = self.do_request(request).await?;
+
+        // Process the successful response
+        if let ResponsePayload::ModifyAttribute(payload) = response {
+            Ok(payload)
+        } else {
+            Err(Error::InternalError(format!(
+                "Expected ModifyAttribute response payload but got: {:?}",
+                response
+            )))
+        }
+    }
 }
 
 impl<T> Clone for Client<T> {
