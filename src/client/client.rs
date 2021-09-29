@@ -34,7 +34,10 @@ pub enum Error {
 impl Error {
     pub fn is_connection_error(&self) -> bool {
         use Error::*;
-        matches!(self, ConfigurationError(_) | RequestWriteError(_) | ResponseReadError(_))
+        matches!(
+            self,
+            ConfigurationError(_) | RequestWriteError(_) | ResponseReadError(_)
+        )
     }
 }
 
