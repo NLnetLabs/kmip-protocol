@@ -511,6 +511,34 @@ impl<T: ReadWrite> Client<T> {
             )))
         }
     }
+
+    /// Serialize a KMIP 1.0 [Get](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218)
+    /// operation to get the details of a given key ID.
+    ///
+    /// See also: [do_request()](Self::do_request())
+    #[maybe_async::maybe_async]
+    pub async fn get_key(&self, key_id: &str) -> Result<GetResponsePayload> {
+        // Setup the request
+        let request = RequestPayload::Get(
+            Some(UniqueIdentifier(key_id.to_string())),
+            Option::<KeyFormatType>::None,
+            Option::<KeyCompressionType>::None,
+            Option::<KeyWrappingSpecification>::None,
+        );
+
+        // Execute the request and capture the response
+        let response = self.do_request(request).await?;
+
+        // Process the successful response
+        if let ResponsePayload::Get(payload) = response {
+            Ok(payload)
+        } else {
+            Err(Error::InternalError(format!(
+                "Expected Get response payload but got: {:?}",
+                response
+            )))
+        }
+    }
 }
 
 impl<T> Clone for Client<T> {
