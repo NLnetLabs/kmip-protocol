@@ -10,7 +10,26 @@
 //!
 //! This will cause a TCP+TLS connection to be established with the server defined by the settings, if possible.
 //!
+//! For more control you can supply your own `TcpStream` factory. For example you can use this to create a socket using
+//! the [socket2] crate which allows you to tune the behaviour of the operating system networking stack specific to
+//! your use case. To supply a `TcpStream` factory use this function instead:
+//!
+//! ```ignore
+//! let client = kmip_protocol::client::tls::<MODULE>::connect_with_tcpstream_factory(&settings, factory_func)?;
+//! ```
+//!
+//! The factory function must conform to this signature:
+//!
+//! ```ignore
+//! Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>
+//! ```
+//!
+//! Note: You do not need to use a factory function to set timeouts as these are already set by the `connect` functions.
+//! For `async` connections the initial connection timeout is implemented as an `async` timeout around the connection
+//! attempt. For `sync` cn
+//!
 //! [ConnectionSettings]: crate::client::ConnectionSettings
+//! [socket2]: https://crates.io/crates/socket2/
 //!
 //! # Enabling a plugin
 //!
