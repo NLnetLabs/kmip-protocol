@@ -34,7 +34,7 @@
 //!
 //! ```ignore
 //! // Where 'settings' defines the hostname, port number, and other settings needed to establish a connection.
-//! let client = kmip_protocol::client::tls::rustls::connect(settings)?;
+//! let client = kmip_protocol::client::tls::rustls::connect(&settings)?;
 //!
 //! let bit_len = 2048;
 //! let private_key_name = "priv".to_string();
