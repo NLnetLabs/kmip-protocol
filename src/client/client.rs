@@ -133,6 +133,22 @@ impl<T> ClientBuilder<T> {
     }
 }
 
+/// Helper macro to avoid repetetive blocks of almost identical code
+macro_rules! get_response_payload_for_type {
+    ($response:expr, $response_type:path) => {{
+        // Process the successful response
+        if let $response_type(payload) = $response {
+            Ok(payload)
+        } else {
+            Err(Error::InternalError(format!(
+                "Expected {} response payload but got: {:?}",
+                stringify!($response_type),
+                $response
+            )))
+        }
+    }};
+}
+
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
 /// Use the [ClientBuilder] to build a [Client] instance to work with.
@@ -149,6 +165,7 @@ pub struct Client<T> {
 }
 
 impl<T: ReadWrite> Client<T> {
+    /// Write request bytes to the given stream and read, deserialize and sanity check the response.
     #[maybe_async::maybe_async]
     async fn send_and_receive(
         &self,
@@ -186,10 +203,10 @@ impl<T: ReadWrite> Client<T> {
                     item.result_message.as_ref().unwrap_or(&String::new()).clone()
                 ))),
                 ResultStatus::OperationPending => Err(Error::InternalError(
-                    "Result status operation pending is not supported".into(),
+                    "Result status 'operation pending' is not supported".into(),
                 )),
                 ResultStatus::OperationUndone => Err(Error::InternalError(
-                    "Result status operation undone is not supported".into(),
+                    "Result status 'operation undone' is not supported".into(),
                 )),
                 ResultStatus::Success => {
                     if item.operation == Some(operation) {
@@ -233,23 +250,29 @@ impl<T: ReadWrite> Client<T> {
     /// Currently always returns [Error::Unknown] even though richer cause information is available.
     #[maybe_async::maybe_async]
     pub async fn do_request(&self, payload: RequestPayload) -> Result<ResponsePayload> {
+        // Clear the diagnostic string representations of the request and response.
         *self.last_req_diag_str.borrow_mut() = None;
         *self.last_res_diag_str.borrow_mut() = None;
 
+        // Save a copy of the KMIP operation identifier before the request payload object is consumed by the
+        // TTLV serializer.
         let operation = payload.operation();
 
-        // Serialize and write the request
+        // Serialize the request payload to TTLV byte form.
         let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
             ErrorKind::IoError(e) => Error::SerializeError(e.to_string()),
             _ => Error::InternalError(err.to_string()),
         })?;
 
+        // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
+        // captured then generate, record and log the diagnostic representation of the request.
         if self.reader_config.has_buf() {
             let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
             trace!("KMIP TTLV request: {}", &diag_str);
             self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
 
+        // Prepare a helper closure for incrementing the number of connection errors encountered by this client.
         let incr_err_count = |err: Error| {
             if err.is_connection_error() {
                 let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
@@ -257,11 +280,14 @@ impl<T: ReadWrite> Client<T> {
             Err(err)
         };
 
+        // Send the serialized request and receive (and deserialize) the response.
         let res = self
             .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
             .await
             .or_else(incr_err_count);
 
+        // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
+        // captured, then generate, record and log the diagnostic representation of the response.
         if let Some(buf) = self.reader_config.read_buf() {
             let diag_str = self.pretty_printer.to_diag_string(&buf);
             trace!("KMIP TTLV response: {}", &diag_str);
@@ -288,14 +314,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::Query(payload) = response {
-            Ok(payload)
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Query response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Query)
     }
 
     /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
@@ -333,17 +352,12 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::CreateKeyPair(payload) = response {
-            Ok((
+        get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
+            (
                 payload.private_key_unique_identifier.deref().clone(),
                 payload.public_key_unique_identifier.deref().clone(),
-            ))
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected CreateKeyPair response payload but got: {:?}",
-                response
-            )))
-        }
+            )
+        })
     }
 
     /// Serialize a KMIP 1.2 [Rng Retrieve](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562)
@@ -359,14 +373,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::RNGRetrieve(payload) = response {
-            Ok(payload)
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected RngRetrieve response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
     }
 
     /// Serialize a KMIP 1.2 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558)
@@ -390,15 +397,7 @@ impl<T: ReadWrite> Client<T> {
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
 
-        // Process the successful response
-        if let ResponsePayload::Sign(payload) = response {
-            Ok(payload)
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Sign response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Sign)
     }
 
     /// Serialize a KMIP 1.0 [Activate](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226)
@@ -416,14 +415,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::Activate(_) = response {
-            Ok(())
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Activate response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
     }
 
     /// Serialize a KMIP 1.0 [Revoke](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227)
@@ -448,14 +440,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::Revoke(_) = response {
-            Ok(())
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Revoke response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
     }
 
     /// Serialize a KMIP 1.0 [Destroy](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228)
@@ -473,14 +458,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::Destroy(_) = response {
-            Ok(())
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Destroy response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
     }
 
     /// Serialize a KMIP 1.0 [ModifyAttribute](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222)
@@ -502,14 +480,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::ModifyAttribute(payload) = response {
-            Ok(payload)
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected ModifyAttribute response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
     }
 
     /// Serialize a KMIP 1.0 [Get](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218)
@@ -530,14 +501,7 @@ impl<T: ReadWrite> Client<T> {
         let response = self.do_request(request).await?;
 
         // Process the successful response
-        if let ResponsePayload::Get(payload) = response {
-            Ok(payload)
-        } else {
-            Err(Error::InternalError(format!(
-                "Expected Get response payload but got: {:?}",
-                response
-            )))
-        }
+        get_response_payload_for_type!(response, ResponsePayload::Get)
     }
 }
 
