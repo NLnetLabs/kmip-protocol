@@ -154,6 +154,10 @@ pub struct RegisterResponsePayload {
 #[serde(rename = "0x42007C")]
 pub struct LocateResponsePayload {
     #[serde(rename = "0x420094")]
+    #[serde(default = "Vec::new")]
+    // This should be Option<Vec<..>> but changing that would require a breaking release. Using
+    // `#[serde(default = "Vec::new")]` works around the case when the Locate response is completely empty without
+    // breaking compatibility with clients who currently expect this to be a Vec and not an Option.
     pub unique_identifiers: Vec<UniqueIdentifier>,
 }
 
