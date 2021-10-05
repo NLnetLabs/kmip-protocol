@@ -25,7 +25,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! kmip-protocol = { version = "0.3.0", features = ["tls-with-rustls"] }
+//! kmip-protocol = { version = "0.3.1", features = ["tls-with-rustls"] }
 //! ```
 //!
 //! [Rustls]: https://github.com/rustls/rustls
