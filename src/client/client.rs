@@ -33,7 +33,7 @@ pub enum Error {
 
 impl Error {
     /// Is this a possibly transient problem with the connection to the server?
-    pub fn is_transient_error(&self) -> bool {
+    pub fn is_connection_error(&self) -> bool {
         use Error::*;
         matches!(
             self,
@@ -275,7 +275,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Prepare a helper closure for incrementing the number of connection errors encountered by this client.
         let incr_err_count = |err: Error| {
-            if err.is_transient_error() {
+            if err.is_connection_error() {
                 let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
             }
             Err(err)
