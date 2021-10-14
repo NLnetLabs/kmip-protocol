@@ -19,6 +19,7 @@ use crate::{
 };
 
 /// There was a problem sending/receiving a KMIP request/response.
+#[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     ConfigurationError(String),
@@ -28,6 +29,7 @@ pub enum Error {
     DeserializeError(String),
     ServerError(String),
     InternalError(String),
+    ItemNotFound(String),
     Unknown(String),
 }
 
@@ -35,10 +37,7 @@ impl Error {
     /// Is this a possibly transient problem with the connection to the server?
     pub fn is_connection_error(&self) -> bool {
         use Error::*;
-        matches!(
-            self,
-            RequestWriteError(_) | ResponseReadError(_)
-        )
+        matches!(self, RequestWriteError(_) | ResponseReadError(_))
     }
 }
 
@@ -60,6 +59,7 @@ impl std::fmt::Display for Error {
             Error::DeserializeError(e) => f.write_fmt(format_args!("Deserialize error: {}", e)),
             Error::ServerError(e) => f.write_fmt(format_args!("Server error: {}", e)),
             Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
+            Error::ItemNotFound(e) => f.write_fmt(format_args!("Item not found: {}", e)),
             Error::Unknown(e) => f.write_fmt(format_args!("Unknown error: {}", e)),
         }
     }
@@ -198,11 +198,21 @@ impl<T: ReadWrite> Client<T> {
             let item = &mut res.batch_items[0];
 
             match item.result_status {
-                ResultStatus::OperationFailed => Err(Error::ServerError(format!(
-                    "Operation {:?} failed: {}",
-                    operation,
-                    item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                ))),
+                ResultStatus::OperationFailed => {
+                    if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
+                        Err(Error::ItemNotFound(format!(
+                            "Operation {:?} failed: {}",
+                            operation,
+                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                        )))
+                    } else {
+                        Err(Error::ServerError(format!(
+                            "Operation {:?} failed: {}",
+                            operation,
+                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                        )))
+                    }
+                }
                 ResultStatus::OperationPending => Err(Error::InternalError(
                     "Result status 'operation pending' is not supported".into(),
                 )),
