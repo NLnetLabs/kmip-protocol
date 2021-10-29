@@ -1,6 +1,6 @@
 [package]
 name = "kmip-protocol"
-version = "0.4.0"
+version = "0.4.1-dev"
 authors = ["The NLnet Labs RPKI Team <rpki-team@nlnetlabs.nl>"]
 edition = "2018"
 description = "KMIP protocol object (de)serialization"
