@@ -21,6 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install Rust
+      uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+
     - name: Build
       run: cargo build --locked --verbose
 
