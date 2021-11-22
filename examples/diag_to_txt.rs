@@ -5,7 +5,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() != 2 {
-        eprintln!("Usage: diag_to_hex <path/to/ttlv_input.txt>");
+        eprintln!("Usage: diag_to_txt <path/to/ttlv_input.txt>");
         std::process::exit(1);
     }
 
