@@ -5,6 +5,7 @@ authors = ["The NLnet Labs RPKI Team <rpki-team@nlnetlabs.nl>"]
 edition = "2018"
 description = "KMIP protocol object (de)serialization"
 repository = "https://github.com/NLnetLabs/kmip/"
+documentation = "https://docs.rs/kmip-protocol/"
 license = "BSD-3-Clause"
 keywords = ["KMIP", "TTLV", "serde", "serialization"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
