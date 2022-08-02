@@ -166,6 +166,10 @@ pub struct Client<T> {
 }
 
 impl<T: ReadWrite> Client<T> {
+    pub fn inner(&self) -> Arc<Mutex<T>> {
+        self.stream.clone()
+    }
+
     /// Write request bytes to the given stream and read, deserialize and sanity check the response.
     #[maybe_async::maybe_async]
     async fn send_and_receive(
