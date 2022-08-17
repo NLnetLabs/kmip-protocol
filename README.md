@@ -40,3 +40,38 @@ See [`examples/demo/`](examples/demo/). For more information about running the e
 ```bash
 cargo run --example demo --features tls-with-rustls -- --help
 ```
+
+### Diagnosing problems
+
+This crate will by default log sent and received KMIP byte sequences in anonymized compact form at TRACE level, if the using crate provides a log implementation. For example:
+
+```
+[2022-08-17T13:27:37Z TRACE kmip_protocol::client::client] KMIP TTLV request: 78[77[69[6Ai6Bi]0C[23[24e1:25[99tA1t]]]0Di]0F[5Ce8:79[08[0At0Be4:]]]]
+```
+
+These so-called diagnostic strings can be expanded to a full KMIP spec like description of the request or response using the provided `diag_to_txt` example, e.g.:
+
+```sh
+$ echo "78[77[69[6Ai6Bi]0C[23[24e1:25[99tA1t]]]0Di]0F[5Ce8:79[08[0At0Be4:]]]]" | cargo run --example diag_to_txt -
+    Finished dev [unoptimized + debuginfo] target(s) in 0.04s
+     Running `target/debug/examples/diag_to_txt -`
+Tag: Request Message (0x420078), Type: Structure (0x01), Data: 
+  Tag: Request Header (0x420077), Type: Structure (0x01), Data: 
+    Tag: Protocol Version (0x420069), Type: Structure (0x01), Data: 
+      Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: <redacted>
+      Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: <redacted>
+    Tag: Authentication (0x42000C), Type: Structure (0x01), Data: 
+      Tag: Credential (0x420023), Type: Structure (0x01), Data: 
+        Tag: Credential Type (0x420024), Type: Enumeration (0x05), Data: 1
+        Tag: Credential Value (0x420025), Type: Structure (0x01), Data: 
+          Tag: Username (0x420099), Type: TextString (0x07), Data: <redacted>
+          Tag: Password (0x4200A1), Type: TextString (0x07), Data: <redacted>
+    Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: <redacted>
+  Tag: Batch Item (0x42000F), Type: Structure (0x01), Data: 
+    Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 8
+    Tag: Request Payload (0x420079), Type: Structure (0x01), Data: 
+      Tag: Attribute (0x420008), Type: Structure (0x01), Data: 
+        Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: <redacted>
+        Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 4
+Tag: 0x4200
+```
