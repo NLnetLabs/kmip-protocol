@@ -52,9 +52,7 @@ This crate will by default log sent and received KMIP byte sequences in anonymiz
 These so-called diagnostic strings can be expanded to a full KMIP spec like description of the request or response using the provided `diag_to_txt` example, e.g.:
 
 ```sh
-$ echo "78[77[69[6Ai6Bi]0C[23[24e1:25[99tA1t]]]0Di]0F[5Ce8:79[08[0At0Be4:]]]]" | cargo run --example diag_to_txt -
-    Finished dev [unoptimized + debuginfo] target(s) in 0.04s
-     Running `target/debug/examples/diag_to_txt -`
+$ echo "78[77[69[6Ai6Bi]0C[23[24e1:25[99tA1t]]]0Di]0F[5Ce8:79[08[0At0Be4:]]]]" | cargo run -q --example diag_to_txt -
 Tag: Request Message (0x420078), Type: Structure (0x01), Data: 
   Tag: Request Header (0x420077), Type: Structure (0x01), Data: 
     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data: 
