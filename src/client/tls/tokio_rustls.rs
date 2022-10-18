@@ -6,7 +6,6 @@ use crate::client::tls::common::rustls::create_rustls_config;
 use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{Client, ConnectionSettings, Error, Result};
 
-use log::info;
 use tokio::net::TcpStream;
 use tokio_rustls::client::TlsStream;
 use tokio_rustls::webpki::DNSNameRef;

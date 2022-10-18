@@ -10,7 +10,6 @@ use crate::client::{
 
 use crate::client::{Client, ConnectionSettings, Result};
 
-use log::info;
 use rustls::{ClientConfig, ClientSession, StreamOwned};
 
 pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<StreamOwned<ClientSession, TcpStream>>> {

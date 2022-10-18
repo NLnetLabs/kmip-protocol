@@ -4,8 +4,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use crate::client::tls::common::{rustls::create_rustls_config, util::create_kmip_client};
 use crate::client::{Client, ConnectionSettings, Error, Result};
 
-use log::info;
-
 use async_std::net::TcpStream;
 use async_tls::{client::TlsStream, TlsConnector};
 

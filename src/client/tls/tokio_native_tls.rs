@@ -4,8 +4,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{Client, ClientCertificate, ConnectionSettings, Error, Result};
 
-use log::info;
-
 use tokio::net::TcpStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
