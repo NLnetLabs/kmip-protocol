@@ -117,9 +117,9 @@ impl<T> ClientBuilder<T> {
 
     /// Build the configured [Client] struct instance.
     pub fn build(self) -> Client<T> {
-        let mut pretty_printer = PrettyPrinter::new();
-        pretty_printer.with_tag_prefix("4200".into());
-        pretty_printer.with_tag_map(tag_map::make_kmip_tag_map());
+        let pretty_printer = PrettyPrinter::new()
+            .with_tag_prefix("4200".into())
+            .with_tag_map(tag_map::make_kmip_tag_map());
 
         Client {
             username: self.username,
@@ -178,27 +178,35 @@ impl<T: ReadWrite> Client<T> {
         reader_config: &Config,
         req_bytes: &[u8],
         stream: Arc<Mutex<T>>,
-    ) -> Result<ResponsePayload> {
-        let mut lock = stream.lock()?;
+    ) -> std::result::Result<(ResponsePayload, Vec<u8>), (Error, Option<Vec<u8>>)> {
+        let mut lock = match stream.lock() {
+            Ok(lock) => lock,
+            Err(err) => return Err((err.into(), None)),
+        };
         let stream = lock.deref_mut();
-
-        stream
+        if let Err(err) = stream
             .write_all(req_bytes)
-            .await
-            .map_err(|e| Error::RequestWriteError(e.to_string()))?;
+            .await {
+                return Err((Error::RequestWriteError(err.to_string()), None));
+            }
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = kmip_ttlv::from_reader(stream, reader_config)
-            .await
-            .map_err(|err| match err.kind() {
-                ErrorKind::IoError(e) => Error::ResponseReadError(e.to_string()),
-                ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
-                    Error::DeserializeError(err.to_string())
+        let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config)
+            .await {
+                Ok((res, cap)) => (res, cap),
+                Err((err, cap)) => {
+                    let err = match err.kind() {
+                        ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
+                        ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
+                            Error::DeserializeError(err.to_string())
+                        }
+                        _ => Error::InternalError(err.to_string())
+                    };
+                    return Err((err, Some(cap)));
                 }
-                _ => Error::InternalError(err.to_string()),
-            })?;
+            };
 
-        if res.header.batch_count == 1 && res.batch_items.len() == 1 {
+        let res = if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
 
             match item.result_status {
@@ -245,6 +253,11 @@ impl<T: ReadWrite> Client<T> {
                 "Expected one batch item in response but received {}",
                 res.batch_items.len()
             )))
+        };
+
+        match res {
+            Ok(res) => Ok((res, cap)),
+            Err(err) => Err((err, Some(cap)))
         }
     }
 
@@ -281,29 +294,33 @@ impl<T: ReadWrite> Client<T> {
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured then generate, record and log the diagnostic representation of the request.
-        if self.reader_config.has_buf() {
+        if self.reader_config.capture() {
             let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
             trace!("KMIP TTLV request: {}", &diag_str);
             self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
 
-        // Prepare a helper closure for incrementing the number of connection errors encountered by this client.
-        let incr_err_count = |err: Error| {
-            if err.is_connection_error() {
-                let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
-            }
-            Err(err)
-        };
-
         // Send the serialized request and receive (and deserialize) the response.
-        let res = self
+        let res = match self
             .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
-            .await
-            .or_else(incr_err_count);
+            .await {
+                Ok(res) => Ok(res),
+                Err((err, cap)) => {
+                    if err.is_connection_error() {
+                        let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
+                    }
+                    Err((err, cap)) 
+                }
+            };
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured, then generate, record and log the diagnostic representation of the response.
-        if let Some(buf) = self.reader_config.read_buf() {
+        let (res, cap) = match res {
+            Ok((res, cap)) => (Ok(res), Some(cap)),
+            Err((err, cap)) => (Err(err), cap),
+        };
+
+        if let Some(buf) = cap {
             let diag_str = self.pretty_printer.to_diag_string(&buf);
             trace!("KMIP TTLV response: {}", &diag_str);
             self.last_res_diag_str.borrow_mut().replace(diag_str);

@@ -9,7 +9,7 @@ pub(crate) fn create_kmip_client<T>(tls_stream: T, conn_settings: &ConnectionSet
         client = client.with_credentials(username.clone(), conn_settings.password.clone());
     }
 
-    let mut reader_config = KmipConfig::default().with_read_buf();
+    let mut reader_config = KmipConfig::default().with_capture();
     if let Some(max_bytes) = conn_settings.max_response_bytes {
         reader_config = reader_config.with_max_bytes(max_bytes);
     };
