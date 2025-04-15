@@ -403,10 +403,33 @@ pub struct BatchItem(
     pub RequestPayload,
 );
 
+impl BatchItem {
+    pub fn operation(&self) -> &Operation {
+        &self.0
+    }
+
+    pub fn unique_batch_item_id(&self) -> Option<&UniqueBatchItemID> {
+        self.1.as_ref()
+    }
+
+    pub fn request_payload(&self) -> &RequestPayload {
+        &self.2
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420078(0x420077,0x42000F)")]
 pub struct RequestMessage(pub RequestHeader, pub Vec<BatchItem>);
 
+impl RequestMessage {
+    pub fn header(&self) -> &RequestHeader {
+        &self.0
+    }
+
+    pub fn batch_items(&self) -> &[BatchItem] {
+        &self.1
+    }
+}
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420077(0x420069,0x420050,0x42000C,0x42000D)")]
 pub struct RequestHeader(
@@ -416,6 +439,23 @@ pub struct RequestHeader(
     pub BatchCount,
 );
 
+impl RequestHeader {
+    pub fn protocol_version(&self) -> &ProtocolVersion {
+        &self.0
+    }
+
+    pub fn max_response_size(&self) -> Option<&MaximumResponseSize> {
+        self.1.as_ref()
+    }
+
+    pub fn authentication(&self) -> Option<&Authentication> {
+        self.2.as_ref()
+    }
+
+    pub fn batch_count(&self) -> &BatchCount {
+        &self.3
+    }
+}
 #[serde(rename = "WithTtlHeader:0x420079")]
 #[non_exhaustive]
 #[allow(clippy::large_enum_variant)]
