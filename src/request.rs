@@ -4,6 +4,9 @@
 //!
 //! [Client]: crate::client::Client
 
+use serde::Deserialize;
+use kmip_ttlv::error::Result;
+
 use crate::{
     auth::CredentialType,
     types::{
@@ -14,7 +17,6 @@ use crate::{
     },
 };
 
-use kmip_ttlv::error::Result;
 
 pub fn to_vec(payload: RequestPayload, credential: Option<CredentialType>) -> Result<Vec<u8>> {
     let operation = payload.operation();
@@ -28,4 +30,11 @@ pub fn to_vec(payload: RequestPayload, credential: Option<CredentialType>) -> Re
         vec![BatchItem(operation, Option::<UniqueBatchItemID>::None, payload)],
     );
     kmip_ttlv::ser::to_vec(&request)
+}
+
+pub fn from_slice<'de, T>(bytes: &'de [u8]) -> Result<T>
+where
+    T: Deserialize<'de>,
+{
+    kmip_ttlv::de::from_slice(bytes)
 }
