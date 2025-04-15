@@ -89,7 +89,7 @@ fn locate_request_private_key_by_name_and_type_serializes_without_error() {
     assert!(to_vec(&request).is_ok());
 }
 
-// See: https://github.com/NLnetLabs/kmip-protocol/issues/30
+/// See: https://github.com/NLnetLabs/kmip-protocol/issues/30
 #[test]
 fn locate_empty_response_deserializes_without_error() {
     // Tag: Response Message (0x42007B), Type: Structure (0x01), Data:
