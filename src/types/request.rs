@@ -10,7 +10,7 @@ use super::common::{
     Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
-///  See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
+/// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420008")]
 pub struct Attribute(
@@ -26,7 +26,7 @@ pub struct Attribute(
 /// AttributeName and AttributeValue pairs together and to use the correct AttributeName text value and instead just Do
 /// The Right Thing for them.
 impl Attribute {
-    ///  See KMIP 1.0 section 3.1 Unique Identifier.
+    /// See KMIP 1.0 section 3.1 Unique Identifier.
     #[allow(non_snake_case)]
     pub fn UniqueIdentifier(value: String) -> Self {
         Attribute(
@@ -36,7 +36,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.2 Name.
+    /// See KMIP 1.0 section 3.2 Name.
     #[allow(non_snake_case)]
     pub fn Name(value: String) -> Self {
         Attribute(
@@ -46,7 +46,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.2 Name.
+    /// See KMIP 1.0 section 3.2 Name.
     #[allow(non_snake_case)]
     pub fn URI(value: String) -> Self {
         Attribute(
@@ -56,7 +56,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.3 Object Type.
+    /// See KMIP 1.0 section 3.3 Object Type.
     #[allow(non_snake_case)]
     pub fn ObjectType(value: ObjectType) -> Self {
         Attribute(
@@ -66,7 +66,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.4 Cryptographic Algorithm.
+    /// See KMIP 1.0 section 3.4 Cryptographic Algorithm.
     #[allow(non_snake_case)]
     pub fn CryptographicAlgorithm(value: CryptographicAlgorithm) -> Self {
         Attribute(
@@ -76,7 +76,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.5 Cryptographic Length.
+    /// See KMIP 1.0 section 3.5 Cryptographic Length.
     #[allow(non_snake_case)]
     pub fn CryptographicLength(value: i32) -> Self {
         Attribute(
@@ -86,7 +86,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.6 Cryptographic Parameters.
+    /// See KMIP 1.0 section 3.6 Cryptographic Parameters.
     #[allow(non_snake_case)]
     pub fn CryptographicParameters(cryptographic_parameters: CryptographicParameters) -> Self {
         Attribute(
@@ -96,7 +96,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.13 Operation Policy Name.
+    /// See KMIP 1.0 section 3.13 Operation Policy Name.
     #[allow(non_snake_case)]
     pub fn OperationPolicyName(value: String) -> Self {
         Attribute(
@@ -106,7 +106,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.14 Cryptographic Usage Mask.
+    /// See KMIP 1.0 section 3.14 Cryptographic Usage Mask.
     #[allow(non_snake_case)]
     pub fn CryptographicUsageMask(value: CryptographicUsageMask) -> Self {
         Attribute(
@@ -116,7 +116,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.24 Activation Date.
+    /// See KMIP 1.0 section 3.24 Activation Date.
     #[allow(non_snake_case)]
     pub fn ActivationDate(value: u64) -> Self {
         Attribute(
@@ -126,7 +126,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.28 Object Group.
+    /// See KMIP 1.0 section 3.28 Object Group.
     #[allow(non_snake_case)]
     pub fn ObjectGroup(value: String) -> Self {
         Attribute(
@@ -136,7 +136,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.29 Link.
+    /// See KMIP 1.0 section 3.29 Link.
     #[allow(non_snake_case)]
     pub fn Link(link_type: LinkType, linked_object_identifier: LinkedObjectIdentifier) -> Self {
         Attribute(
@@ -146,7 +146,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.30 Application Specific Information.
+    /// See KMIP 1.0 section 3.30 Application Specific Information.
     #[allow(non_snake_case)]
     pub fn ApplicationSpecificInformation(
         application_namespace: ApplicationNamespace,
@@ -159,7 +159,7 @@ impl Attribute {
         )
     }
 
-    ///  See KMIP 1.0 section 3.31 Contact Information.
+    /// See KMIP 1.0 section 3.31 Contact Information.
     #[allow(non_snake_case)]
     pub fn ContactInformation(value: String) -> Self {
         Attribute(
@@ -172,7 +172,7 @@ impl Attribute {
 
 macro_rules! impl_template_attribute_flavour {
     ($RustType:ident, $TtlvTag:literal) => {
-        ///  See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
+        /// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
         #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
         #[serde(rename = $TtlvTag)]
         pub struct $RustType(
@@ -199,12 +199,12 @@ impl_template_attribute_flavour!(CommonTemplateAttribute, "0x42001F");
 impl_template_attribute_flavour!(PrivateKeyTemplateAttribute, "0x420065");
 impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
 
-///  See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
+/// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420023")]
 pub struct Credential(pub CredentialType, pub CredentialValue);
 
-///  See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
+/// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Copy, Debug, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420024")]
 #[non_exhaustive]
@@ -213,7 +213,7 @@ pub enum CredentialType {
     UsernameAndPassword,
 }
 
-///  See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
+/// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420025")]
 #[non_exhaustive]
@@ -224,17 +224,17 @@ pub enum CredentialValue {
     ),
 }
 
-///  See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
+/// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420099")]
 pub struct Username(pub String);
 
-///  See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
+/// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200A1")]
 pub struct Password(pub String);
 
-///  See KMIP 1.0 section 2.1.3 [Key Block](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613459).
+/// See KMIP 1.0 section 2.1.3 [Key Block](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613459).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420040")]
 pub struct KeyBlock(
@@ -246,7 +246,7 @@ pub struct KeyBlock(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<KeyWrappingData>,
 );
 
-///  See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
+/// See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420045")]
 pub struct KeyValue(
@@ -254,7 +254,7 @@ pub struct KeyValue(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
 );
 
-///  See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
+/// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420046")]
 pub struct KeyWrappingData(
@@ -266,17 +266,17 @@ pub struct KeyWrappingData(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
 );
 
-///  See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
+/// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42004D")]
 pub struct MACOrSignature(#[serde(with = "serde_bytes")] Vec<u8>);
 
-///  See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
+/// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42003D")]
 pub struct IVOrCounterOrNonce(#[serde(with = "serde_bytes")] Vec<u8>);
 
-///  See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
+/// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420036")]
 pub struct EncryptionKeyInformation(
@@ -284,7 +284,7 @@ pub struct EncryptionKeyInformation(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicParameters>,
 );
 
-///  See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
+/// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42004E")]
 pub struct MACOrSignatureKeyInformation(
@@ -292,7 +292,7 @@ pub struct MACOrSignatureKeyInformation(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<CryptographicParameters>,
 );
 
-///  See KMIP 1.0 section 2.1.6 [Key Wrapping Specification](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160).
+/// See KMIP 1.0 section 2.1.6 [Key Wrapping Specification](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581160).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420047")]
 pub struct KeyWrappingSpecification(
@@ -302,7 +302,7 @@ pub struct KeyWrappingSpecification(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
 );
 
-///  See KMIP 1.0 section 2.2 [Managed Objects](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163).
+/// See KMIP 1.0 section 2.2 [Managed Objects](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
 #[non_exhaustive]
@@ -325,27 +325,27 @@ pub enum ManagedObject {
     // Not implemented
 }
 
-///  See KMIP 1.0 section 2.2.2 [Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581165).
+/// See KMIP 1.0 section 2.2.2 [Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581165).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42008F")]
 pub struct SymmetricKey(pub KeyBlock);
 
-///  See KMIP 1.0 section 2.2.3 [Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581166).
+/// See KMIP 1.0 section 2.2.3 [Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581166).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42006D")]
 pub struct PublicKey(pub KeyBlock);
 
-///  See KMIP 1.0 section 2.2.4 [Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581167).
+/// See KMIP 1.0 section 2.2.4 [Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581167).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420064")]
 pub struct PrivateKey(pub KeyBlock);
 
-///  See KMIP 1.0 section 2.2.6 [Template](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581169).
+/// See KMIP 1.0 section 2.2.6 [Template](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581169).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420090")]
 pub struct Template(pub Vec<Attribute>);
 
-///  See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
+/// See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420053")]
 pub struct Name(pub NameValue, pub NameType);
@@ -356,7 +356,7 @@ impl std::fmt::Display for Name {
     }
 }
 
-///  See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
+/// See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420081")]
 pub struct RevocationReason(
@@ -364,37 +364,37 @@ pub struct RevocationReason(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<RevocationMessage>,
 );
 
-///  See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
+/// See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420069")]
 pub struct ProtocolVersion(pub ProtocolVersionMajor, pub ProtocolVersionMinor);
 
-///  See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
+/// See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42006A")]
 pub struct ProtocolVersionMajor(pub i32);
 
-///  See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
+/// See KMIP 1.0 section 6.1 [Protocol Version](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581239).
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42006B")]
 pub struct ProtocolVersionMinor(pub i32);
 
-///  See KMIP 1.0 section 6.3 [Maximum Response Size](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581241).
+/// See KMIP 1.0 section 6.3 [Maximum Response Size](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581241).
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420050")]
 pub struct MaximumResponseSize(pub i32);
 
-///  See KMIP 1.0 section 6.6 [Authentication](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244).
+/// See KMIP 1.0 section 6.6 [Authentication](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000C")]
 pub struct Authentication(pub Credential);
 
-///  See KMIP 1.0 section 6.14 [Batch Count](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581252).
+/// See KMIP 1.0 section 6.14 [Batch Count](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581252).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42000D")]
 pub struct BatchCount(pub i32);
 
-///  See KMIP 1.0 section 6.15 [Batch Item](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253).
+/// See KMIP 1.0 section 6.15 [Batch Item](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000F")]
 pub struct BatchItem(
@@ -403,12 +403,12 @@ pub struct BatchItem(
     pub RequestPayload,
 );
 
-///  See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
+/// See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420078")]
 pub struct RequestMessage(pub RequestHeader, pub Vec<BatchItem>);
 
-///  See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
+/// See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420077")]
 pub struct RequestHeader(
@@ -418,38 +418,38 @@ pub struct RequestHeader(
     pub BatchCount,
 );
 
-///  See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
+/// See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420079")]
 #[non_exhaustive]
 #[allow(clippy::large_enum_variant)]
 pub enum RequestPayload {
-    // ///  See KMIP 1.0 section 4.1 Create.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+    /// See KMIP 1.0 section 4.1 Create.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
     Create(ObjectType, TemplateAttribute),
 
-    // ///  See KMIP 1.0 section 4.2 Create Key Pair.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
+    /// See KMIP 1.0 section 4.2 Create Key Pair.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
     CreateKeyPair(
         #[serde(skip_serializing_if = "Option::is_none")] Option<CommonTemplateAttribute>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<PrivateKeyTemplateAttribute>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<PublicKeyTemplateAttribute>,
     ),
 
-    // ///  See KMIP 1.0 section 4.3 Register.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+    /// See KMIP 1.0 section 4.3 Register.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
     Register(
         ObjectType,
         TemplateAttribute,
         #[serde(skip_serializing_if = "Option::is_none")] Option<ManagedObject>,
     ),
 
-    // ///  See KMIP 1.0 section 4.8 Locate.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
+    /// See KMIP 1.0 section 4.8 Locate.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
-    // ///  See KMIP 1.0 section 4.10 Get.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+    /// See KMIP 1.0 section 4.10 Get.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
     Get(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<KeyFormatType>,
@@ -457,73 +457,73 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<KeyWrappingSpecification>,
     ),
 
-    // ///  See KMIP 1.0 section 4.11 Get Attributes.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+    /// See KMIP 1.0 section 4.11 Get Attributes.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
     GetAttributes(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<Vec<AttributeName>>,
     ),
 
-    // ///  See KMIP 1.0 section 4.12 Get Attribute List.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+    /// See KMIP 1.0 section 4.12 Get Attribute List.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
     GetAttributeList(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
 
-    // ///  See KMIP 1.0 section 4.13 Add Attribute.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+    /// See KMIP 1.0 section 4.13 Add Attribute.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
     AddAttribute(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         Attribute,
     ),
 
-    // ///  See KMIP 1.0 section 4.14 Modify Attribute.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+    /// See KMIP 1.0 section 4.14 Modify Attribute.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
     ModifyAttribute(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         Attribute,
     ),
 
-    // ///  See KMIP 1.0 section 4.15 Delete Attribute.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+    /// See KMIP 1.0 section 4.15 Delete Attribute.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
     DeleteAttribute(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         AttributeName,
         #[serde(skip_serializing_if = "Option::is_none")] Option<AttributeIndex>,
     ),
 
-    // ///  See KMIP 1.0 section 4.18 Activate.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
+    /// See KMIP 1.0 section 4.18 Activate.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
     Activate(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
 
-    // ///  See KMIP 1.0 section 4.19 Revoke.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+    /// See KMIP 1.0 section 4.19 Revoke.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
     Revoke(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         RevocationReason,
         #[serde(skip_serializing_if = "Option::is_none")] Option<CompromiseOccurrenceDate>,
     ),
 
-    // ///  See KMIP 1.0 section 4.20 Destroy.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
+    /// See KMIP 1.0 section 4.20 Destroy.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
     Destroy(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
 
-    // ///  See KMIP 1.0 section 4.24 Query.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+    /// See KMIP 1.0 section 4.24 Query.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
     Query(Vec<QueryFunction>),
 
-    // ///  See KMIP 1.1 section 4.26 Discover Versions.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
+    /// See KMIP 1.1 section 4.26 Discover Versions.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
     DiscoverVersions(Vec<ProtocolVersion>),
 
-    // ///  See KMIP 1.2 section 4.31 Sign.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
+    /// See KMIP 1.2 section 4.31 Sign.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     Sign(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<CryptographicParameters>,
         Data,
     ),
 
-    // ///  See KMIP 1.2 section 4.35 RNG Retrieve.
-    // See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
+    /// See KMIP 1.2 section 4.35 RNG Retrieve.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
     RNGRetrieve(DataLength),
 }
 
@@ -612,7 +612,7 @@ impl RequestPayload {
     }
 }
 
-///  See KMIP 1.0 section 9.1.3.2.4 [Wrapping Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241993348).
+/// See KMIP 1.0 section 9.1.3.2.4 [Wrapping Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241993348).
 #[derive(Clone, Copy, Debug, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42009E")]
 #[non_exhaustive]
@@ -633,7 +633,7 @@ pub enum WrappingMethod {
     TR31,
 }
 
-///  See KMIP 1.0 section 9.1.3.2.23 [Query Function Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554).
+/// See KMIP 1.0 section 9.1.3.2.23 [Query Function Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554).
 #[derive(Clone, Copy, Debug, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420074")]
 #[non_exhaustive]
