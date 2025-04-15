@@ -557,6 +557,10 @@ pub enum RequestPayload {
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(Vec<ProtocolVersion>),
 
+    // TODO? Missing operation code mappings to request payloads
+    // Encrypt = 1F
+    // Decrypt = 20
+
     #[serde(rename = "if 0x42005C==0x00000021")]
     Sign(
         #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
