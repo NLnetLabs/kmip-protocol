@@ -477,6 +477,12 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<ManagedObject>,
     ),
 
+    // TODO? Missing operation code mappings to request payloads
+    // Re-key = 4
+    // Derive Key = 5
+    // Certify = 6
+    // Re-certify = 7
+
     #[serde(rename = "if 0x42005C==0x00000008")]
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
@@ -516,6 +522,10 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none")] Option<AttributeIndex>,
     ),
 
+    // TODO? Missing operation code mappings to request payloads
+    // Obtain Lease = 10
+    // Get Usage Allocation = 11
+
     #[serde(rename = "if 0x42005C==0x00000012")]
     Activate(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
 
@@ -529,8 +539,20 @@ pub enum RequestPayload {
     #[serde(rename = "if 0x42005C==0x00000014")]
     Destroy(#[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>),
 
+    // TODO? Missing operation code mappings to request payloads
+    // Archive = 15
+    // Recover = 16
+    // Validate = 17
+
     #[serde(rename = "if 0x42005C==0x00000018")]
     Query(Vec<QueryFunction>),
+
+    // TODO? Missing operation code mappings to request payloads
+    // Cancel = 19
+    // Poll = 1A
+    // Notify = 1B
+    // Put = 1C
+    // Re-key Key Pair = 1D
 
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(Vec<ProtocolVersion>),
@@ -542,8 +564,32 @@ pub enum RequestPayload {
         Data,
     ),
 
+    // TODO? Missing operation code mappings to request payloads
+    // Signature Verify = 22
+    // MAC = 23
+    // MAC Verify = 24
+
     #[serde(rename = "if 0x42005C==0x00000025")]
     RNGRetrieve(DataLength),
+
+    // TODO? Missing operation code mappings to request payloads
+    // RNG Seed = 26
+    // Hash = 27
+    // Create Split Key = 28
+    // Join Split Key = 29
+    // Import = 2A
+    // Export = 2B
+    // Log = 2C
+    // Login = 2D 
+    // Logout = 2E
+    // Delegated Login = 2F
+    // Adjust Attribute = 30
+    // Set Attribute = 31
+    // Set Endpoint Role = 32
+    // PKCS#11 = 33
+    // Interop = 34
+    // Re-Provision = 35
+    // Extensions = 8XXXXXXX
 }
 
 impl RequestPayload {
