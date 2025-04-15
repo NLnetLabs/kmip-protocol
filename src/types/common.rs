@@ -274,18 +274,25 @@ pub struct TransparentRSAPrivateKey {
     #[serde(with = "serde_bytes")]
     pub modulus: Vec<u8>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub private_exponent: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub public_exponent: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub p: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub q: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prime_exponent_p: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prime_exponent_q: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub crt_coefficient: Option<Vec<u8>>,
 }
 
@@ -306,10 +313,12 @@ pub struct TransparentDHPrivateKey {
     #[serde(with = "serde_bytes")]
     pub p: Vec<u8>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub q: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
     pub g: Vec<u8>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub j: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
     pub x: Vec<u8>,
@@ -322,10 +331,12 @@ pub struct TransparentDHPublicKey {
     #[serde(with = "serde_bytes")]
     pub p: Vec<u8>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub q: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
     pub g: Vec<u8>,
     #[serde(with = "serde_bytes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub j: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
     pub y: Vec<u8>,
