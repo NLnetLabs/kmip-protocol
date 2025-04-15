@@ -167,7 +167,7 @@ pub struct LocateResponsePayload {
 
     #[serde(rename = "0x420094")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unique_identifiers: Option<Vec<UniqueIdentifier>>
+    pub unique_identifiers: Option<Vec<UniqueIdentifier>>,
 }
 
 ///  See KMIP 1.0 section 4.10 [Get](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218).
@@ -461,7 +461,6 @@ pub struct BatchItem {
 
     // #[serde(rename = "0x420006")]
     // pub asynchronous_correlation_value: Option<??>,
-
     #[serde(rename = "0x42007C")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payload: Option<ResponsePayload>,
@@ -479,7 +478,7 @@ pub struct BatchItem {
 pub enum ResponsePayload {
     /// See KMIP 1.0 section 4.1 Create.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
-    #[serde(rename(deserialize= "if 0x42005C==0x00000001"))]
+    #[serde(rename(deserialize = "if 0x42005C==0x00000001"))]
     #[serde(rename(serialize = "Transparent"))]
     Create(CreateResponsePayload),
 

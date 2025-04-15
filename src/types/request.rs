@@ -494,7 +494,6 @@ pub enum RequestPayload {
     // Derive Key = 5
     // Certify = 6
     // Re-certify = 7
-
     /// See KMIP 1.0 section 4.8 Locate.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
     #[serde(rename = "if 0x42005C==0x00000008")]
@@ -551,7 +550,6 @@ pub enum RequestPayload {
     // TODO? Missing operation code mappings to request payloads
     // Obtain Lease = 10
     // Get Usage Allocation = 11
-
     /// See KMIP 1.0 section 4.18 Activate.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
     #[serde(rename = "if 0x42005C==0x00000012")]
@@ -575,7 +573,6 @@ pub enum RequestPayload {
     // Archive = 15
     // Recover = 16
     // Validate = 17
-
     /// See KMIP 1.0 section 4.24 Query.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
     #[serde(rename = "if 0x42005C==0x00000018")]
@@ -587,7 +584,6 @@ pub enum RequestPayload {
     // Notify = 1B
     // Put = 1C
     // Re-key Key Pair = 1D
-
     /// See KMIP 1.1 section 4.26 Discover Versions.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
     #[serde(rename = "if 0x42005C==0x0000001E")]
@@ -596,7 +592,6 @@ pub enum RequestPayload {
     // TODO? Missing operation code mappings to request payloads
     // Encrypt = 1F
     // Decrypt = 20
-
     /// See KMIP 1.2 section 4.31 Sign.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     #[serde(rename = "if 0x42005C==0x00000021")]
@@ -610,7 +605,6 @@ pub enum RequestPayload {
     // Signature Verify = 22
     // MAC = 23
     // MAC Verify = 24
-
     /// See KMIP 1.2 section 4.35 RNG Retrieve.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
     #[serde(rename = "if 0x42005C==0x00000025")]
