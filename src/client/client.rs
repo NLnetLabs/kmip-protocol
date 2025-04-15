@@ -184,27 +184,24 @@ impl<T: ReadWrite> Client<T> {
             Err(err) => return Err((err.into(), None)),
         };
         let stream = lock.deref_mut();
-        if let Err(err) = stream
-            .write_all(req_bytes)
-            .await {
-                return Err((Error::RequestWriteError(err.to_string()), None));
-            }
+        if let Err(err) = stream.write_all(req_bytes).await {
+            return Err((Error::RequestWriteError(err.to_string()), None));
+        }
 
         // Read and deserialize the response
-        let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config)
-            .await {
-                Ok((res, cap)) => (res, cap),
-                Err((err, cap)) => {
-                    let err = match err.kind() {
-                        ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
-                        ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
-                            Error::DeserializeError(err.to_string())
-                        }
-                        _ => Error::InternalError(err.to_string())
-                    };
-                    return Err((err, Some(cap)));
-                }
-            };
+        let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config).await {
+            Ok((res, cap)) => (res, cap),
+            Err((err, cap)) => {
+                let err = match err.kind() {
+                    ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
+                    ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
+                        Error::DeserializeError(err.to_string())
+                    }
+                    _ => Error::InternalError(err.to_string()),
+                };
+                return Err((err, Some(cap)));
+            }
+        };
 
         let res = if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
@@ -257,7 +254,7 @@ impl<T: ReadWrite> Client<T> {
 
         match res {
             Ok(res) => Ok((res, cap)),
-            Err(err) => Err((err, Some(cap)))
+            Err(err) => Err((err, Some(cap))),
         }
     }
 
@@ -303,15 +300,16 @@ impl<T: ReadWrite> Client<T> {
         // Send the serialized request and receive (and deserialize) the response.
         let res = match self
             .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
-            .await {
-                Ok(res) => Ok(res),
-                Err((err, cap)) => {
-                    if err.is_connection_error() {
-                        let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
-                    }
-                    Err((err, cap)) 
+            .await
+        {
+            Ok(res) => Ok(res),
+            Err((err, cap)) => {
+                if err.is_connection_error() {
+                    let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
                 }
-            };
+                Err((err, cap))
+            }
+        };
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured, then generate, record and log the diagnostic representation of the response.
