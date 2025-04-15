@@ -579,7 +579,7 @@ impl<T> Client<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "sync"))]
 mod test {
     use std::{
         io::{Cursor, Read, Write},
