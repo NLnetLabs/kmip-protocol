@@ -216,6 +216,14 @@ pub mod tag_map;
 ))]
 pub mod client;
 
+#[cfg(feature = "tls-with-rustls")]
+/// Re-export
+pub use rustls;
+
+#[cfg(feature = "tls-with-tokio-rustls")]
+/// Re-export
+pub use tokio_rustls;
+
 pub mod types;
 
 #[cfg(test)]
