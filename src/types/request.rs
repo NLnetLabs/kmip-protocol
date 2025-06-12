@@ -170,35 +170,46 @@ impl Attribute {
     }
 }
 
-macro_rules! impl_template_attribute_flavour {
-    ($RustType:ident, $TtlvTag:literal) => {
-        /// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
-        #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-        #[serde(rename = "$TtlvTag(0x420053,0x420008)")]
-        pub struct $RustType(
-            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Name>>,
-            #[serde(skip_serializing_if = "Option::is_none")] pub Option<Vec<Attribute>>,
-        );
-        impl $RustType {
-            pub fn unnamed(attributes: Vec<Attribute>) -> Self {
-                Self(Option::<Vec<Name>>::None, Some(attributes))
-            }
-
-            pub fn named(name: String, attributes: Vec<Attribute>) -> Self {
-                Self(
-                    Some(vec![Name(NameValue(name), NameType::UninterpretedTextString)]),
-                    Some(attributes),
-                )
-            }
-        }
-    };
+/// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420091")]
+pub struct TemplateAttribute(Vec<Attribute>);
+impl TemplateAttribute {
+    pub fn new(attributes: Vec<Attribute>) -> Self {
+        Self(attributes)
+    }
 }
 
-impl_template_attribute_flavour!(TemplateAttribute, "0x420091");
-impl_template_attribute_flavour!(CommonTemplateAttribute, "0x42001F");
-impl_template_attribute_flavour!(PrivateKeyTemplateAttribute, "0x420065");
-impl_template_attribute_flavour!(PublicKeyTemplateAttribute, "0x42006E");
+/// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42001F(0x420008)")]
+pub struct CommonTemplateAttribute(Vec<Attribute>);
 
+impl CommonTemplateAttribute {
+    pub fn new(attributes: Vec<Attribute>) -> Self {
+        Self(attributes)
+    }
+}
+
+/// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420065")]
+pub struct PrivateKeyTemplateAttribute(Vec<Attribute>);
+impl PrivateKeyTemplateAttribute {
+    pub fn new(attributes: Vec<Attribute>) -> Self {
+        Self(attributes)
+    }
+}
+
+/// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420006E")]
+pub struct PublicKeyTemplateAttribute(Vec<Attribute>);
+impl PublicKeyTemplateAttribute {
+    pub fn new(attributes: Vec<Attribute>) -> Self {
+        Self(attributes)
+    }
+}
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420023(0x420024,0x420025)")]
@@ -462,7 +473,7 @@ impl RequestHeader {
 
 /// See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "WithTtlHeader:0x420079")]
+#[serde(rename = "0x420079")]
 #[non_exhaustive]
 #[allow(clippy::large_enum_variant)]
 pub enum RequestPayload {
@@ -475,7 +486,7 @@ pub enum RequestPayload {
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
     #[serde(rename = "if 0x42005C==0x00000002")]
     CreateKeyPair(
-        #[serde(skip_serializing_if = "Option::is_none")] Option<CommonTemplateAttribute>,
+        #[serde(rename = "0x42001F", skip_serializing_if = "Option::is_none")] Option<CommonTemplateAttribute>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<PrivateKeyTemplateAttribute>,
         #[serde(skip_serializing_if = "Option::is_none")] Option<PublicKeyTemplateAttribute>,
     ),
@@ -503,17 +514,26 @@ pub enum RequestPayload {
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
     #[serde(rename = "if 0x42005C==0x0000000A")]
     Get(
-        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
-        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyFormatType>,
-        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyCompressionType>,
-        #[serde(skip_serializing_if = "Option::is_none")] Option<KeyWrappingSpecification>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        Option<UniqueIdentifier>,
+
+        #[serde(skip_serializing_if = "Option::is_none")] 
+        Option<KeyFormatType>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        Option<KeyCompressionType>,
+
+        #[serde(skip_serializing_if = "Option::is_none")] 
+        Option<KeyWrappingSpecification>,
     ),
 
     /// See KMIP 1.0 section 4.11 Get Attributes.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
     #[serde(rename = "if 0x42005C==0x0000000B")]
     GetAttributes(
-        #[serde(skip_serializing_if = "Option::is_none")] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        Option<UniqueIdentifier>,
+        
         #[serde(skip_serializing_if = "Option::is_none")] Option<Vec<AttributeName>>,
     ),
 

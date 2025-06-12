@@ -306,3 +306,52 @@ pub fn make_kmip_tag_map() -> HashMap<TtlvTag, &'static str> {
     .into_iter()
     .collect()
 }
+
+pub fn make_kmip_enum_map() -> HashMap<(TtlvTag, u32), &'static str> {
+    vec![
+        // Operation: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776640
+        ((b"\x42\x00\x5C".into(), 0x00000001), "Create"),
+        ((b"\x42\x00\x5C".into(), 0x00000002), "Create Key Pair"),
+        ((b"\x42\x00\x5C".into(), 0x00000003), "Register"),
+        ((b"\x42\x00\x5C".into(), 0x00000004), "Re-key"),
+        ((b"\x42\x00\x5C".into(), 0x00000005), "Derive Key"),
+        ((b"\x42\x00\x5C".into(), 0x00000006), "Certify"),
+        ((b"\x42\x00\x5C".into(), 0x00000007), "Re-certify"),
+        ((b"\x42\x00\x5C".into(), 0x00000008), "Locate"),
+        ((b"\x42\x00\x5C".into(), 0x00000009), "Check"),
+        ((b"\x42\x00\x5C".into(), 0x0000000A), "Get"),
+        ((b"\x42\x00\x5C".into(), 0x0000000B), "Get Attributes"),
+        ((b"\x42\x00\x5C".into(), 0x0000000C), "Get Attribute List"),
+        ((b"\x42\x00\x5C".into(), 0x0000000D), "Add Attribute"),
+        ((b"\x42\x00\x5C".into(), 0x0000000E), "Modify Attribute"),
+        ((b"\x42\x00\x5C".into(), 0x0000000F), "Delete Attribute"),
+        ((b"\x42\x00\x5C".into(), 0x00000010), "Obtain Lease"),
+        ((b"\x42\x00\x5C".into(), 0x00000011), "Get Usage Allocation"),
+        ((b"\x42\x00\x5C".into(), 0x00000012), "Activate"),
+        ((b"\x42\x00\x5C".into(), 0x00000013), "Revoke"),
+        ((b"\x42\x00\x5C".into(), 0x00000014), "Destroy"),
+        ((b"\x42\x00\x5C".into(), 0x00000015), "Archive"),
+        ((b"\x42\x00\x5C".into(), 0x00000016), "Recover"),
+        ((b"\x42\x00\x5C".into(), 0x00000017), "Validate"),
+        ((b"\x42\x00\x5C".into(), 0x00000018), "Query"),
+        ((b"\x42\x00\x5C".into(), 0x00000019), "Cancel"),
+        ((b"\x42\x00\x5C".into(), 0x0000001A), "Poll"),
+        ((b"\x42\x00\x5C".into(), 0x0000001B), "Notify"),
+        ((b"\x42\x00\x5C".into(), 0x0000001C), "Put"),
+        ((b"\x42\x00\x5C".into(), 0x0000001D), "Re-key Key Pair"),
+        ((b"\x42\x00\x5C".into(), 0x0000001E), "Discover Versions"),
+        ((b"\x42\x00\x5C".into(), 0x0000001F), "Encrypt"),
+        ((b"\x42\x00\x5C".into(), 0x00000020), "Decrypt"),
+        ((b"\x42\x00\x5C".into(), 0x00000021), "Sign"),
+        ((b"\x42\x00\x5C".into(), 0x00000022), "Signature Verify"),
+        ((b"\x42\x00\x5C".into(), 0x00000023), "MAC"),
+        ((b"\x42\x00\x5C".into(), 0x00000024), "MAC Verify"),
+        ((b"\x42\x00\x5C".into(), 0x00000025), "RNG Retrieve"),
+        ((b"\x42\x00\x5C".into(), 0x00000026), "RNG Seed"),
+        ((b"\x42\x00\x5C".into(), 0x00000027), "Hash"),
+        ((b"\x42\x00\x5C".into(), 0x00000028), "Create Split Key"),
+        ((b"\x42\x00\x5C".into(), 0x00000029), "Join Split Key"),
+    ]
+    .into_iter()
+    .collect()
+}

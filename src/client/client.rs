@@ -364,15 +364,15 @@ impl<T: ReadWrite> Client<T> {
     ) -> Result<(String, String)> {
         // Setup the request
         let request = RequestPayload::CreateKeyPair(
-            Some(CommonTemplateAttribute::unnamed(vec![
+            Some(CommonTemplateAttribute::new(vec![
                 request::Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
                 request::Attribute::CryptographicLength(key_length),
             ])),
-            Some(PrivateKeyTemplateAttribute::unnamed(vec![
+            Some(PrivateKeyTemplateAttribute::new(vec![
                 request::Attribute::Name(private_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
             ])),
-            Some(PublicKeyTemplateAttribute::unnamed(vec![
+            Some(PublicKeyTemplateAttribute::new(vec![
                 request::Attribute::Name(public_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
             ])),

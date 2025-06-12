@@ -51,7 +51,7 @@ pub enum AttributeValue {
     CryptographicAlgorithm(CryptographicAlgorithm),
 
     /// See KMIP 1.0 section 3.5 Cryptographic Length.
-    // Not implemented
+    // Not implemented because the caller should use AttributeValue::Integer.
 
     /// See KMIP 1.0 section 3.6 Cryptographic Parameters.
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Parameters"))]
@@ -72,7 +72,11 @@ pub enum AttributeValue {
     ),
 
     /// See KMIP 1.0 section 3.7 Cryptographic Domain Parameters.
-    // Not implemented
+    #[serde(rename(deserialize = "if 0x42000A==Cryptographic Domain Parameters"))]
+    CryptographicDomainParameters(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<i32>, // Q length
+        #[serde(skip_serializing_if = "Option::is_none")] Option<RecommendedCurve>,
+    ),
 
     /// See KMIP 1.0 section 3.8 Certificate Type.
     // Not implemented
@@ -424,6 +428,72 @@ pub enum CryptographicAlgorithm {
 
     #[serde(rename = "0x00000004")]
     RSA,
+
+    #[serde(rename = "0x00000005")]
+    DSA,
+
+    #[serde(rename = "0x00000006")]
+    ECDSA,
+
+    #[serde(rename = "0x00000007")]
+    HMAC_SHA1,
+
+    #[serde(rename = "0x00000008")]
+    HMAC_SHA224,
+
+    #[serde(rename = "0x00000009")]
+    HMAC_SHA256,
+
+    #[serde(rename = "0x0000000A")]
+    HMAC_SHA384,
+
+    #[serde(rename = "0x0000000B")]
+    HMAC_SHA512,
+
+    #[serde(rename = "0x0000000C")]
+    HMAC_MD5,
+
+    #[serde(rename = "0x0000000D")]
+    DH,
+
+    #[serde(rename = "0x0000000E")]
+    ECDH,
+
+    #[serde(rename = "0x0000000F")]
+    ECMQV,
+
+    #[serde(rename = "0x00000010")]
+    Blowfish,
+
+    #[serde(rename = "0x00000011")]
+    Camellia,
+
+    #[serde(rename = "0x00000012")]
+    CAST5,
+
+    #[serde(rename = "0x00000013")]
+    IDEA,
+
+    #[serde(rename = "0x00000014")]
+    MARS,
+
+    #[serde(rename = "0x00000015")]
+    RC2,
+
+    #[serde(rename = "0x00000016")]
+    RC4,
+
+    #[serde(rename = "0x00000017")]
+    RC5,
+
+    #[serde(rename = "0x00000018")]
+    SKIPJACK,
+
+    #[serde(rename = "0x00000019")]
+    Twofish,
+
+    #[serde(rename = "0x0000001A")]
+    EC,
 }
 
 /// See KMIP 1.0 section 3.5 [Cryptographic Length](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177).
@@ -599,6 +669,37 @@ pub struct CounterLength(pub i32);
 #[serde(rename = "Transparent:0x4200D1")]
 pub struct InitialCounterValue(pub i32);
 
+/// See KMIP 1.0 section 3.7 [Cryptographic Domain Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613488).
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420029")]
+#[rustfmt::skip]
+pub struct CryptographicDomainParameters {
+    #[serde(skip_serializing_if = "Option::is_none")] pub q_length: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub recommended_curve: Option<RecommendedCurve>,
+}
+
+impl CryptographicDomainParameters {
+    pub fn with_q_length(self, value: i32) -> Self {
+        Self {
+            q_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_recommended_curve(self, value: RecommendedCurve) -> Self {
+        Self {
+            recommended_curve: Some(value),
+            ..self
+        }
+    }
+}
+
+impl From<CryptographicDomainParameters> for AttributeValue {
+    fn from(params: CryptographicDomainParameters) -> Self {
+        AttributeValue::CryptographicDomainParameters(params.q_length, params.recommended_curve)
+    }
+}
+
 /// See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
 // Note: This enum value is stored in a u32 but is serialized as an i32.
 #[repr(u32)]
@@ -745,6 +846,58 @@ pub enum KeyFormatType {
     TransparentECMQVPublicKey,
 }
 
+/// See KMIP 1.0 section 9.1.3.2.5 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497874).
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x420075")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum RecommendedCurve {
+    #[serde(rename = "0x00000001")]
+    P_192,
+
+    #[serde(rename = "0x00000002")]
+    K_163,
+
+    #[serde(rename = "0x00000003")]
+    B_163,
+
+    #[serde(rename = "0x00000004")]
+    P_224,
+
+    #[serde(rename = "0x00000005")]
+    K_233,
+
+    #[serde(rename = "0x00000006")]
+    B_233,
+
+    #[serde(rename = "0x00000007")]
+    P_256,
+
+    #[serde(rename = "0x00000008")]
+    K_283,
+
+    #[serde(rename = "0x00000009")]
+    B_283,
+
+    #[serde(rename = "0x0000000A")]
+    P_384,
+
+    #[serde(rename = "0x0000000B")]
+    K_409,
+
+    #[serde(rename = "0x0000000C")]
+    B_409,
+
+    #[serde(rename = "0x0000000D")]
+    P_521,
+
+    #[serde(rename = "0x0000000E")]
+    K_571,
+
+    #[serde(rename = "0x0000000F")]
+    B_571,
+}
+
 /// See KMIP 1.0 section 9.1.3.2.6 [Certificate Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42001D")]
@@ -882,7 +1035,7 @@ pub enum BlockCipherMode {
     X9_102_AKW2,
 }
 
-/// See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497882).
+/// See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42005F")]
 #[non_exhaustive]
