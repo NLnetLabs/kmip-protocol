@@ -309,6 +309,36 @@ pub fn make_kmip_tag_map() -> HashMap<TtlvTag, &'static str> {
 
 pub fn make_kmip_enum_map() -> HashMap<(TtlvTag, u32), &'static str> {
     vec![
+        // Key Format Type: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776616
+        ((b"\x42\x00\x42".into(), 0x00000001), "Raw"),
+        ((b"\x42\x00\x42".into(), 0x00000002), "Opaque"),
+        ((b"\x42\x00\x42".into(), 0x00000003), "PKCS#1"),
+        ((b"\x42\x00\x42".into(), 0x00000004), "PKCS#8"),
+        ((b"\x42\x00\x42".into(), 0x00000005), "X.509"),
+        ((b"\x42\x00\x42".into(), 0x00000006), "ECPrivateKey"),
+        ((b"\x42\x00\x42".into(), 0x00000007), "Transparent Symmetric Key"),
+        ((b"\x42\x00\x42".into(), 0x00000008), "Transparent DSA Private Key"),
+        ((b"\x42\x00\x42".into(), 0x00000009), "Transparent DSA Public Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000A), "Transparent RSA Private Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000B), "Transparent RSA Public Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000C), "Transparent DH Private Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000D), "Transparent DH Public Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000E), "Transparent ECDSA Private Key"),
+        ((b"\x42\x00\x42".into(), 0x0000000F), "Transparent ECDSA Public Key Key"),
+        ((b"\x42\x00\x42".into(), 0x00000010), "Transparent ECDH Private Key"),
+        ((b"\x42\x00\x42".into(), 0x00000011), "Transparent ECDH Public Key"),
+        ((b"\x42\x00\x42".into(), 0x00000012), "Transparent ECMQV Private Key"),
+        ((b"\x42\x00\x42".into(), 0x00000013), "Transparent ECMQV Public Key"),
+        // Object Type: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776625
+        ((b"\x42\x00\x57".into(), 0x00000001), "Certificate"),
+        ((b"\x42\x00\x57".into(), 0x00000002), "Symmetric Key"),
+        ((b"\x42\x00\x57".into(), 0x00000003), "Public Key"),
+        ((b"\x42\x00\x57".into(), 0x00000004), "Private Key"),
+        ((b"\x42\x00\x57".into(), 0x00000005), "Split Key"),
+        ((b"\x42\x00\x57".into(), 0x00000006), "Template"),
+        ((b"\x42\x00\x57".into(), 0x00000007), "Secret Data"),
+        ((b"\x42\x00\x57".into(), 0x00000008), "Opaque Object"),
+        ((b"\x42\x00\x57".into(), 0x00000009), "PGP Key"),
         // Operation: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776640
         ((b"\x42\x00\x5C".into(), 0x00000001), "Create"),
         ((b"\x42\x00\x5C".into(), 0x00000002), "Create Key Pair"),
@@ -351,6 +381,40 @@ pub fn make_kmip_enum_map() -> HashMap<(TtlvTag, u32), &'static str> {
         ((b"\x42\x00\x5C".into(), 0x00000027), "Hash"),
         ((b"\x42\x00\x5C".into(), 0x00000028), "Create Split Key"),
         ((b"\x42\x00\x5C".into(), 0x00000029), "Join Split Key"),
+        // Result Reason: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776642
+        ((b"\x42\x00\x7E".into(), 0x00000001), "Item Not Found"),
+        ((b"\x42\x00\x7E".into(), 0x00000002), "Response Too Large"),
+        ((b"\x42\x00\x7E".into(), 0x00000003), "Authentication Not Successful"),
+        ((b"\x42\x00\x7E".into(), 0x00000004), "Invalid Message"),
+        ((b"\x42\x00\x7E".into(), 0x00000005), "Operation Not Supported"),
+        ((b"\x42\x00\x7E".into(), 0x00000006), "Missing Data"),
+        ((b"\x42\x00\x7E".into(), 0x00000007), "Invalid Field"),
+        ((b"\x42\x00\x7E".into(), 0x00000008), "Feature Not Supported"),
+        ((b"\x42\x00\x7E".into(), 0x00000009), "Operation Canceled By Requester"),
+        ((b"\x42\x00\x7E".into(), 0x0000000A), "Cryptographic Failure"),
+        ((b"\x42\x00\x7E".into(), 0x0000000B), "Illegal Operation"),
+        ((b"\x42\x00\x7E".into(), 0x0000000C), "Permission Denied"),
+        ((b"\x42\x00\x7E".into(), 0x0000000D), "Object archived"),
+        ((b"\x42\x00\x7E".into(), 0x0000000E), "Index Out of Bounds"),
+        (
+            (b"\x42\x00\x7E".into(), 0x0000000F),
+            "Application Namespace Not Supported",
+        ),
+        ((b"\x42\x00\x7E".into(), 0x00000010), "Key Format Type Not Supported"),
+        (
+            (b"\x42\x00\x7E".into(), 0x00000011),
+            "Key Compression Type Not Supported",
+        ),
+        ((b"\x42\x00\x7E".into(), 0x00000012), "Encoding Option Error"),
+        ((b"\x42\x00\x7E".into(), 0x00000013), "Key Value Not Present"),
+        ((b"\x42\x00\x7E".into(), 0x00000014), "Attestation Required"),
+        ((b"\x42\x00\x7E".into(), 0x00000015), "Attestation Failed"),
+        ((b"\x42\x00\x7E".into(), 0x00000100), "General Failure"),
+        // Result Status: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776641
+        ((b"\x42\x00\x7F".into(), 0x00000000), "Success"),
+        ((b"\x42\x00\x7F".into(), 0x00000001), "Operation Failed"),
+        ((b"\x42\x00\x7F".into(), 0x00000002), "Operation Pending"),
+        ((b"\x42\x00\x7F".into(), 0x00000003), "Operation Undone"),
     ]
     .into_iter()
     .collect()
