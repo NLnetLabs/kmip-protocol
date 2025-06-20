@@ -194,10 +194,20 @@ impl<T: ReadWrite> Client<T> {
             Err((err, cap)) => {
                 let err = match err.kind() {
                     ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
-                    ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
-                        Error::DeserializeError(err.to_string())
+                    ErrorKind::ResponseSizeExceedsLimit(v) => {
+                        Error::ResponseReadError(format!("Response size {v} bytes is too large"))
                     }
-                    _ => Error::InternalError(err.to_string()),
+                    ErrorKind::MalformedTtlv(err) => {
+                        Error::DeserializeError(format!("Error while deserializing the response: {err}"))
+                    }
+                    ErrorKind::SerdeError(err, None) => {
+                        Error::DeserializeError(format!("Error while deserializing the response: {err}"))
+                    }
+                    ErrorKind::SerdeError(err, Some(context)) => Error::DeserializeError(format!(
+                        "Error while deserializing the response: {err} [context: {}]",
+                        hex::encode_upper(context)
+                    )),
+                    err => Error::InternalError(format!("An internal error occured: {err}")),
                 };
                 return Err((err, Some(cap)));
             }
@@ -286,13 +296,21 @@ impl<T: ReadWrite> Client<T> {
         // Serialize the request payload to TTLV byte form.
         let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
             ErrorKind::IoError(e) => Error::SerializeError(e.to_string()),
+            ErrorKind::ResponseSizeExceedsLimit(size) => {
+                Error::ServerError(format!("Response size {size} bytes is too large"))
+            }
+            ErrorKind::MalformedTtlv(err) => Error::SerializeError(err.to_string()),
+            ErrorKind::SerdeError(err, None) => Error::SerializeError(err.to_string()),
+            ErrorKind::SerdeError(err, Some(context)) => {
+                Error::SerializeError(format!("{err} [context: {}]", hex::encode_upper(context)))
+            }
             _ => Error::InternalError(err.to_string()),
         })?;
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured then generate, record and log the diagnostic representation of the request.
         if self.reader_config.capture() {
-            let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
+            let diag_str = self.pretty_printer.to_string(&req_bytes);
             trace!("KMIP TTLV request: {}", &diag_str);
             self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
@@ -319,7 +337,7 @@ impl<T: ReadWrite> Client<T> {
         };
 
         if let Some(buf) = cap {
-            let diag_str = self.pretty_printer.to_diag_string(&buf);
+            let diag_str = self.pretty_printer.to_string(&buf);
             trace!("KMIP TTLV response: {}", &diag_str);
             self.last_res_diag_str.borrow_mut().replace(diag_str);
         }
