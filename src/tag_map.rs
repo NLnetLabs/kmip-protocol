@@ -309,6 +309,33 @@ pub fn make_kmip_tag_map() -> HashMap<TtlvTag, &'static str> {
 
 pub fn make_kmip_enum_map() -> HashMap<(TtlvTag, u32), &'static str> {
     vec![
+        // Cryptographic Algorithm: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776626
+        ((b"\x42\x00\x28".into(), 0x00000001), "DES"),
+        ((b"\x42\x00\x28".into(), 0x00000002), "3DES"),
+        ((b"\x42\x00\x28".into(), 0x00000003), "AES"),
+        ((b"\x42\x00\x28".into(), 0x00000004), "RSA"),
+        ((b"\x42\x00\x28".into(), 0x00000005), "DSA"),
+        ((b"\x42\x00\x28".into(), 0x00000006), "ECDSA"),
+        ((b"\x42\x00\x28".into(), 0x00000007), "HMAC-SHA1"),
+        ((b"\x42\x00\x28".into(), 0x00000008), "HMAC-SHA224"),
+        ((b"\x42\x00\x28".into(), 0x00000009), "HMAC-SHA256"),
+        ((b"\x42\x00\x28".into(), 0x0000000A), "HMAC-SHA384"),
+        ((b"\x42\x00\x28".into(), 0x0000000B), "HMAC-SHA512"),
+        ((b"\x42\x00\x28".into(), 0x0000000C), "HMAC-MD5"),
+        ((b"\x42\x00\x28".into(), 0x0000000D), "DH"),
+        ((b"\x42\x00\x28".into(), 0x0000000E), "ECDH"),
+        ((b"\x42\x00\x28".into(), 0x0000000F), "ECMQV"),
+        ((b"\x42\x00\x28".into(), 0x00000010), "Blowfish"),
+        ((b"\x42\x00\x28".into(), 0x00000011), "Camellia"),
+        ((b"\x42\x00\x28".into(), 0x00000012), "CAST5"),
+        ((b"\x42\x00\x28".into(), 0x00000013), "IDEA"),
+        ((b"\x42\x00\x28".into(), 0x00000014), "MARS"),
+        ((b"\x42\x00\x28".into(), 0x00000015), "RC2"),
+        ((b"\x42\x00\x28".into(), 0x00000016), "RC4"),
+        ((b"\x42\x00\x28".into(), 0x00000017), "RC5"),
+        ((b"\x42\x00\x28".into(), 0x00000018), "SKIPJACK"),
+        ((b"\x42\x00\x28".into(), 0x00000019), "Twofish"),
+        ((b"\x42\x00\x28".into(), 0x0000001A), "EC"),
         // Key Format Type: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776616
         ((b"\x42\x00\x42".into(), 0x00000001), "Raw"),
         ((b"\x42\x00\x42".into(), 0x00000002), "Opaque"),
@@ -329,6 +356,9 @@ pub fn make_kmip_enum_map() -> HashMap<(TtlvTag, u32), &'static str> {
         ((b"\x42\x00\x42".into(), 0x00000011), "Transparent ECDH Public Key"),
         ((b"\x42\x00\x42".into(), 0x00000012), "Transparent ECMQV Private Key"),
         ((b"\x42\x00\x42".into(), 0x00000013), "Transparent ECMQV Public Key"),
+        // Name Type: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776624
+        ((b"\x42\x00\x54".into(), 0x00000001), "Uninterpreted Text String"),
+        ((b"\x42\x00\x54".into(), 0x00000002), "URI"),
         // Object Type: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776625
         ((b"\x42\x00\x57".into(), 0x00000001), "Certificate"),
         ((b"\x42\x00\x57".into(), 0x00000002), "Symmetric Key"),
