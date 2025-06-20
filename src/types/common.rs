@@ -2,10 +2,10 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
 use enum_display_derive::Display;
 use enum_flags::EnumFlags;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -211,7 +211,7 @@ pub enum AttributeValue {
 // initial Tag of TTLV to be written out, for which we use TagOnly:0x420043
 // below in hte case of the Bytes variant as that would otherwise be
 // serialized without a tag.
-#[serde(rename = "Transparent")] 
+#[serde(rename = "Transparent")]
 pub enum KeyMaterial {
     #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
     #[serde(rename(serialize = "TagOnly:0x420043"))]
