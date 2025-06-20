@@ -1,7 +1,8 @@
 //! Rust types for sserializing KMIP requests.
+use std::{fmt::Display, str::FromStr};
+
 use enum_display_derive::Display;
 use serde_derive::{Deserialize, Serialize};
-use std::fmt::Display;
 
 use super::common::{
     ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate,
@@ -18,6 +19,20 @@ pub struct Attribute(
     #[serde(skip_serializing_if = "Option::is_none")] pub Option<AttributeIndex>,
     pub AttributeValue,
 );
+
+impl Attribute {
+    pub fn name(&self) -> &AttributeName {
+        &self.0
+    }
+
+    pub fn index(&self) -> Option<&AttributeIndex> {
+        self.1.as_ref()
+    }
+
+    pub fn value(&self) -> &AttributeValue {
+        &self.2
+    }
+}
 
 /// Helper functions to simplifying including KMIP TemplateAttributes in requests.
 ///
@@ -420,6 +435,14 @@ pub struct Template(pub Vec<Attribute>);
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420053(0x420055,0x420054)")]
 pub struct Name(pub NameValue, pub NameType);
+
+impl FromStr for Name {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(NameValue::from_str(s)?, NameType::UninterpretedTextString))
+    }
+}
 
 impl std::fmt::Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

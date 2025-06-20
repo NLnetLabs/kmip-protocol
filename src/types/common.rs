@@ -384,6 +384,14 @@ impl std::fmt::Display for NameValue {
     }
 }
 
+impl FromStr for NameValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
+    }
+}
+
 /// See KMIP 1.0 section 3.3 [Object Type](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420057")]
