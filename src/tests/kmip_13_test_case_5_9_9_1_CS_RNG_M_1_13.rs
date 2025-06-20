@@ -43,7 +43,11 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
         "00000030000000042000D0200000004000000010000000042000F010000002842005C0500000004000000250000000042",
         "007901000000104200C402000000040000002000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,

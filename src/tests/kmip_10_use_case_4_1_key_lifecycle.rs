@@ -38,7 +38,7 @@ fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_request() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Create(
                 ObjectType::SymmetricKey,
-                TemplateAttribute::unnamed(vec![
+                TemplateAttribute::new(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::AES),
                     Attribute::CryptographicLength(128),
                     Attribute::Name("Key1".into()),
@@ -58,7 +58,11 @@ fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_request() {
         "05000000040000000100000000420008010000003042000A070000001843727970746F677261706869632055736167652",
         "04D61736B42000B02000000040000000400000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -136,7 +140,11 @@ fn kmip_1_0_usecase_4_1_step_2_client_a_get_attribute_request() {
         "00790100000040420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "461390000000042000A07000000055374617465000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -217,7 +225,11 @@ fn kmip_1_0_usecase_4_1_step_3_client_a_activate_request() {
         "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "4613900000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -292,7 +304,11 @@ fn kmip_1_0_usecase_4_1_step_4_client_a_get_attribute_request() {
         "00790100000040420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "461390000000042000A07000000055374617465000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -378,7 +394,11 @@ fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_request() {
         "0000200000000420008010000003842000A07000000044E616D650000000042000B010000002042005507000000044B65",
         "79310000000042005405000000040000000100000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -422,8 +442,10 @@ fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_response() 
     assert!(matches!(&item.payload, Some(ResponsePayload::Locate(_))));
 
     if let Some(ResponsePayload::Locate(payload)) = item.payload.as_ref() {
-        assert_eq!(payload.unique_identifiers.len(), 1);
-        assert_eq!(&payload.unique_identifiers[0], KEY_ID);
+        assert!(payload.unique_identifiers.is_some());
+        let unique_identifiers = payload.unique_identifiers.as_ref().unwrap();
+        assert_eq!(unique_identifiers.len(), 1);
+        assert_eq!(&unique_identifiers[0], KEY_ID);
     } else {
         panic!("Wrong payload");
     }
@@ -455,7 +477,11 @@ fn kmip_1_0_usecase_4_1_step_6_client_b_get_symmetric_key_request() {
         "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "4613900000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -553,7 +579,11 @@ fn kmip_1_0_usecase_4_1_step_7_client_b_revoke_symmetric_key_compromised_request
         "00790100000058420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "461390000000042008101000000104200820500000004000000020000000042002109000000080000000000000006",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -628,7 +658,11 @@ fn kmip_1_0_usecase_4_1_step_8_client_b_get_attribute_request() {
         "00790100000040420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "461390000000042000A07000000055374617465000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -710,7 +744,11 @@ fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_request() {
         "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "4613900000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -846,7 +884,11 @@ fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_request() {
         "623732662D32613136313633336164613900000000420008010000002842000A070000000C782D6174747269627574653",
         "20000000042000B070000000656616C7565320000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -984,7 +1026,11 @@ fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_request() {
         "64662D343363302D623732662D32613136313633336164613900000000420008010000003042000A070000000C782D617",
         "474726962757465320000000042000B070000000E4D6F64696669656456616C7565320000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -1115,7 +1161,11 @@ fn kmip_1_0_usecase_4_1_step_13_client_a_delete_attribute_batch_request() {
         "4070000002432316432386238612D303664662D343363302D623732662D3261313631363333616461390000000042000A",
         "070000000C782D6174747269627574653200000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -1230,7 +1280,11 @@ fn kmip_1_0_usecase_4_1_step_15_client_a_destroy_symmetric_key_request() {
         "00790100000030420094070000002432316432386238612D303664662D343363302D623732662D3261313631363333616",
         "4613900000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,

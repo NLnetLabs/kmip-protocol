@@ -55,7 +55,11 @@ fn kmip_1_0_usecase_12_1_step_1_query_operations_objects_max_response_size_256_r
     //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
         "0000200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -124,7 +128,11 @@ fn kmip_1_0_usecase_12_1_step_2_query_operations_objects_max_response_size_2048_
     //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
         "0000200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,

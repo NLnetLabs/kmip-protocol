@@ -41,7 +41,7 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Create(
                 ObjectType::SymmetricKey,
-                TemplateAttribute::unnamed(vec![
+                TemplateAttribute::new(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::AES),
                     Attribute::CryptographicLength(128),
                     Attribute::CryptographicUsageMask(
@@ -75,7 +75,11 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
         "0506172616D657465727342000B01000000304200110500000004000000010000000042005F0500000004000000030000",
         "000042003805000000040000000400000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
