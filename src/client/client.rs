@@ -457,7 +457,7 @@ impl<T: ReadWrite> Client<T> {
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn activate_key(&self, private_key_id: &str) -> Result<()> {
-        let request = RequestPayload::Activate(Some(UniqueIdentifier(private_key_id.to_owned())));
+        let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
