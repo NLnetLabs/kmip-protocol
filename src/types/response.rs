@@ -40,7 +40,10 @@ pub struct KeyBlock {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420045")]
 pub struct KeyValue {
+    #[serde(rename = "Transparent")]
     pub key_material: KeyMaterial,
+
+    #[serde(rename = "0x420008")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attributes: Option<Vec<Attribute>>,
 }
@@ -49,13 +52,17 @@ pub struct KeyValue {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420091")]
 pub struct TemplateAttribute {
+    #[serde(rename = "0x420043")]
     pub name: KeyMaterial,
+
+    #[serde(rename = "0x420008")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attributes: Option<Vec<Attribute>>,
 }
 
 ///  See KMIP 1.0 section 2.2 [Managed Objects](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent")]
 #[non_exhaustive]
 pub enum ManagedObject {
     #[serde(rename = "if 0x420057==0x00000001")]
@@ -96,6 +103,7 @@ pub struct Certificate {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42008F")]
 pub struct SymmetricKey {
+    #[serde(rename = "0x420040")]
     pub key_block: KeyBlock,
 }
 
@@ -103,6 +111,7 @@ pub struct SymmetricKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42006D")]
 pub struct PublicKey {
+    #[serde(rename = "0x420040")]
     pub key_block: KeyBlock,
 }
 
@@ -110,6 +119,7 @@ pub struct PublicKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420064")]
 pub struct PrivateKey {
+    #[serde(rename = "0x420040")]
     pub key_block: KeyBlock,
 }
 
@@ -133,7 +143,7 @@ pub struct CreateResponsePayload {
 
 ///  See KMIP 1.0 section 4.2 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct CreateKeyPairResponsePayload {
     #[serde(rename = "0x420066")]
     pub private_key_unique_identifier: UniqueIdentifier,
@@ -172,16 +182,21 @@ pub struct LocateResponsePayload {
 
 ///  See KMIP 1.0 section 4.10 [Get](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct GetResponsePayload {
+    #[serde(rename = "0x420057")]
     pub object_type: ObjectType,
+
+    #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "Untagged")]
     pub cryptographic_object: ManagedObject,
 }
 
 ///  See KMIP 1.0 section 4.11 [Get Attributes](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct GetAttributesResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -193,7 +208,7 @@ pub struct GetAttributesResponsePayload {
 
 ///  See KMIP 1.0 section 4.12 [Get Attribute List](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct GetAttributeListResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -206,7 +221,7 @@ pub struct GetAttributeListResponsePayload {
 /// 4.19 [Revoke](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227)
 /// and 4.20 [Destroy](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228) responses.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct UniqueIdentifierResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -225,7 +240,7 @@ pub type DestroyResponsePayload = UniqueIdentifierResponsePayload;
 /// 4.14 [Modify](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222) and 4.15
 /// [Delete](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223) Attribute responses.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct AttributeEditResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -245,7 +260,7 @@ pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 
 ///  See KMIP 1.0 section 4.24 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct QueryResponsePayload {
     #[serde(rename = "0x42005C")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -268,7 +283,7 @@ pub struct QueryResponsePayload {
 
 ///  See KMIP 1.0 section 4.24 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct RNGRetrieveResponsePayload {
     #[serde(with = "serde_bytes")]
     pub data: Vec<u8>,
@@ -281,7 +296,7 @@ pub struct ServerInformation;
 
 ///  See KMIP 1.1 section 4.26 [Discover Versions](https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct DiscoverVersionsResponsePayload {
     #[serde(rename = "0x420069")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -290,7 +305,7 @@ pub struct DiscoverVersionsResponsePayload {
 
 ///  See KMIP 1.2 section 4.31 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Transparent:0x42007C")]
 pub struct SignResponsePayload {
     #[serde(rename = "0x420094")]
     pub unique_identifier: UniqueIdentifier,
@@ -472,7 +487,7 @@ pub struct BatchItem {
 
 ///  See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42007C")]
+#[serde(rename = "Override:0x42007C")]
 #[non_exhaustive]
 #[allow(clippy::large_enum_variant)]
 pub enum ResponsePayload {

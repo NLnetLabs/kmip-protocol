@@ -204,10 +204,16 @@ pub enum AttributeValue {
 
 /// See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420043")]
+// Use "Transparent" here because we must not write out the TLV of TTLV for
+// 0x420043 because Bytes must be written as 42004208..., not 42004301 (i.e.
+// as the ByteString type, not the Structure type)... but we do need the
+// initial Tag of TTLV to be written out, for which we use TagOnly:0x420043
+// below in hte case of the Bytes variant as that would otherwise be
+// serialized without a tag.
+#[serde(rename = "Transparent")] 
 pub enum KeyMaterial {
     #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
-    #[serde(rename(serialize = "Transparent"))]
+    #[serde(rename(serialize = "TagOnly:0x420043"))]
     Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
 
     #[serde(rename(deserialize = "if 0x420042 == 0x00000007"))]
@@ -297,9 +303,10 @@ pub struct TransparentRSAPrivateKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPublicKey {
-    #[serde(with = "serde_bytes")]
+    #[serde(rename = "0x420052", with = "serde_bytes")]
     pub modulus: Vec<u8>,
-    #[serde(with = "serde_bytes")]
+
+    #[serde(rename = "0x42006C", with = "serde_bytes")]
     pub public_exponent: Vec<u8>,
 }
 
@@ -506,19 +513,45 @@ pub struct CryptographicLength(pub i32);
 #[serde(rename = "0x42002B")]
 #[rustfmt::skip]
 pub struct CryptographicParameters {
-    #[serde(skip_serializing_if = "Option::is_none")] pub block_cipher_mode: Option<BlockCipherMode>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub padding_method: Option<PaddingMethod>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub hashing_algorithm: Option<HashingAlgorithm>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub key_role_type: Option<KeyRoleType>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub random_iv: Option<RandomIV>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub iv_length: Option<IVLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub tag_length: Option<TagLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub counter_length: Option<CounterLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+    #[serde(rename = "0x420011", skip_serializing_if = "Option::is_none")]
+    pub block_cipher_mode: Option<BlockCipherMode>,
+    
+    #[serde(rename = "0x42005F", skip_serializing_if = "Option::is_none")]
+    pub padding_method: Option<PaddingMethod>,
+    
+    #[serde(rename = "0x420038", skip_serializing_if = "Option::is_none")]
+    pub hashing_algorithm: Option<HashingAlgorithm>,
+    
+    #[serde(rename = "0x420083", skip_serializing_if = "Option::is_none")]
+    pub key_role_type: Option<KeyRoleType>,
+    
+    #[serde(rename = "0x4200AE", skip_serializing_if = "Option::is_none")]
+    pub digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
+    
+    #[serde(rename = "0x420028", skip_serializing_if = "Option::is_none")]
+    pub cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200C5", skip_serializing_if = "Option::is_none")]
+    pub random_iv: Option<RandomIV>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CD", skip_serializing_if = "Option::is_none")]
+    pub iv_length: Option<IVLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CE", skip_serializing_if = "Option::is_none")]
+    pub tag_length: Option<TagLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CF", skip_serializing_if = "Option::is_none")]
+    pub fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D2", skip_serializing_if = "Option::is_none")]
+    pub invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D0", skip_serializing_if = "Option::is_none")]
+    pub counter_length: Option<CounterLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D1", skip_serializing_if = "Option::is_none")]
+    pub initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+    
 }
 
 impl CryptographicParameters {
