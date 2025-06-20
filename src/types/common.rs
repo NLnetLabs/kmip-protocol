@@ -1,10 +1,11 @@
 //! Rust types common to both serialization of KMIP requests and deserialization KMIP responses.
+use std::fmt::Display;
+use std::str::FromStr;
+
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
-
 use enum_display_derive::Display;
 use enum_flags::EnumFlags;
-use std::fmt::Display;
 
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
