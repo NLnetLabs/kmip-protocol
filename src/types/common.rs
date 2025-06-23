@@ -209,7 +209,7 @@ pub enum AttributeValue {
 // 0x420043 because Bytes must be written as 42004208..., not 42004301 (i.e.
 // as the ByteString type, not the Structure type)... but we do need the
 // initial Tag of TTLV to be written out, for which we use TagOnly:0x420043
-// below in hte case of the Bytes variant as that would otherwise be
+// below in the case of the Bytes variant as that would otherwise be
 // serialized without a tag.
 #[serde(rename = "Transparent")]
 pub enum KeyMaterial {
