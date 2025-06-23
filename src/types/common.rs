@@ -242,6 +242,22 @@ pub enum KeyMaterial {
     Structure(#[serde(with = "serde_bytes")] Vec<u8>), // All other transparent key types which we don't support yet
 }
 
+impl Display for KeyMaterial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeyMaterial::Bytes(_) => write!(f, "Bytes"),
+            KeyMaterial::TransparentSymmetricKey(_) => write!(f, "TransparentSymmetricKey"),
+            KeyMaterial::TransparentDSAPrivateKey(_) => write!(f, "TransparentDSAPrivateKey"),
+            KeyMaterial::TransparentDSAPublicKey(_) => write!(f, "TransparentDSAPublicKey"),
+            KeyMaterial::TransparentRSAPrivateKey(_) => write!(f, "TransparentRSAPrivateKey"),
+            KeyMaterial::TransparentRSAPublicKey(_) => write!(f, "TransparentRSAPublicKey"),
+            KeyMaterial::TransparentDHPrivateKey(_) => write!(f, "TransparentDHPrivateKey"),
+            KeyMaterial::TransparentDHPublicKey(_) => write!(f, "TransparentDHPublicKey"),
+            KeyMaterial::Structure(_) => write!(f, "Structure"),
+        }
+    }
+}
+
 /// See KMIP 1.0 section 2.1.7.1 [Transparent Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
