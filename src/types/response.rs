@@ -90,6 +90,17 @@ pub enum ManagedObject {
     // OpaqueObject(OpaqueObject),
 }
 
+impl Display for ManagedObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ManagedObject::Certificate(_) => write!(f, "Certificate"),
+            ManagedObject::SymmetricKey(_) => write!(f, "SymmetricKey"),
+            ManagedObject::PublicKey(_) => write!(f, "PublicKey"),
+            ManagedObject::PrivateKey(_) => write!(f, "PrivateKey"),
+        }
+    }
+}
+
 ///  See KMIP 1.0 section 2.2.1 [Certificate](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581164).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420013")]
