@@ -40,7 +40,7 @@ pub struct KeyBlock {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420045")]
 pub struct KeyValue {
-    #[serde(rename = "Transparent")]
+    #[serde(rename = "Untagged")]
     pub key_material: KeyMaterial,
 
     #[serde(rename = "0x420008")]
