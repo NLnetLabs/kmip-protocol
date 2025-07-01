@@ -9,11 +9,9 @@ use std::{
 };
 
 use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
-use log::trace;
 
 use crate::{
     auth::{self, CredentialType},
-    request::to_vec,
     tag_map,
     types::{common::*, request, request::*, response::*, traits::*},
 };
@@ -309,10 +307,18 @@ impl<T: ReadWrite> Client<T> {
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured then generate, record and log the diagnostic representation of the request.
-        if self.reader_config.capture() {
-            let diag_str = self.pretty_printer.to_string(&req_bytes);
-            trace!("KMIP TTLV request: {}", &diag_str);
-            self.last_req_diag_str.borrow_mut().replace(diag_str);
+        match self.reader_config.capture() {
+            CaptureMode::Disabled => { /* Nothing to do */ }
+            CaptureMode::Diagnostic => {
+                let diag_str = self.reader_config.self.pretty_printer.to_diag_string(&req_bytes);
+                trace!("KMIP TTLV request: {}", &diag_str);
+                self.last_req_diag_str.borrow_mut().replace(diag_str);
+            }
+            CaptureMode::Sensitive => {
+                let diag_str = self.reader_config.self.pretty_printer.to_string(&req_bytes);
+                trace!("KMIP TTLV request: {}", &diag_str);
+                self.last_req_diag_str.borrow_mut().replace(diag_str);
+            }
         }
 
         // Send the serialized request and receive (and deserialize) the response.
