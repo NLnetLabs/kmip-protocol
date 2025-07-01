@@ -343,9 +343,19 @@ impl<T: ReadWrite> Client<T> {
         };
 
         if let Some(buf) = cap {
-            let diag_str = self.pretty_printer.to_string(&buf);
-            trace!("KMIP TTLV response: {}", &diag_str);
-            self.last_res_diag_str.borrow_mut().replace(diag_str);
+            match self.reader_config.capture() {
+                CaptureMode::Disabled => { /* Nothing to do */ }
+                CaptureMode::Diagnostic => {
+                    let diag_str = self.pretty_printer.to_diag_string(&buf);
+                    trace!("KMIP TTLV response: {}", &diag_str);
+                    self.last_res_diag_str.borrow_mut().replace(diag_str);
+                }
+                CaptureMode::Sensitive => {
+                    let diag_str = self.pretty_printer.to_string(&buf);
+                    trace!("KMIP TTLV response: {}", &diag_str);
+                    self.last_res_diag_str.borrow_mut().replace(diag_str);
+                }
+            }
         }
 
         res
