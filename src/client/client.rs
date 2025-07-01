@@ -8,10 +8,12 @@ use std::{
     },
 };
 
-use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
+use kmip_ttlv::{de::CaptureMode, error::ErrorKind, Config, PrettyPrinter};
+use log::trace;
 
 use crate::{
     auth::{self, CredentialType},
+    request::to_vec,
     tag_map,
     types::{common::*, request, request::*, response::*, traits::*},
 };
@@ -310,12 +312,12 @@ impl<T: ReadWrite> Client<T> {
         match self.reader_config.capture() {
             CaptureMode::Disabled => { /* Nothing to do */ }
             CaptureMode::Diagnostic => {
-                let diag_str = self.reader_config.self.pretty_printer.to_diag_string(&req_bytes);
+                let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
                 trace!("KMIP TTLV request: {}", &diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
             CaptureMode::Sensitive => {
-                let diag_str = self.reader_config.self.pretty_printer.to_string(&req_bytes);
+                let diag_str = self.pretty_printer.to_string(&req_bytes);
                 trace!("KMIP TTLV request: {}", &diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
