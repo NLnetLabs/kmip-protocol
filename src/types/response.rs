@@ -274,21 +274,19 @@ pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 #[serde(rename = "Transparent:0x42007C")]
 pub struct QueryResponsePayload {
     #[serde(rename = "0x42005C")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub operations: Option<Vec<Operation>>,
 
     #[serde(rename = "0x420057")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub object_types: Option<Vec<ObjectType>>,
 
     #[serde(rename = "0x42009D")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub vendor_identification: Option<String>,
 
     #[serde(rename = "0x420088")]
-    #[serde(skip_deserializing)] // We don't support this yet
-    //#[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
+    #[serde(skip_serializing, default)]
     pub server_information: Option<ServerInformation>,
 }
 

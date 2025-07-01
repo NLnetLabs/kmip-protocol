@@ -756,7 +756,7 @@ pub enum RequestPayload {
     // Validate = 17
     /// See KMIP 1.0 section 4.24 Query.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
-    #[serde(rename = "if 0x42005C==0x00000018")]
+    #[serde(rename = "WithTtlHeader:if 0x42005C==0x00000018")]
     Query(Vec<QueryFunction>),
 
     // TODO? Missing operation code mappings to request payloads
