@@ -9,7 +9,7 @@ use std::{
 };
 
 use kmip_ttlv::{de::CaptureMode, error::ErrorKind, Config, PrettyPrinter};
-use log::trace;
+use tracing::trace;
 
 use crate::{
     auth::{self, CredentialType},
@@ -179,19 +179,24 @@ impl<T: ReadWrite> Client<T> {
         req_bytes: &[u8],
         stream: Arc<Mutex<T>>,
     ) -> std::result::Result<(ResponsePayload, Vec<u8>), (Error, Option<Vec<u8>>)> {
+        trace!("Acquiring stream lock");
         let mut lock = match stream.lock() {
             Ok(lock) => lock,
             Err(err) => return Err((err.into(), None)),
         };
         let stream = lock.deref_mut();
+
+        trace!("Writing {} bytes to the KMIP server", req_bytes.len());
         if let Err(err) = stream.write_all(req_bytes).await {
             return Err((Error::RequestWriteError(err.to_string()), None));
         }
 
         // Read and deserialize the response
+        trace!("Awaiting KMIP server response");
         let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config).await {
             Ok((res, cap)) => (res, cap),
             Err((err, cap)) => {
+                trace!("KMIP server responded with an error.");
                 let err = match err.kind() {
                     ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
                     ErrorKind::ResponseSizeExceedsLimit(v) => {
@@ -213,6 +218,7 @@ impl<T: ReadWrite> Client<T> {
             }
         };
 
+        trace!("KMIP server responded with success.");
         let res = if res.header.batch_count == 1 && res.batch_items.len() == 1 {
             let item = &mut res.batch_items[0];
 
@@ -262,6 +268,7 @@ impl<T: ReadWrite> Client<T> {
             )))
         };
 
+        trace!("Send and receive complete");
         match res {
             Ok(res) => Ok((res, cap)),
             Err(err) => Err((err, Some(cap))),
@@ -360,6 +367,7 @@ impl<T: ReadWrite> Client<T> {
             }
         }
 
+        trace!("do_request() complete.");
         res
     }
 
@@ -378,6 +386,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Query operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Query)
@@ -416,6 +425,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Create RSA key pair operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
@@ -437,6 +447,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("RNGRetrieve operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
@@ -462,6 +473,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Sign operation complete");
 
         get_response_payload_for_type!(response, ResponsePayload::Sign)
     }
@@ -479,6 +491,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Activate operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
@@ -504,6 +517,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Revoke key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
@@ -522,6 +536,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Destroy key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
@@ -544,6 +559,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Rename key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
@@ -565,6 +581,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Get operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Get)
