@@ -361,8 +361,7 @@ pub struct TransparentDHPublicKey {
 
 /// See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename(deserialize = "0x4200C2"))]
-#[serde(rename(serialize = "Transparent:0x4200C2"))]
+#[serde(rename = "Transparent:0x4200C2")]
 pub struct Data(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 /// See KMIP 1.2 section 2.1.11 [Data Length](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467).

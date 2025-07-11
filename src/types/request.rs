@@ -1,5 +1,5 @@
 //! Rust types for sserializing KMIP requests.
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use enum_display_derive::Display;
 use serde_derive::{Deserialize, Serialize};
@@ -377,6 +377,16 @@ impl PublicKeyTemplateAttribute {
 #[serde(rename = "0x420023(0x420024,0x420025)")]
 pub struct Credential(pub CredentialType, pub CredentialValue);
 
+impl Credential {
+    pub fn credential_type(&self) -> CredentialType {
+        self.0
+    }
+
+    pub fn credential_value(&self) -> &CredentialValue {
+        &self.1
+    }
+}
+
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x420024")]
@@ -391,10 +401,25 @@ pub enum CredentialType {
 #[serde(rename = "0x420025")]
 #[non_exhaustive]
 pub enum CredentialValue {
+    #[serde(rename = "if 0x420024==0x00000001")]
     UsernameAndPassword(
         Username,
         #[serde(skip_serializing_if = "Option::is_none")] Option<Password>,
     ),
+}
+
+impl CredentialValue {
+    pub fn username(&self) -> Option<&Username> {
+        match self {
+            CredentialValue::UsernameAndPassword(username, _password) => Some(username),
+        }
+    }
+
+    pub fn password(&self) -> Option<&Password> {
+        match self {
+            CredentialValue::UsernameAndPassword(_username, password) => password.as_ref(),
+        }
+    }
 }
 
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
@@ -402,10 +427,26 @@ pub enum CredentialValue {
 #[serde(rename = "Transparent:0x420099")]
 pub struct Username(pub String);
 
+impl Deref for Username {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_str()
+    }
+}
+
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200A1")]
 pub struct Password(pub String);
+
+impl Deref for Password {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_str()
+    }
+}
 
 /// See KMIP 1.0 section 2.1.3 [Key Block](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613459).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -567,11 +608,31 @@ pub struct MaximumResponseSize(pub i32);
 
 /// See KMIP 1.0 section 6.6 [Authentication](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581244).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x42000C")]
+#[serde(rename = "0x42000C(0x420023)")]
 pub struct Authentication(pub Credential);
 
+impl Authentication {
+    pub fn credential(&self) -> &Credential {
+        &self.0
+    }
+}
+
+impl Authentication {
+    pub fn username(&self) -> Option<&Username> {
+        match self.credential().credential_value() {
+            CredentialValue::UsernameAndPassword(username, _password) => Some(username),
+        }
+    }
+
+    pub fn password(&self) -> Option<&Password> {
+        match self.credential().credential_value() {
+            CredentialValue::UsernameAndPassword(_username, password) => password.as_ref(),
+        }
+    }
+}
+
 /// See KMIP 1.0 section 6.14 [Batch Count](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581252).
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42000D")]
 pub struct BatchCount(pub i32);
 
@@ -618,9 +679,9 @@ impl RequestMessage {
 #[serde(rename = "0x420077(0x420069,0x420050,0x42000C,0x42000D)")]
 pub struct RequestHeader(
     pub ProtocolVersion,
-    #[serde(skip_serializing_if = "Option::is_none")] pub Option<MaximumResponseSize>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub Option<Authentication>,
-    pub BatchCount,
+    #[serde(skip_serializing_if = "Option::is_none", default)] pub Option<MaximumResponseSize>,
+    #[serde(skip_serializing_if = "Option::is_none", default)] pub Option<Authentication>,
+    #[serde(default)] pub BatchCount,
 );
 
 impl RequestHeader {
