@@ -813,7 +813,7 @@ pub struct ApplicationData(pub String);
 
 /// See KMIP 1.0 section 6.4 [Unique Batch Item ID](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename(serialize = "Transparent:0x420093"))]
+#[serde(rename = "Transparent:0x420093")]
 pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
