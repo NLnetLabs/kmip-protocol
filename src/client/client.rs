@@ -13,9 +13,21 @@ use tracing::trace;
 
 use crate::{
     auth::{self, CredentialType},
-    request::to_vec,
     tag_map,
-    types::{common::*, request, request::*, response::*, traits::*},
+    types::{
+        self,
+        common::*,
+        request::{
+            self, Authentication, BatchCount, CommonTemplateAttribute, KeyWrappingSpecification, MaximumResponseSize,
+            PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute, QueryFunction, RequestHeader, RequestMessage,
+            RequestPayload, RevocationReason,
+        },
+        response::{
+            self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
+            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+        },
+        traits::*,
+    },
 };
 
 /// There was a problem sending/receiving a KMIP request/response.
@@ -178,7 +190,7 @@ impl<T: ReadWrite> Client<T> {
         reader_config: &Config,
         req_bytes: &[u8],
         stream: Arc<Mutex<T>>,
-    ) -> std::result::Result<(ResponsePayload, Vec<u8>), (Error, Option<Vec<u8>>)> {
+    ) -> std::result::Result<(Vec<Result<types::response::BatchItem>>, Vec<u8>), (Error, Option<Vec<u8>>)> {
         trace!("Acquiring stream lock");
         let mut lock = match stream.lock() {
             Ok(lock) => lock,
@@ -219,51 +231,47 @@ impl<T: ReadWrite> Client<T> {
         };
 
         trace!("KMIP server responded with success.");
-        let res = if res.header.batch_count == 1 && res.batch_items.len() == 1 {
-            let item = &mut res.batch_items[0];
-
-            match item.result_status {
-                ResultStatus::OperationFailed => {
-                    if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
-                        Err(Error::ItemNotFound(format!(
-                            "Operation {:?} failed: {}",
-                            operation,
-                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                        )))
-                    } else {
-                        Err(Error::ServerError(format!(
-                            "Operation {:?} failed: {}",
-                            operation,
-                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                        )))
-                    }
-                }
-                ResultStatus::OperationPending => Err(Error::InternalError(
-                    "Result status 'operation pending' is not supported".into(),
-                )),
-                ResultStatus::OperationUndone => Err(Error::InternalError(
-                    "Result status 'operation undone' is not supported".into(),
-                )),
-                ResultStatus::Success => {
-                    if item.operation == Some(operation) {
-                        if let Some(payload) = item.payload.take() {
-                            Ok(payload)
+        let res = if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
+            Ok(res
+                .batch_items
+                .drain(..)
+                .map(|item| match item.result_status {
+                    ResultStatus::OperationFailed => {
+                        if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
+                            Err(Error::ItemNotFound(format!(
+                                "Operation {:?} failed: {}",
+                                operation,
+                                item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                            )))
                         } else {
-                            Err(Error::InternalError(
-                                "Unable to process response payload due to wrong deserialized type!".into(),
-                            ))
+                            Err(Error::ServerError(format!(
+                                "Operation {:?} failed: {}",
+                                operation,
+                                item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                            )))
                         }
-                    } else {
-                        Err(Error::InternalError(format!(
-                            "Response operation {:?} does not match request operation {}",
-                            item.operation, operation
-                        )))
                     }
-                }
-            }
+                    ResultStatus::OperationPending => Err(Error::InternalError(
+                        "Result status 'operation pending' is not supported".into(),
+                    )),
+                    ResultStatus::OperationUndone => Err(Error::InternalError(
+                        "Result status 'operation undone' is not supported".into(),
+                    )),
+                    ResultStatus::Success => {
+                        if item.operation == Some(operation) {
+                            Ok(item)
+                        } else {
+                            Err(Error::InternalError(format!(
+                                "Response operation {:?} does not match request operation {}",
+                                item.operation, operation
+                            )))
+                        }
+                    }
+                })
+                .collect::<Vec<_>>())
         } else {
             Err(Error::ServerError(format!(
-                "Expected one batch item in response but received {}",
+                "Expected at least one batch item in response but received {}",
                 res.batch_items.len()
             )))
         };
@@ -292,16 +300,44 @@ impl<T: ReadWrite> Client<T> {
     /// Currently always returns [Error::Unknown] even though richer cause information is available.
     #[maybe_async::maybe_async]
     pub async fn do_request(&self, payload: RequestPayload) -> Result<ResponsePayload> {
+        let operation = payload.operation();
+        let batch_item = request::BatchItem(operation, Option::<UniqueBatchItemID>::None, payload);
+        self.do_requests(vec![batch_item]).await.and_then(|mut r| {
+            r.pop()
+                .ok_or(Error::InternalError("Missing response payload".to_string()))?
+                .map(|item| item.payload)
+                .map_err(|err| Error::InternalError(format!("Missing response payload: {err}")))?
+                .ok_or(Error::InternalError("Missing response payload".to_string()))
+        })
+    }
+
+    #[maybe_async::maybe_async]
+    pub async fn do_requests(&self, batch_items: Vec<request::BatchItem>) -> Result<Vec<Result<response::BatchItem>>> {
+        if batch_items.is_empty() {
+            return Err(Error::SerializeError("Cannot serialize an empty payload".to_string()));
+        }
+
         // Clear the diagnostic string representations of the request and response.
         *self.last_req_diag_str.borrow_mut() = None;
         *self.last_res_diag_str.borrow_mut() = None;
 
         // Save a copy of the KMIP operation identifier before the request payload object is consumed by the
         // TTLV serializer.
-        let operation = payload.operation();
+        let operation = *batch_items[0].operation();
 
         // Serialize the request payload to TTLV byte form.
-        let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
+        let protocol_version = batch_items[0].request_payload().protocol_version();
+        let req = RequestMessage(
+            RequestHeader(
+                protocol_version,
+                Option::<MaximumResponseSize>::None,
+                self.auth().map(Authentication::build),
+                BatchCount(batch_items.len() as i32),
+            ),
+            batch_items,
+        );
+
+        let req_bytes = kmip_ttlv::ser::to_vec(&req).map_err(|err| match err.kind() {
             ErrorKind::IoError(e) => Error::SerializeError(e.to_string()),
             ErrorKind::ResponseSizeExceedsLimit(size) => {
                 Error::ServerError(format!("Response size {size} bytes is too large"))
@@ -604,7 +640,15 @@ impl<T> Clone for Client<T> {
 }
 
 impl<T> Client<T> {
-    fn auth(&self) -> Option<CredentialType> {
+    pub fn username(&self) -> Option<&str> {
+        self.username.as_deref()
+    }
+
+    pub fn password(&self) -> Option<&str> {
+        self.password.as_deref()
+    }
+
+    pub fn auth(&self) -> Option<CredentialType> {
         if self.username.is_some() && self.password.is_some() {
             Some(CredentialType::UsernameAndPassword(
                 auth::UsernameAndPasswordCredential::new(self.username.clone().unwrap(), self.password.clone()),
