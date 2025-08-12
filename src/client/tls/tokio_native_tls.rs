@@ -2,24 +2,26 @@ use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use crate::client::tls::common::util::create_kmip_client;
-use crate::client::{Client, ClientCertificate, ConnectionSettings, Error, Result};
+use crate::client::{ClientCertificate, ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
 
+pub type Client = crate::client::Client<TlsStream<TcpStream>>;
+
 async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> Result<Client<TlsStream<TcpStream>>>
+) -> Result<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,
