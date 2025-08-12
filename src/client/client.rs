@@ -683,7 +683,7 @@ mod test {
 
     use kmip_ttlv::Config;
 
-    #[cfg(feature = "tls-with-openssl")]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{
@@ -874,6 +874,8 @@ mod test {
         //         .init()
         //         .unwrap();
 
+        use std::sync::Arc;
+
         fn load_binary_file(path: &'static str) -> std::io::Result<Vec<u8>> {
             let mut buf = Vec::new();
             std::fs::File::open(path)?.read_to_end(&mut buf)?;
@@ -881,7 +883,7 @@ mod test {
         }
 
         fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>> {
-            let cert_chain = rustls_pemfile::read_all(&mut BufReader::new(bytes))?
+            let cert_chain = rustls_pemfile::read_all(&mut std::io::BufReader::new(bytes))?
                 .iter()
                 .map(|i: &rustls_pemfile::Item| match i {
                     rustls_pemfile::Item::X509Certificate(bytes) => rustls::Certificate(bytes.clone()),
@@ -893,7 +895,7 @@ mod test {
         }
 
         fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<rustls::PrivateKey> {
-            let private_key = rustls_pemfile::read_one(&mut BufReader::new(bytes))?
+            let private_key = rustls_pemfile::read_one(&mut std::io::BufReader::new(bytes))?
                 .map(|i: rustls_pemfile::Item| match i {
                     rustls_pemfile::Item::X509Certificate(_) => panic!("Expected a PKCS8 key, got an X509 certificate"),
                     rustls_pemfile::Item::RSAKey(_) => panic!("Expected a PKCS8 key, got an RSA key"),
@@ -911,11 +913,11 @@ mod test {
         let mut config = rustls::ClientConfig::new();
         config
             .root_store
-            .add_pem_file(&mut BufReader::new(ca_cert_pem.as_slice()))
+            .add_pem_file(&mut std::io::BufReader::new(ca_cert_pem.as_slice()))
             .unwrap();
         config
             .root_store
-            .add_pem_file(&mut BufReader::new(server_cert_pem.as_slice()))
+            .add_pem_file(&mut std::io::BufReader::new(server_cert_pem.as_slice()))
             .unwrap();
 
         let cert_chain = bytes_to_cert_chain(&server_cert_pem).unwrap();
@@ -938,6 +940,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     #[ignore = "Requires a running Kryptus instance"]
     fn test_kryptus_query_against_server() {
         let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
