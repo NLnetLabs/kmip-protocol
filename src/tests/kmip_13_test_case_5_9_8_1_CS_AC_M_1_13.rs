@@ -24,8 +24,8 @@ use crate::{
 };
 
 const TIMESTAMP: u64 = 0x000000004B7918AA;
-const TIMESTAMP_STR: &'static str = "000000004B7918AA";
-const UNIQUE_IDENTIFIER_0: &'static str = "$UNIQUE_IDENTIFIER_0";
+const TIMESTAMP_STR: &str = "000000004B7918AA";
+const UNIQUE_IDENTIFIER_0: &str = "$UNIQUE_IDENTIFIER_0";
 
 // --------------------------------------------------------------------------------------------------------------------
 // 5.9.8 Advanced Cryptographic Mandatory Test Cases KMIP v1.3
@@ -148,7 +148,7 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
         "            42002A 02 00000004 00000800 00000000", // Cryptgraphic Length, Integer (0x02), Data: 0x800 (2048 + 4 pad bytes)
     );
     let expected_request_hex = expected_request_hex.replace(" ", "");
-    let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", &TIMESTAMP_STR);
+    let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", TIMESTAMP_STR);
     let expected_request_hex = expected_request_hex.replace("<KEY_MATERIAL_BYTES>", &use_case_key_material_hex);
 
     let actual_request_hex = match to_vec(&use_case_request) {

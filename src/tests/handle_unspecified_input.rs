@@ -38,6 +38,6 @@ fn test_batch_item_vendor_extensions() {
     assert!(matches!(res.message_extension, Some(MessageExtension { .. })));
     let me = res.message_extension.unwrap();
     assert_eq!(me.vendor_identification, "\u{01}\u{02}\u{03}");
-    assert_eq!(me.criticality_indicator, true);
+    assert!(me.criticality_indicator);
     assert_eq!(me.vendor_extension, VendorExtension);
 }

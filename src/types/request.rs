@@ -210,10 +210,7 @@ impl TemplateAttribute {
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
-        let mut template_names = match self.template_names {
-            Some(names) => names,
-            None => vec![],
-        };
+        let mut template_names = self.template_names.unwrap_or_default();
         template_names.push(template_name);
         self.template_names = Some(template_names);
         self
@@ -256,10 +253,7 @@ impl CommonTemplateAttribute {
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
-        let mut template_names = match self.template_names {
-            Some(names) => names,
-            None => vec![],
-        };
+        let mut template_names = self.template_names.unwrap_or_default();
         template_names.push(template_name);
         self.template_names = Some(template_names);
         self
@@ -302,10 +296,7 @@ impl PrivateKeyTemplateAttribute {
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
-        let mut template_names = match self.template_names {
-            Some(names) => names,
-            None => vec![],
-        };
+        let mut template_names = self.template_names.unwrap_or_default();
         template_names.push(template_name);
         self.template_names = Some(template_names);
         self
@@ -348,10 +339,7 @@ impl PublicKeyTemplateAttribute {
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
-        let mut template_names = match self.template_names {
-            Some(names) => names,
-            None => vec![],
-        };
+        let mut template_names = self.template_names.unwrap_or_default();
         template_names.push(template_name);
         self.template_names = Some(template_names);
         self

@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-const KEY_ID: &'static str = "28c7bad1-bc9b-41df-b439-1ba04a6fd982";
+const KEY_ID: &str = "28c7bad1-bc9b-41df-b439-1ba04a6fd982";
 
 /// -------------------------------------------------------------------------------------------------------------------
 /// 17.1 Test Case: Handling of Attributes and Attribute Index Values
