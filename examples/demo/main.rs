@@ -185,19 +185,18 @@ impl From<Opt> for ConnectionSettings {
                 (None, None, Some(path)) => Some(ClientCertificate::CombinedPkcs12 {
                     cert_bytes: load_binary_file(path),
                 }),
-                (Some(path), None, None) => Some(ClientCertificate::SeparatePem {
-                    cert_bytes: load_binary_file(path),
-                    key_bytes: None,
-                }),
+                (Some(_), None, None) => {
+                    panic!("Client certificate key path requires a client private key path")
+                }
                 (None, Some(_), None) => {
-                    panic!("Client certificate key path requires a client certificate path")
+                    panic!("Client private key path requires a client certificate path")
                 }
                 (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
                     panic!("Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path")
                 }
                 (Some(cert_path), Some(key_path), None) => Some(ClientCertificate::SeparatePem {
                     cert_bytes: load_binary_file(cert_path),
-                    key_bytes: Some(load_binary_file(key_path)),
+                    key_bytes: load_binary_file(key_path),
                 }),
             }
         };
