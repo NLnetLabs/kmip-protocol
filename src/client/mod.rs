@@ -3,7 +3,7 @@
 mod client;
 
 #[cfg(feature = "tls")]
-mod tls;
+pub mod tls;
 
 #[cfg(feature = "sync-pool")]
 mod sync_pool;
