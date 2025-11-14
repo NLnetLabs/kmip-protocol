@@ -60,10 +60,7 @@ where
 
     if let Some(cert) = &conn_settings.client_cert {
         match cert {
-            ClientCertificate::SeparatePem {
-                cert_bytes,
-                key_bytes: Some(key_bytes),
-            } => {
+            ClientCertificate::SeparatePem { cert_bytes, key_bytes } => {
                 let cert_chain = bytes_to_cert_chain(&cert_bytes)?;
 
                 let key_der = bytes_to_private_key(&key_bytes).map_err(|err| {
@@ -78,14 +75,6 @@ where
                     .map_err(|err| {
                         Error::ConfigurationError(format!("Unable to use client certficate and private key: {}", err))
                     })?;
-            }
-            ClientCertificate::SeparatePem {
-                cert_bytes: _,
-                key_bytes: None,
-            } => {
-                return Err(Error::ConfigurationError(
-                    "Missing PEM client certificate private key".to_string(),
-                ));
             }
             ClientCertificate::CombinedPkcs12 { .. } => {
                 return Err(Error::ConfigurationError(

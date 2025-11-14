@@ -1,19 +1,14 @@
 use std::time::Duration;
 
 /// Certificate details in various supported formats for use with TLS client authentication.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientCertificate {
-    SeparatePem {
-        cert_bytes: Vec<u8>,
-        key_bytes: Option<Vec<u8>>,
-    },
-    CombinedPkcs12 {
-        cert_bytes: Vec<u8>,
-    },
+    SeparatePem { cert_bytes: Vec<u8>, key_bytes: Vec<u8> },
+    CombinedPkcs12 { cert_bytes: Vec<u8> },
 }
 
 /// TCP and TLS settings for connecting to a KMIP server.
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct ConnectionSettings {
     /// HSM host/domain name
     pub host: String,

@@ -2,23 +2,25 @@ use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use crate::client::tls::common::{rustls::create_rustls_config, util::create_kmip_client};
-use crate::client::{Client, ConnectionSettings, Error, Result};
+use crate::client::{ConnectionSettings, Error, Result};
 
 use async_std::net::TcpStream;
 use async_tls::{client::TlsStream, TlsConnector};
+
+pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
 async fn default_tcp_stream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
     connect_with_tcp_stream_factory(conn_settings, default_tcp_stream_factory).await
 }
 
 pub async fn connect_with_tcp_stream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcp_stream_factory: F,
-) -> Result<Client<TlsStream<TcpStream>>>
+) -> Result<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,

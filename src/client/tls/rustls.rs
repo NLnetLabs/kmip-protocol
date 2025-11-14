@@ -8,11 +8,13 @@ use crate::client::{
     Error,
 };
 
-use crate::client::{Client, ConnectionSettings, Result};
+use crate::client::{ConnectionSettings, Result};
 
 use rustls::{ClientConfig, ClientSession, StreamOwned};
 
-pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<StreamOwned<ClientSession, TcpStream>>> {
+pub type Client = crate::client::Client<StreamOwned<ClientSession, TcpStream>>;
+
+pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, |addr, settings| {
         let tcpstream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
@@ -23,10 +25,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<StreamOwned<
     })
 }
 
-pub fn connect_with_tcpstream_factory<F>(
-    conn_settings: &ConnectionSettings,
-    tcpstream_factory: F,
-) -> Result<Client<StreamOwned<ClientSession, TcpStream>>>
+pub fn connect_with_tcpstream_factory<F>(conn_settings: &ConnectionSettings, tcpstream_factory: F) -> Result<Client>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>,
 {
