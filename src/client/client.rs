@@ -8,14 +8,26 @@ use std::{
     },
 };
 
-use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
-use log::trace;
+use kmip_ttlv::{de::CaptureMode, error::ErrorKind, Config, PrettyPrinter};
+use tracing::trace;
 
 use crate::{
     auth::{self, CredentialType},
-    request::to_vec,
     tag_map,
-    types::{common::*, request, request::*, response::*, traits::*},
+    types::{
+        self,
+        common::*,
+        request::{
+            self, Authentication, BatchCount, CommonTemplateAttribute, KeyWrappingSpecification, MaximumResponseSize,
+            PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute, QueryFunction, RequestHeader, RequestMessage,
+            RequestPayload, RevocationReason,
+        },
+        response::{
+            self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
+            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+        },
+        traits::*,
+    },
 };
 
 /// There was a problem sending/receiving a KMIP request/response.
@@ -117,9 +129,9 @@ impl<T> ClientBuilder<T> {
 
     /// Build the configured [Client] struct instance.
     pub fn build(self) -> Client<T> {
-        let mut pretty_printer = PrettyPrinter::new();
-        pretty_printer.with_tag_prefix("4200".into());
-        pretty_printer.with_tag_map(tag_map::make_kmip_tag_map());
+        let pretty_printer = PrettyPrinter::new()
+            .with_tag_prefix("4200".into())
+            .with_tag_map(tag_map::make_kmip_tag_map());
 
         Client {
             username: self.username,
@@ -178,73 +190,96 @@ impl<T: ReadWrite> Client<T> {
         reader_config: &Config,
         req_bytes: &[u8],
         stream: Arc<Mutex<T>>,
-    ) -> Result<ResponsePayload> {
-        let mut lock = stream.lock()?;
+    ) -> std::result::Result<(Vec<Result<types::response::BatchItem>>, Vec<u8>), (Error, Option<Vec<u8>>)> {
+        trace!("Acquiring stream lock");
+        let mut lock = match stream.lock() {
+            Ok(lock) => lock,
+            Err(err) => return Err((err.into(), None)),
+        };
         let stream = lock.deref_mut();
 
-        stream
-            .write_all(req_bytes)
-            .await
-            .map_err(|e| Error::RequestWriteError(e.to_string()))?;
+        trace!("Writing {} bytes to the KMIP server", req_bytes.len());
+        if let Err(err) = stream.write_all(req_bytes).await {
+            return Err((Error::RequestWriteError(err.to_string()), None));
+        }
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = kmip_ttlv::from_reader(stream, reader_config)
-            .await
-            .map_err(|err| match err.kind() {
-                ErrorKind::IoError(e) => Error::ResponseReadError(e.to_string()),
-                ErrorKind::ResponseSizeExceedsLimit(_) | ErrorKind::MalformedTtlv(_) => {
-                    Error::DeserializeError(err.to_string())
-                }
-                _ => Error::InternalError(err.to_string()),
-            })?;
-
-        if res.header.batch_count == 1 && res.batch_items.len() == 1 {
-            let item = &mut res.batch_items[0];
-
-            match item.result_status {
-                ResultStatus::OperationFailed => {
-                    if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
-                        Err(Error::ItemNotFound(format!(
-                            "Operation {:?} failed: {}",
-                            operation,
-                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                        )))
-                    } else {
-                        Err(Error::ServerError(format!(
-                            "Operation {:?} failed: {}",
-                            operation,
-                            item.result_message.as_ref().unwrap_or(&String::new()).clone()
-                        )))
+        trace!("Awaiting KMIP server response");
+        let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config).await {
+            Ok((res, cap)) => (res, cap),
+            Err((err, cap)) => {
+                trace!("KMIP server responded with an error.");
+                let err = match err.kind() {
+                    ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
+                    ErrorKind::ResponseSizeExceedsLimit(v) => {
+                        Error::ResponseReadError(format!("Response size {v} bytes is too large"))
                     }
-                }
-                ResultStatus::OperationPending => Err(Error::InternalError(
-                    "Result status 'operation pending' is not supported".into(),
-                )),
-                ResultStatus::OperationUndone => Err(Error::InternalError(
-                    "Result status 'operation undone' is not supported".into(),
-                )),
-                ResultStatus::Success => {
-                    if item.operation == Some(operation) {
-                        if let Some(payload) = item.payload.take() {
-                            Ok(payload)
-                        } else {
-                            Err(Error::InternalError(
-                                "Unable to process response payload due to wrong deserialized type!".into(),
-                            ))
-                        }
-                    } else {
-                        Err(Error::InternalError(format!(
-                            "Response operation {:?} does not match request operation {}",
-                            item.operation, operation
-                        )))
+                    ErrorKind::MalformedTtlv(err) => {
+                        Error::DeserializeError(format!("Error while deserializing the response: {err}"))
                     }
-                }
+                    ErrorKind::SerdeError(err, None) => {
+                        Error::DeserializeError(format!("Error while deserializing the response: {err}"))
+                    }
+                    ErrorKind::SerdeError(err, Some(context)) => Error::DeserializeError(format!(
+                        "Error while deserializing the response: {err} [context: {}]",
+                        hex::encode_upper(context)
+                    )),
+                    err => Error::InternalError(format!("An internal error occured: {err}")),
+                };
+                return Err((err, Some(cap)));
             }
+        };
+
+        trace!("KMIP server responded with success.");
+        let res = if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
+            Ok(res
+                .batch_items
+                .drain(..)
+                .map(|item| match item.result_status {
+                    ResultStatus::OperationFailed => {
+                        if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
+                            Err(Error::ItemNotFound(format!(
+                                "Operation {:?} failed: {}",
+                                operation,
+                                item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                            )))
+                        } else {
+                            Err(Error::ServerError(format!(
+                                "Operation {:?} failed: {}",
+                                operation,
+                                item.result_message.as_ref().unwrap_or(&String::new()).clone()
+                            )))
+                        }
+                    }
+                    ResultStatus::OperationPending => Err(Error::InternalError(
+                        "Result status 'operation pending' is not supported".into(),
+                    )),
+                    ResultStatus::OperationUndone => Err(Error::InternalError(
+                        "Result status 'operation undone' is not supported".into(),
+                    )),
+                    ResultStatus::Success => {
+                        if item.operation == Some(operation) {
+                            Ok(item)
+                        } else {
+                            Err(Error::InternalError(format!(
+                                "Response operation {:?} does not match request operation {}",
+                                item.operation, operation
+                            )))
+                        }
+                    }
+                })
+                .collect::<Vec<_>>())
         } else {
             Err(Error::ServerError(format!(
-                "Expected one batch item in response but received {}",
+                "Expected at least one batch item in response but received {}",
                 res.batch_items.len()
             )))
+        };
+
+        trace!("Send and receive complete");
+        match res {
+            Ok(res) => Ok((res, cap)),
+            Err(err) => Err((err, Some(cap))),
         }
     }
 
@@ -265,50 +300,110 @@ impl<T: ReadWrite> Client<T> {
     /// Currently always returns [Error::Unknown] even though richer cause information is available.
     #[maybe_async::maybe_async]
     pub async fn do_request(&self, payload: RequestPayload) -> Result<ResponsePayload> {
+        let operation = payload.operation();
+        let batch_item = request::BatchItem(operation, Option::<UniqueBatchItemID>::None, payload);
+        self.do_requests(vec![batch_item]).await.and_then(|mut r| {
+            r.pop()
+                .ok_or(Error::InternalError("Missing response payload".to_string()))?
+                .map(|item| item.payload)
+                .map_err(|err| Error::InternalError(format!("Missing response payload: {err}")))?
+                .ok_or(Error::InternalError("Missing response payload".to_string()))
+        })
+    }
+
+    #[maybe_async::maybe_async]
+    pub async fn do_requests(&self, batch_items: Vec<request::BatchItem>) -> Result<Vec<Result<response::BatchItem>>> {
+        if batch_items.is_empty() {
+            return Err(Error::SerializeError("Cannot serialize an empty payload".to_string()));
+        }
+
         // Clear the diagnostic string representations of the request and response.
         *self.last_req_diag_str.borrow_mut() = None;
         *self.last_res_diag_str.borrow_mut() = None;
 
         // Save a copy of the KMIP operation identifier before the request payload object is consumed by the
         // TTLV serializer.
-        let operation = payload.operation();
+        let operation = *batch_items[0].operation();
 
         // Serialize the request payload to TTLV byte form.
-        let req_bytes = to_vec(payload, self.auth()).map_err(|err| match err.kind() {
+        let protocol_version = batch_items[0].request_payload().protocol_version();
+        let req = RequestMessage(
+            RequestHeader(
+                protocol_version,
+                Option::<MaximumResponseSize>::None,
+                self.auth().map(Authentication::build),
+                BatchCount(batch_items.len() as i32),
+            ),
+            batch_items,
+        );
+
+        let req_bytes = kmip_ttlv::ser::to_vec(&req).map_err(|err| match err.kind() {
             ErrorKind::IoError(e) => Error::SerializeError(e.to_string()),
+            ErrorKind::ResponseSizeExceedsLimit(size) => {
+                Error::ServerError(format!("Response size {size} bytes is too large"))
+            }
+            ErrorKind::MalformedTtlv(err) => Error::SerializeError(err.to_string()),
+            ErrorKind::SerdeError(err, None) => Error::SerializeError(err.to_string()),
+            ErrorKind::SerdeError(err, Some(context)) => {
+                Error::SerializeError(format!("{err} [context: {}]", hex::encode_upper(context)))
+            }
             _ => Error::InternalError(err.to_string()),
         })?;
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured then generate, record and log the diagnostic representation of the request.
-        if self.reader_config.has_buf() {
-            let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
-            trace!("KMIP TTLV request: {}", &diag_str);
-            self.last_req_diag_str.borrow_mut().replace(diag_str);
+        match self.reader_config.capture() {
+            CaptureMode::Disabled => { /* Nothing to do */ }
+            CaptureMode::Diagnostic => {
+                let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
+                trace!("KMIP TTLV request: {}", &diag_str);
+                self.last_req_diag_str.borrow_mut().replace(diag_str);
+            }
+            CaptureMode::Sensitive => {
+                let diag_str = self.pretty_printer.to_string(&req_bytes);
+                trace!("KMIP TTLV request: {}", &diag_str);
+                self.last_req_diag_str.borrow_mut().replace(diag_str);
+            }
         }
 
-        // Prepare a helper closure for incrementing the number of connection errors encountered by this client.
-        let incr_err_count = |err: Error| {
-            if err.is_connection_error() {
-                let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
-            }
-            Err(err)
-        };
-
         // Send the serialized request and receive (and deserialize) the response.
-        let res = self
+        let res = match self
             .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
             .await
-            .or_else(incr_err_count);
+        {
+            Ok(res) => Ok(res),
+            Err((err, cap)) => {
+                if err.is_connection_error() {
+                    let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
+                }
+                Err((err, cap))
+            }
+        };
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured, then generate, record and log the diagnostic representation of the response.
-        if let Some(buf) = self.reader_config.read_buf() {
-            let diag_str = self.pretty_printer.to_diag_string(&buf);
-            trace!("KMIP TTLV response: {}", &diag_str);
-            self.last_res_diag_str.borrow_mut().replace(diag_str);
+        let (res, cap) = match res {
+            Ok((res, cap)) => (Ok(res), Some(cap)),
+            Err((err, cap)) => (Err(err), cap),
+        };
+
+        if let Some(buf) = cap {
+            match self.reader_config.capture() {
+                CaptureMode::Disabled => { /* Nothing to do */ }
+                CaptureMode::Diagnostic => {
+                    let diag_str = self.pretty_printer.to_diag_string(&buf);
+                    trace!("KMIP TTLV response: {}", &diag_str);
+                    self.last_res_diag_str.borrow_mut().replace(diag_str);
+                }
+                CaptureMode::Sensitive => {
+                    let diag_str = self.pretty_printer.to_string(&buf);
+                    trace!("KMIP TTLV response: {}", &diag_str);
+                    self.last_res_diag_str.borrow_mut().replace(diag_str);
+                }
+            }
         }
 
+        trace!("do_request() complete.");
         res
     }
 
@@ -327,6 +422,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Query operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Query)
@@ -349,15 +445,15 @@ impl<T: ReadWrite> Client<T> {
     ) -> Result<(String, String)> {
         // Setup the request
         let request = RequestPayload::CreateKeyPair(
-            Some(CommonTemplateAttribute::unnamed(vec![
+            Some(CommonTemplateAttribute::new(vec![
                 request::Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
                 request::Attribute::CryptographicLength(key_length),
             ])),
-            Some(PrivateKeyTemplateAttribute::unnamed(vec![
+            Some(PrivateKeyTemplateAttribute::new(vec![
                 request::Attribute::Name(private_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
             ])),
-            Some(PublicKeyTemplateAttribute::unnamed(vec![
+            Some(PublicKeyTemplateAttribute::new(vec![
                 request::Attribute::Name(public_key_name),
                 request::Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
             ])),
@@ -365,6 +461,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Create RSA key pair operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
@@ -386,6 +483,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("RNGRetrieve operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
@@ -411,6 +509,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Sign operation complete");
 
         get_response_payload_for_type!(response, ResponsePayload::Sign)
     }
@@ -424,10 +523,11 @@ impl<T: ReadWrite> Client<T> {
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn activate_key(&self, private_key_id: &str) -> Result<()> {
-        let request = RequestPayload::Activate(Some(UniqueIdentifier(private_key_id.to_owned())));
+        let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Activate operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
@@ -453,6 +553,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Revoke key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
@@ -471,6 +572,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Destroy key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
@@ -493,6 +595,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Rename key operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
@@ -514,6 +617,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Execute the request and capture the response
         let response = self.do_request(request).await?;
+        trace!("Get operation complete");
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Get)
@@ -536,7 +640,15 @@ impl<T> Clone for Client<T> {
 }
 
 impl<T> Client<T> {
-    fn auth(&self) -> Option<CredentialType> {
+    pub fn username(&self) -> Option<&str> {
+        self.username.as_deref()
+    }
+
+    pub fn password(&self) -> Option<&str> {
+        self.password.as_deref()
+    }
+
+    pub fn auth(&self) -> Option<CredentialType> {
         if self.username.is_some() && self.password.is_some() {
             Some(CredentialType::UsernameAndPassword(
                 auth::UsernameAndPasswordCredential::new(self.username.clone().unwrap(), self.password.clone()),
@@ -562,7 +674,7 @@ impl<T> Client<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "sync"))]
 mod test {
     use std::{
         io::{Cursor, Read, Write},
@@ -571,7 +683,7 @@ mod test {
 
     use kmip_ttlv::Config;
 
-    #[cfg(feature = "tls-with-openssl")]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{
@@ -762,6 +874,8 @@ mod test {
         //         .init()
         //         .unwrap();
 
+        use std::sync::Arc;
+
         fn load_binary_file(path: &'static str) -> std::io::Result<Vec<u8>> {
             let mut buf = Vec::new();
             std::fs::File::open(path)?.read_to_end(&mut buf)?;
@@ -769,7 +883,7 @@ mod test {
         }
 
         fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>> {
-            let cert_chain = rustls_pemfile::read_all(&mut BufReader::new(bytes))?
+            let cert_chain = rustls_pemfile::read_all(&mut std::io::BufReader::new(bytes))?
                 .iter()
                 .map(|i: &rustls_pemfile::Item| match i {
                     rustls_pemfile::Item::X509Certificate(bytes) => rustls::Certificate(bytes.clone()),
@@ -781,7 +895,7 @@ mod test {
         }
 
         fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<rustls::PrivateKey> {
-            let private_key = rustls_pemfile::read_one(&mut BufReader::new(bytes))?
+            let private_key = rustls_pemfile::read_one(&mut std::io::BufReader::new(bytes))?
                 .map(|i: rustls_pemfile::Item| match i {
                     rustls_pemfile::Item::X509Certificate(_) => panic!("Expected a PKCS8 key, got an X509 certificate"),
                     rustls_pemfile::Item::RSAKey(_) => panic!("Expected a PKCS8 key, got an RSA key"),
@@ -799,11 +913,11 @@ mod test {
         let mut config = rustls::ClientConfig::new();
         config
             .root_store
-            .add_pem_file(&mut BufReader::new(ca_cert_pem.as_slice()))
+            .add_pem_file(&mut std::io::BufReader::new(ca_cert_pem.as_slice()))
             .unwrap();
         config
             .root_store
-            .add_pem_file(&mut BufReader::new(server_cert_pem.as_slice()))
+            .add_pem_file(&mut std::io::BufReader::new(server_cert_pem.as_slice()))
             .unwrap();
 
         let cert_chain = bytes_to_cert_chain(&server_cert_pem).unwrap();
@@ -826,6 +940,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     #[ignore = "Requires a running Kryptus instance"]
     fn test_kryptus_query_against_server() {
         let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
