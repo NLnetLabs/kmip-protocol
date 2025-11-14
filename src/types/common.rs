@@ -1,10 +1,12 @@
 //! Rust types common to both serialization of KMIP requests and deserialization KMIP responses.
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use std::fmt::Display;
+use std::str::FromStr;
 
 use enum_display_derive::Display;
 use enum_flags::EnumFlags;
-use std::fmt::Display;
+use enum_ordinalize::Ordinalize;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -51,7 +53,7 @@ pub enum AttributeValue {
     CryptographicAlgorithm(CryptographicAlgorithm),
 
     /// See KMIP 1.0 section 3.5 Cryptographic Length.
-    // Not implemented
+    // Not implemented because the caller should use AttributeValue::Integer.
 
     /// See KMIP 1.0 section 3.6 Cryptographic Parameters.
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Parameters"))]
@@ -72,7 +74,11 @@ pub enum AttributeValue {
     ),
 
     /// See KMIP 1.0 section 3.7 Cryptographic Domain Parameters.
-    // Not implemented
+    #[serde(rename(deserialize = "if 0x42000A==Cryptographic Domain Parameters"))]
+    CryptographicDomainParameters(
+        #[serde(skip_serializing_if = "Option::is_none")] Option<i32>, // Q length
+        #[serde(skip_serializing_if = "Option::is_none")] Option<RecommendedCurve>,
+    ),
 
     /// See KMIP 1.0 section 3.8 Certificate Type.
     // Not implemented
@@ -200,10 +206,16 @@ pub enum AttributeValue {
 
 /// See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420043")]
+// Use "Transparent" here because we must not write out the TLV of TTLV for
+// 0x420043 because Bytes must be written as 42004208..., not 42004301 (i.e.
+// as the ByteString type, not the Structure type)... but we do need the
+// initial Tag of TTLV to be written out, for which we use TagOnly:0x420043
+// below in the case of the Bytes variant as that would otherwise be
+// serialized without a tag.
+#[serde(rename = "Transparent")]
 pub enum KeyMaterial {
     #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
-    #[serde(rename(serialize = "Transparent"))]
+    #[serde(rename(serialize = "TagOnly:0x420043"))]
     Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
 
     #[serde(rename(deserialize = "if 0x420042 == 0x00000007"))]
@@ -229,6 +241,22 @@ pub enum KeyMaterial {
 
     #[serde(rename(deserialize = "if 0x420042 >= 0x0000000E"))]
     Structure(#[serde(with = "serde_bytes")] Vec<u8>), // All other transparent key types which we don't support yet
+}
+
+impl Display for KeyMaterial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeyMaterial::Bytes(_) => write!(f, "Bytes"),
+            KeyMaterial::TransparentSymmetricKey(_) => write!(f, "TransparentSymmetricKey"),
+            KeyMaterial::TransparentDSAPrivateKey(_) => write!(f, "TransparentDSAPrivateKey"),
+            KeyMaterial::TransparentDSAPublicKey(_) => write!(f, "TransparentDSAPublicKey"),
+            KeyMaterial::TransparentRSAPrivateKey(_) => write!(f, "TransparentRSAPrivateKey"),
+            KeyMaterial::TransparentRSAPublicKey(_) => write!(f, "TransparentRSAPublicKey"),
+            KeyMaterial::TransparentDHPrivateKey(_) => write!(f, "TransparentDHPrivateKey"),
+            KeyMaterial::TransparentDHPublicKey(_) => write!(f, "TransparentDHPublicKey"),
+            KeyMaterial::Structure(_) => write!(f, "Structure"),
+        }
+    }
 }
 
 /// See KMIP 1.0 section 2.1.7.1 [Transparent Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
@@ -293,9 +321,10 @@ pub struct TransparentRSAPrivateKey {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentRSAPublicKey {
-    #[serde(with = "serde_bytes")]
+    #[serde(rename = "0x420052", with = "serde_bytes")]
     pub modulus: Vec<u8>,
-    #[serde(with = "serde_bytes")]
+
+    #[serde(rename = "0x42006C", with = "serde_bytes")]
     pub public_exponent: Vec<u8>,
 }
 
@@ -333,12 +362,11 @@ pub struct TransparentDHPublicKey {
 
 /// See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename(deserialize = "0x4200C2"))]
-#[serde(rename(serialize = "Transparent:0x4200C2"))]
+#[serde(rename = "Transparent:0x4200C2")]
 pub struct Data(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 /// See KMIP 1.2 section 2.1.11 [Data Length](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467).
-#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200C4")]
 pub struct DataLength(pub i32);
 
@@ -369,6 +397,14 @@ pub struct NameValue(pub String);
 impl std::fmt::Display for NameValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl FromStr for NameValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
     }
 }
 
@@ -424,6 +460,72 @@ pub enum CryptographicAlgorithm {
 
     #[serde(rename = "0x00000004")]
     RSA,
+
+    #[serde(rename = "0x00000005")]
+    DSA,
+
+    #[serde(rename = "0x00000006")]
+    ECDSA,
+
+    #[serde(rename = "0x00000007")]
+    HMAC_SHA1,
+
+    #[serde(rename = "0x00000008")]
+    HMAC_SHA224,
+
+    #[serde(rename = "0x00000009")]
+    HMAC_SHA256,
+
+    #[serde(rename = "0x0000000A")]
+    HMAC_SHA384,
+
+    #[serde(rename = "0x0000000B")]
+    HMAC_SHA512,
+
+    #[serde(rename = "0x0000000C")]
+    HMAC_MD5,
+
+    #[serde(rename = "0x0000000D")]
+    DH,
+
+    #[serde(rename = "0x0000000E")]
+    ECDH,
+
+    #[serde(rename = "0x0000000F")]
+    ECMQV,
+
+    #[serde(rename = "0x00000010")]
+    Blowfish,
+
+    #[serde(rename = "0x00000011")]
+    Camellia,
+
+    #[serde(rename = "0x00000012")]
+    CAST5,
+
+    #[serde(rename = "0x00000013")]
+    IDEA,
+
+    #[serde(rename = "0x00000014")]
+    MARS,
+
+    #[serde(rename = "0x00000015")]
+    RC2,
+
+    #[serde(rename = "0x00000016")]
+    RC4,
+
+    #[serde(rename = "0x00000017")]
+    RC5,
+
+    #[serde(rename = "0x00000018")]
+    SKIPJACK,
+
+    #[serde(rename = "0x00000019")]
+    Twofish,
+
+    #[serde(rename = "0x0000001A")]
+    EC,
 }
 
 /// See KMIP 1.0 section 3.5 [Cryptographic Length](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177).
@@ -436,19 +538,45 @@ pub struct CryptographicLength(pub i32);
 #[serde(rename = "0x42002B")]
 #[rustfmt::skip]
 pub struct CryptographicParameters {
-    #[serde(skip_serializing_if = "Option::is_none")] pub block_cipher_mode: Option<BlockCipherMode>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub padding_method: Option<PaddingMethod>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub hashing_algorithm: Option<HashingAlgorithm>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub key_role_type: Option<KeyRoleType>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub random_iv: Option<RandomIV>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub iv_length: Option<IVLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub tag_length: Option<TagLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub counter_length: Option<CounterLength>, // KMIP 1.2
-    #[serde(skip_serializing_if = "Option::is_none")] pub initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+    #[serde(rename = "0x420011", skip_serializing_if = "Option::is_none")]
+    pub block_cipher_mode: Option<BlockCipherMode>,
+    
+    #[serde(rename = "0x42005F", skip_serializing_if = "Option::is_none")]
+    pub padding_method: Option<PaddingMethod>,
+    
+    #[serde(rename = "0x420038", skip_serializing_if = "Option::is_none")]
+    pub hashing_algorithm: Option<HashingAlgorithm>,
+    
+    #[serde(rename = "0x420083", skip_serializing_if = "Option::is_none")]
+    pub key_role_type: Option<KeyRoleType>,
+    
+    #[serde(rename = "0x4200AE", skip_serializing_if = "Option::is_none")]
+    pub digital_signature_algorithm: Option<DigitalSignatureAlgorithm>, // KMIP 1.2
+    
+    #[serde(rename = "0x420028", skip_serializing_if = "Option::is_none")]
+    pub cryptographic_algorithm: Option<CryptographicAlgorithm>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200C5", skip_serializing_if = "Option::is_none")]
+    pub random_iv: Option<RandomIV>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CD", skip_serializing_if = "Option::is_none")]
+    pub iv_length: Option<IVLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CE", skip_serializing_if = "Option::is_none")]
+    pub tag_length: Option<TagLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200CF", skip_serializing_if = "Option::is_none")]
+    pub fixed_field_length: Option<FixedFieldLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D2", skip_serializing_if = "Option::is_none")]
+    pub invocation_field_length: Option<InvocationFieldLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D0", skip_serializing_if = "Option::is_none")]
+    pub counter_length: Option<CounterLength>, // KMIP 1.2
+    
+    #[serde(rename = "0x4200D1", skip_serializing_if = "Option::is_none")]
+    pub initial_counter_value: Option<InitialCounterValue>, // KMIP 1.2
+    
 }
 
 impl CryptographicParameters {
@@ -599,6 +727,37 @@ pub struct CounterLength(pub i32);
 #[serde(rename = "Transparent:0x4200D1")]
 pub struct InitialCounterValue(pub i32);
 
+/// See KMIP 1.0 section 3.7 [Cryptographic Domain Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613488).
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420029")]
+#[rustfmt::skip]
+pub struct CryptographicDomainParameters {
+    #[serde(skip_serializing_if = "Option::is_none")] pub q_length: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub recommended_curve: Option<RecommendedCurve>,
+}
+
+impl CryptographicDomainParameters {
+    pub fn with_q_length(self, value: i32) -> Self {
+        Self {
+            q_length: Some(value),
+            ..self
+        }
+    }
+
+    pub fn with_recommended_curve(self, value: RecommendedCurve) -> Self {
+        Self {
+            recommended_curve: Some(value),
+            ..self
+        }
+    }
+}
+
+impl From<CryptographicDomainParameters> for AttributeValue {
+    fn from(params: CryptographicDomainParameters) -> Self {
+        AttributeValue::CryptographicDomainParameters(params.q_length, params.recommended_curve)
+    }
+}
+
 /// See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
 // Note: This enum value is stored in a u32 but is serialized as an i32.
 #[repr(u32)]
@@ -629,12 +788,12 @@ pub enum CryptographicUsageMask {
 }
 
 /// See KMIP 1.0 section 3.24 [Compromise Occurrence Date](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198).
-#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420021")]
 pub struct CompromiseOccurrenceDate(pub u64);
 
 /// See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420080")]
 pub struct RevocationMessage(pub String);
 
@@ -655,7 +814,7 @@ pub struct ApplicationData(pub String);
 
 /// See KMIP 1.0 section 6.4 [Unique Batch Item ID](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename(serialize = "Transparent:0x420093"))]
+#[serde(rename = "Transparent:0x420093")]
 pub struct UniqueBatchItemID(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
 impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
@@ -745,6 +904,58 @@ pub enum KeyFormatType {
     TransparentECMQVPublicKey,
 }
 
+/// See KMIP 1.0 section 9.1.3.2.5 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497874).
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[serde(rename = "0x420075")]
+#[non_exhaustive]
+#[allow(non_camel_case_types)]
+pub enum RecommendedCurve {
+    #[serde(rename = "0x00000001")]
+    P_192,
+
+    #[serde(rename = "0x00000002")]
+    K_163,
+
+    #[serde(rename = "0x00000003")]
+    B_163,
+
+    #[serde(rename = "0x00000004")]
+    P_224,
+
+    #[serde(rename = "0x00000005")]
+    K_233,
+
+    #[serde(rename = "0x00000006")]
+    B_233,
+
+    #[serde(rename = "0x00000007")]
+    P_256,
+
+    #[serde(rename = "0x00000008")]
+    K_283,
+
+    #[serde(rename = "0x00000009")]
+    B_283,
+
+    #[serde(rename = "0x0000000A")]
+    P_384,
+
+    #[serde(rename = "0x0000000B")]
+    K_409,
+
+    #[serde(rename = "0x0000000C")]
+    B_409,
+
+    #[serde(rename = "0x0000000D")]
+    P_521,
+
+    #[serde(rename = "0x0000000E")]
+    K_571,
+
+    #[serde(rename = "0x0000000F")]
+    B_571,
+}
+
 /// See KMIP 1.0 section 9.1.3.2.6 [Certificate Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42001D")]
@@ -813,9 +1024,10 @@ pub enum DigitalSignatureAlgorithm {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.10 [Name Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420054")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum NameType {
     #[serde(rename = "0x00000001")]
     UninterpretedTextString,
@@ -882,7 +1094,7 @@ pub enum BlockCipherMode {
     X9_102_AKW2,
 }
 
-/// See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497882).
+/// See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
 #[serde(rename = "0x42005F")]
 #[non_exhaustive]
@@ -1108,9 +1320,10 @@ pub enum LinkType {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.26 [Operation Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497894).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum Operation {
     // KMIP 1.0 operations
     #[serde(rename = "0x00000001")]
