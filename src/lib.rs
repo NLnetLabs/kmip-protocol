@@ -224,6 +224,9 @@ pub use rustls;
 /// Re-export
 pub use tokio_rustls;
 
+#[cfg(feature = "deserializer")]
+pub mod de;
+
 pub mod types;
 
 #[cfg(test)]

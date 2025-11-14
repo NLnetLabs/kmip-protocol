@@ -18,9 +18,9 @@ fn main() {
     let ttlv_bin = hex::decode(ttlv_hex_str)
         .expect("Failed to parse the input file. Make sure it is in hex format, e.g. 42007A..");
 
-    let mut pretty_printer = PrettyPrinter::new();
-    pretty_printer.with_tag_prefix("4200".into());
-    pretty_printer.with_tag_map(tag_map::make_kmip_tag_map());
+    let pretty_printer = PrettyPrinter::new()
+        .with_tag_prefix("4200".into())
+        .with_tag_map(tag_map::make_kmip_tag_map());
 
     println!("{}", pretty_printer.to_string(&ttlv_bin));
 }
