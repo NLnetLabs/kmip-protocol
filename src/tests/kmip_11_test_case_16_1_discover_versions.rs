@@ -39,7 +39,11 @@ fn kmip_1_1_testcase_16_1_time_0_discover_versions_no_versions_provided_request(
         "00000010000000042000D0200000004000000010000000042000F010000001842005C05000000040000001E0000000042",
         "00790100000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -107,7 +111,11 @@ fn kmip_1_1_testcase_16_1_time_1_discover_versionswith_v10_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000010000000042006B02000000040000000000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -173,7 +181,11 @@ fn kmip_1_1_testcase_16_1_time_2_discover_versions_with_v11_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000010000000042006B02000000040000000100000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,
@@ -239,7 +251,11 @@ fn kmip_1_1_testcase_16_1_time_3_discover_versions_with_v931_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000090000000042006B02000000040000001F00000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         use_case_request_hex, actual_request_hex,

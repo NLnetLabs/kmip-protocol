@@ -24,18 +24,18 @@ use crate::{
 };
 
 const TIMESTAMP: u64 = 0x000000004B7918AA;
-const TIMESTAMP_STR: &'static str = "000000004B7918AA";
-const UNIQUE_IDENTIFIER_0: &'static str = "$UNIQUE_IDENTIFIER_0";
+const TIMESTAMP_STR: &str = "000000004B7918AA";
+const UNIQUE_IDENTIFIER_0: &str = "$UNIQUE_IDENTIFIER_0";
 
 // --------------------------------------------------------------------------------------------------------------------
 // 5.9.8 Advanced Cryptographic Mandatory Test Cases KMIP v1.3
-// Test case 5.9.8.1 CS-AC-M-1-13
+// Test case 5.9.8.1 CS-AC-M-1-30
 // --------------------------------------------------------------------------------------------------------------------
 
 #[test]
 fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
     // To get more insight into failed tests use a log implementation, e.g.:
-    // SimpleLogger::new().init().unwrap();
+    // simple_logging::log_to_stderr(log::LevelFilter::Trace);
 
     let use_case_key_material_hex = concat!(
         "308204a50201000282010100ab7f161c0042496ccd6c6d4dadb919973435357776003acf54b7af1e440afb80b64a8755f",
@@ -80,7 +80,7 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Register(
                 ObjectType::PrivateKey,
-                TemplateAttribute::unnamed(vec![
+                TemplateAttribute::new(vec![
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
                     Attribute::CryptographicParameters(
                         CryptographicParameters::default()
@@ -148,10 +148,13 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
         "            42002A 02 00000004 00000800 00000000", // Cryptgraphic Length, Integer (0x02), Data: 0x800 (2048 + 4 pad bytes)
     );
     let expected_request_hex = expected_request_hex.replace(" ", "");
-    let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", &TIMESTAMP_STR);
+    let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", TIMESTAMP_STR);
     let expected_request_hex = expected_request_hex.replace("<KEY_MATERIAL_BYTES>", &use_case_key_material_hex);
 
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         expected_request_hex, actual_request_hex,
@@ -266,7 +269,10 @@ fn kmip_1_3_testcase_5_9_8_1_step_2_sign_request() {
     );
     let expected_request_hex = expected_request_hex.replace("<USE_CASE_BYTES_TO_SIGN>", use_case_bytes_to_sign);
 
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
+    let actual_request_hex = match to_vec(&use_case_request) {
+        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
+    };
 
     assert_eq!(
         expected_request_hex, actual_request_hex,
