@@ -2,7 +2,7 @@
 name = "kmip-protocol"
 version = "0.5.0"
 authors = ["The NLnet Labs RPKI Team <rpki-team@nlnetlabs.nl>"]
-edition = "2018"
+edition = "2024"
 description = "KMIP protocol object (de)serialization"
 repository = "https://github.com/NLnetLabs/kmip/"
 documentation = "https://docs.rs/kmip-protocol/"
@@ -11,7 +11,7 @@ keywords = ["KMIP", "TTLV", "serde", "serialization"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
 exclude = ["/.github"]
 readme = "README.md"
-rust-version = "1.68.0"
+rust-version = "1.87.0"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
@@ -42,6 +42,7 @@ tracing = "0.1.41"
 webpki = {version = "0.22.4", optional = true }
 webpki-roots = { version = "1", optional = true }
 enum-ordinalize = "4.3.0"
+proptest = { version = "1.9.0", optional = true }
 
 [features]
 default = ["sync"]
@@ -58,11 +59,16 @@ tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki-roots"]
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
 tls-with-async-tls = ["tls", "async-with-async-std", "async-tls", "rustls-pemfile", "webpki" ]
+proptest = ["dep:proptest"]
 
 [[example]]
 name = "demo"
 required-features = ["tls"]
 test = false
+
+[[test]]
+name = "roundtrip_ttlv"
+required-features = ["proptest"]
 
 [build-dependencies]
 rustc_version   = "0.4.0"
