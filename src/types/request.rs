@@ -207,6 +207,13 @@ impl TemplateAttribute {
         }
     }
 
+    pub fn new_with_names(attributes: Vec<Attribute>, names: Vec<Name>) -> Self {
+        Self {
+            template_names: (!names.is_empty()).then_some(names),
+            attributes: (!attributes.is_empty()).then_some(attributes),
+        }
+    }
+
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
@@ -247,6 +254,13 @@ impl CommonTemplateAttribute {
         Self {
             template_names: None,
             attributes: Some(attributes),
+        }
+    }
+
+    pub fn new_with_names(attributes: Vec<Attribute>, names: Vec<Name>) -> Self {
+        Self {
+            template_names: (!names.is_empty()).then_some(names),
+            attributes: (!attributes.is_empty()).then_some(attributes),
         }
     }
 
@@ -293,6 +307,13 @@ impl PrivateKeyTemplateAttribute {
         }
     }
 
+    pub fn new_with_names(attributes: Vec<Attribute>, names: Vec<Name>) -> Self {
+        Self {
+            template_names: (!names.is_empty()).then_some(names),
+            attributes: (!attributes.is_empty()).then_some(attributes),
+        }
+    }
+
     pub fn with_template_name(mut self, template_name: &'static str) -> Self {
         // TODO: SAFETY
         let template_name = Name::from_str(template_name).unwrap();
@@ -333,6 +354,13 @@ impl PublicKeyTemplateAttribute {
         Self {
             template_names: None,
             attributes: Some(attributes),
+        }
+    }
+
+    pub fn new_with_names(attributes: Vec<Attribute>, names: Vec<Name>) -> Self {
+        Self {
+            template_names: (!names.is_empty()).then_some(names),
+            attributes: (!attributes.is_empty()).then_some(attributes),
         }
     }
 

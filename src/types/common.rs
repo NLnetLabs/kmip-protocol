@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use enum_display_derive::Display;
 use enum_flags::EnumFlags;
+use enum_ordinalize::Ordinalize;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
@@ -1023,9 +1024,10 @@ pub enum DigitalSignatureAlgorithm {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.10 [Name Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420054")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum NameType {
     #[serde(rename = "0x00000001")]
     UninterpretedTextString,
@@ -1318,9 +1320,10 @@ pub enum LinkType {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.26 [Operation Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497894).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42005C")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum Operation {
     // KMIP 1.0 operations
     #[serde(rename = "0x00000001")]

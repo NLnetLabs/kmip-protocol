@@ -41,9 +41,11 @@ trait-set = "0.2.0"
 tracing = "0.1.41"
 webpki = {version = "0.22.4", optional = true }
 webpki-roots = { version = "1", optional = true }
+enum-ordinalize = "4.3.0"
 
 [features]
 default = ["sync"]
+deserializer = []
 sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync", "sync-pool"]
 sync-pool = ["r2d2"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio", "async-pool"]
