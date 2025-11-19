@@ -1,21 +1,15 @@
 use std::sync::Arc;
 
+#[cfg(feature = "tls-with-tokio-rustls")]
+use tokio_rustls::rustls;
+
 use rustls::{
     client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
     pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
-    SignatureScheme,
+    ClientConfig, KeyLogFile, RootCertStore, SignatureScheme,
 };
 
 use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientCertificate, ConnectionSettings, Error, Result};
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "tls-with-tokio-rustls")] {
-        use tokio_rustls::rustls::{Certificate, ClientConfig, KeyLogFile, PrivateKey, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError};
-        use tokio_rustls::webpki::DNSNameRef;
-    } else {
-        use rustls::{ClientConfig, KeyLogFile, RootCertStore};
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;

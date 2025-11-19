@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
@@ -8,7 +9,6 @@ use crate::client::{ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
 use tokio_rustls::client::TlsStream;
-use tokio_rustls::webpki::DNSNameRef;
 use tokio_rustls::TlsConnector;
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
@@ -37,7 +37,7 @@ where
         ))?;
 
     let host_str = conn_settings.host.clone();
-    let hostname = DNSNameRef::try_from_ascii_str(&host_str).map_err(|err| {
+    let hostname = host_str.try_into().map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
     })?;
     let connect_timeout = conn_settings.connect_timeout.clone();
