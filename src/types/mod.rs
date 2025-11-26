@@ -48,6 +48,127 @@ macro_rules! impl_ttlv_serde {
         }
     };
 
+    // Impl TTLV (de)serialization for a struct.
+    (struct $type:ident {
+        $($(#[$($attr:tt)*])* $field:ident: $field_ty:ty),* $(,)?
+    } as $tag:literal) => {
+        impl_ttlv_serde!(struct $type as $tag {
+            fast_scan = |scanner| Self { $(
+                $field: impl_ttlv_serde!(0: $(#[$($attr)*])* $field_ty => scanner),
+            )* };
+
+            format = |&self, formatter| {
+                let Self { $($field,)* } = self;
+                $(impl_ttlv_serde!(1: $(#[$($attr)*])* $field => formatter);)*
+            };
+        });
+    };
+
+    // Impl TTLV (de)serialization for a tuple struct.
+    (struct $type:ident(
+        $($(#[$($attr:tt)*])* $field:ident: $field_ty:ty),* $(,)?
+    ) as $tag:literal) => {
+        impl_ttlv_serde!(struct $type as $tag {
+            fast_scan = |scanner| Self($(
+                impl_ttlv_serde!(0: $(#[$($attr)*])* $field_ty => scanner),
+            )*);
+
+            format = |&self, formatter| {
+                let Self($($field,)*) = self;
+                $(impl_ttlv_serde!(1: $(#[$($attr)*])* $field => formatter);)*
+            };
+        });
+    };
+
+    (0: #[option+vec] $field_ty:ty => $scanner:ident) => {
+        std::iter::from_fn(
+            || <$field_ty>::fast_scan_opt(&mut $scanner).transpose())
+            .collect::<Result<Vec<_>, _>>()
+            .map(Some)?
+            .filter(|x| !x.is_empty())
+    };
+
+    (0: #[vec] $field_ty:ty => $scanner:ident) => {
+        std::iter::from_fn(
+            || <$field_ty>::fast_scan_opt(&mut $scanner).transpose())
+            .collect::<Result<Vec<_>, _>>()?
+    };
+
+    (0: #[option] $field_ty:ty => $scanner:ident) => {
+        <$field_ty>::fast_scan_opt(&mut $scanner)?
+    };
+
+    (0: $field_ty:ty => $scanner:ident) => {
+        <$field_ty>::fast_scan(&mut $scanner)?
+    };
+
+    (1: #[option+vec] $field:ident => $formatter:ident) => {
+        for $field in $field.iter().flatten() {
+            $field.format(&mut $formatter)?;
+        };
+    };
+
+    (1: #[vec] $field:ident => $formatter:ident) => {
+        for $field in $field {
+            $field.format(&mut $formatter)?;
+        };
+    };
+
+    (1: #[option] $field:ident => $formatter:ident) => {
+        if let Some($field) = $field {
+            $field.format(&mut $formatter)?;
+        };
+    };
+
+    (1: $field:ident => $formatter:ident) => {
+        $field.format(&mut $formatter)?;
+    };
+
+    // Impl TTLV (de)serialization for a complex struct.
+    (struct $type:ident as $tag:literal {
+        fast_scan = |$scanner:ident| $fast_scan:expr;
+        format = |&$self:ident, $formatter:ident| $format:expr;
+    }) => {
+        impl $type {
+            pub const TAG: Tag = Tag::new($tag);
+
+            pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+                Self::fast_scan_inner(scanner.scan_struct(Self::TAG)?)
+            }
+
+            pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+                Self::fast_scan_inner(scanner.scan_struct(tag)?)
+            }
+
+            pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+                scanner
+                    .scan_opt_struct(Self::TAG)?
+                    .map(Self::fast_scan_inner)
+                    .transpose()
+            }
+
+            pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+                scanner.scan_opt_struct(tag)?.map(Self::fast_scan_inner).transpose()
+            }
+
+            fn fast_scan_inner(mut $scanner: FastScanner<'_>) -> Result<Self, FastScanError> {
+                let this = $fast_scan;
+                $scanner.finish()?;
+                Ok(this)
+            }
+
+            pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+                self.format_with(formatter, Self::TAG)
+            }
+
+            pub fn format_with(&$self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+                let mut $formatter = formatter.format_struct(tag)?;
+                $format;
+                Ok($formatter.finish())
+            }
+        }
+    };
+
     // Impl TTLV (de)serialization for a boolean wrapper.
     (bool $type:ident as $tag:literal) => {
         impl $type {

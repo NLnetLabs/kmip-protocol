@@ -1105,108 +1105,21 @@ impl CryptographicParameters {
     }
 }
 
-impl CryptographicParameters {
-    pub const TAG: Tag = Tag::new(0x42002B);
-
-    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
-        Self::fast_scan_inner(scanner.scan_struct(Self::TAG)?)
-    }
-
-    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
-        Self::fast_scan_inner(scanner.scan_struct(tag)?)
-    }
-
-    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
-        scanner
-            .scan_opt_struct(Self::TAG)?
-            .map(Self::fast_scan_inner)
-            .transpose()
-    }
-
-    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
-        scanner.scan_opt_struct(tag)?.map(Self::fast_scan_inner).transpose()
-    }
-
-    fn fast_scan_inner(mut scanner: FastScanner<'_>) -> Result<Self, FastScanError> {
-        let block_cipher_mode = BlockCipherMode::fast_scan_opt(&mut scanner)?;
-        let padding_method = PaddingMethod::fast_scan_opt(&mut scanner)?;
-        let hashing_algorithm = HashingAlgorithm::fast_scan_opt(&mut scanner)?;
-        let key_role_type = KeyRoleType::fast_scan_opt(&mut scanner)?;
-        let digital_signature_algorithm = DigitalSignatureAlgorithm::fast_scan_opt(&mut scanner)?;
-        let cryptographic_algorithm = CryptographicAlgorithm::fast_scan_opt(&mut scanner)?;
-        let random_iv = RandomIV::fast_scan_opt(&mut scanner)?;
-        let iv_length = IVLength::fast_scan_opt(&mut scanner)?;
-        let tag_length = TagLength::fast_scan_opt(&mut scanner)?;
-        let fixed_field_length = FixedFieldLength::fast_scan_opt(&mut scanner)?;
-        let invocation_field_length = InvocationFieldLength::fast_scan_opt(&mut scanner)?;
-        let counter_length = CounterLength::fast_scan_opt(&mut scanner)?;
-        let initial_counter_value = InitialCounterValue::fast_scan_opt(&mut scanner)?;
-        scanner.finish()?;
-        Ok(Self {
-            block_cipher_mode,
-            padding_method,
-            hashing_algorithm,
-            key_role_type,
-            digital_signature_algorithm,
-            cryptographic_algorithm,
-            random_iv,
-            iv_length,
-            tag_length,
-            fixed_field_length,
-            invocation_field_length,
-            counter_length,
-            initial_counter_value,
-        })
-    }
-
-    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
-        self.format_with(formatter, Self::TAG)
-    }
-
-    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
-        let mut formatter = formatter.format_struct(tag)?;
-        if let Some(block_cipher_mode) = &self.block_cipher_mode {
-            block_cipher_mode.format(&mut formatter)?;
-        }
-        if let Some(padding_method) = &self.padding_method {
-            padding_method.format(&mut formatter)?;
-        }
-        if let Some(hashing_algorithm) = &self.hashing_algorithm {
-            hashing_algorithm.format(&mut formatter)?;
-        }
-        if let Some(key_role_type) = &self.key_role_type {
-            key_role_type.format(&mut formatter)?;
-        }
-        if let Some(digital_signature_algorithm) = &self.digital_signature_algorithm {
-            digital_signature_algorithm.format(&mut formatter)?;
-        }
-        if let Some(cryptographic_algorithm) = &self.cryptographic_algorithm {
-            cryptographic_algorithm.format(&mut formatter)?;
-        }
-        if let Some(random_iv) = &self.random_iv {
-            random_iv.format(&mut formatter)?;
-        }
-        if let Some(iv_length) = &self.iv_length {
-            iv_length.format(&mut formatter)?;
-        }
-        if let Some(tag_length) = &self.tag_length {
-            tag_length.format(&mut formatter)?;
-        }
-        if let Some(fixed_field_length) = &self.fixed_field_length {
-            fixed_field_length.format(&mut formatter)?;
-        }
-        if let Some(invocation_field_length) = &self.invocation_field_length {
-            invocation_field_length.format(&mut formatter)?;
-        }
-        if let Some(counter_length) = &self.counter_length {
-            counter_length.format(&mut formatter)?;
-        }
-        if let Some(initial_counter_value) = &self.initial_counter_value {
-            initial_counter_value.format(&mut formatter)?;
-        }
-        Ok(formatter.finish())
-    }
-}
+impl_ttlv_serde!(struct CryptographicParameters {
+    #[option] block_cipher_mode: BlockCipherMode,    
+    #[option] padding_method: PaddingMethod,    
+    #[option] hashing_algorithm: HashingAlgorithm,    
+    #[option] key_role_type: KeyRoleType,    
+    #[option] digital_signature_algorithm: DigitalSignatureAlgorithm,
+    #[option] cryptographic_algorithm: CryptographicAlgorithm,
+    #[option] random_iv: RandomIV,
+    #[option] iv_length: IVLength,
+    #[option] tag_length: TagLength,
+    #[option] fixed_field_length: FixedFieldLength,
+    #[option] invocation_field_length: InvocationFieldLength,
+    #[option] counter_length: CounterLength,
+    #[option] initial_counter_value: InitialCounterValue,
+} as 0x42002B);
 
 impl From<CryptographicParameters> for AttributeValue {
     fn from(params: CryptographicParameters) -> Self {
