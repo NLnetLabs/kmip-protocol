@@ -2,6 +2,7 @@
 use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use enum_display_derive::Display;
+use enum_ordinalize::Ordinalize;
 use serde_derive::{Deserialize, Serialize};
 
 use super::common::{
@@ -404,12 +405,13 @@ impl Credential {
 }
 
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420024")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum CredentialType {
     #[serde(rename = "0x00000001")]
-    UsernameAndPassword,
+    UsernameAndPassword = 1,
 }
 
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
@@ -955,12 +957,13 @@ impl RequestPayload {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.4 [Wrapping Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241993348).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42009E")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum WrappingMethod {
     #[serde(rename = "0x00000001")]
-    Encrypt,
+    Encrypt = 1,
 
     #[serde(rename = "0x00000002")]
     MACSign,
@@ -976,12 +979,13 @@ pub enum WrappingMethod {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.23 [Query Function Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420074")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum QueryFunction {
     #[serde(rename = "0x00000001")]
-    QueryOperations,
+    QueryOperations = 1,
 
     #[serde(rename = "0x00000002")]
     QueryObjects,

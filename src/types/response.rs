@@ -1,4 +1,5 @@
 //! Rust types for deserializing KMIP responses.
+use enum_ordinalize::Ordinalize;
 use serde_derive::{Deserialize, Serialize};
 
 use enum_display_derive::Display;
@@ -336,9 +337,10 @@ pub struct ProtocolVersion {
 }
 
 ///  See KMIP 1.0 section 6.9 [Result Status](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007F")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum ResultStatus {
     #[serde(rename = "0x00000000")]
     Success,
@@ -354,12 +356,13 @@ pub enum ResultStatus {
 }
 
 ///  See KMIP 1.0 section 6.10 [Result Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007E")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum ResultReason {
     #[serde(rename = "0x00000001")]
-    ItemNotFound,
+    ItemNotFound = 1,
 
     #[serde(rename = "0x00000002")]
     ResponseTooLarge,
