@@ -128,7 +128,7 @@ impl Attribute {
         Attribute(
             AttributeName("Cryptographic Usage Mask".into()),
             Option::<AttributeIndex>::None,
-            AttributeValue::Integer(value as i32),
+            AttributeValue::Integer(value.bits()),
         )
     }
 

@@ -3,10 +3,17 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use enum_display_derive::Display;
-use enum_flags::EnumFlags;
 use enum_ordinalize::Ordinalize;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
+
+use crate::ttlv::fast_scan::FastScanError;
+use crate::ttlv::fast_scan::FastScanner;
+use crate::ttlv::format::FormatResult;
+use crate::ttlv::format::Formatter;
+use crate::ttlv::types::Tag;
+
+use super::impl_ttlv_serde;
 
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -19,6 +26,8 @@ impl std::cmp::PartialEq<str> for AttributeName {
     }
 }
 
+impl_ttlv_serde!(text AttributeName as 0x42000A);
+
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420009")]
@@ -29,6 +38,8 @@ impl std::cmp::PartialEq<i32> for AttributeIndex {
         &self.0 == other
     }
 }
+
+impl_ttlv_serde!(int AttributeIndex as 0x420009);
 
 /// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -204,6 +215,132 @@ pub enum AttributeValue {
     // Interval(??),
 }
 
+impl AttributeValue {
+    pub const TAG: Tag = Tag::new(0x42000B);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>, name: &AttributeName) -> Result<Self, FastScanError> {
+        match name.0.as_str() {
+            "Unique Identifier" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
+            "Name" => {
+                let mut scanner = scanner.scan_struct(Self::TAG)?;
+                let name_value = NameValue::fast_scan(&mut scanner)?;
+                let name_type = NameType::fast_scan(&mut scanner)?;
+                scanner.finish()?;
+                Ok(Self::Name(name_value, name_type))
+            }
+            "ObjectType" => ObjectType::fast_scan_with(scanner, Self::TAG).map(Self::ObjectType),
+            "Cryptographic Algorithm" => {
+                CryptographicAlgorithm::fast_scan_with(scanner, Self::TAG).map(Self::CryptographicAlgorithm)
+            }
+            "Cryptographic Length" => scanner.scan_int(Self::TAG).map(Self::Integer),
+            "Cryptographic Parameters" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
+            "Operation Policy Name" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
+            "Cryptographic Usage Mask" => scanner.scan_int(Self::TAG).map(Self::Integer),
+            "Activation Date" => scanner.scan_date_time(Self::TAG).map(|s| Self::DateTime(s as u64)),
+            "Object Group" => scanner.scan_text(Self::TAG).map(|s| Self::ObjectGroup(s.into())),
+            "Link" => {
+                let mut scanner = scanner.scan_struct(Self::TAG)?;
+                let link_type = LinkType::fast_scan(&mut scanner)?;
+                let linked_object_identifier = LinkedObjectIdentifier::fast_scan(&mut scanner)?;
+                scanner.finish()?;
+                Ok(Self::Link(link_type, linked_object_identifier))
+            }
+            "Application Specific Information" => {
+                let mut scanner = scanner.scan_struct(Self::TAG)?;
+                let application_namespace = ApplicationNamespace::fast_scan(&mut scanner)?;
+                let application_data = ApplicationData::fast_scan(&mut scanner)?;
+                scanner.finish()?;
+                Ok(Self::ApplicationSpecificInformation(
+                    application_namespace,
+                    application_data,
+                ))
+            }
+            "Contact Information" => scanner.scan_text(Self::TAG).map(|s| Self::ContactInformation(s.into())),
+            _ => Err(FastScanError::assert()),
+        }
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        match self {
+            AttributeValue::Name(name_value, name_type) => {
+                let mut formatter = formatter.format_struct(Self::TAG)?;
+                name_value.format(&mut formatter)?;
+                name_type.format(&mut formatter)?;
+                Ok(formatter.finish())
+            }
+            AttributeValue::ObjectType(this) => this.format_with(formatter, Self::TAG),
+            AttributeValue::CryptographicAlgorithm(this) => this.format_with(formatter, Self::TAG),
+            &AttributeValue::CryptographicParameters(
+                block_cipher_mode,
+                padding_method,
+                hashing_algorithm,
+                key_role_type,
+                digital_signature_algorithm,
+                cryptographic_algorithm,
+                random_iv,
+                iv_length,
+                tag_length,
+                fixed_field_length,
+                invocation_field_length,
+                counter_length,
+                initial_counter_value,
+            ) => CryptographicParameters {
+                block_cipher_mode,
+                padding_method,
+                hashing_algorithm,
+                key_role_type,
+                digital_signature_algorithm,
+                cryptographic_algorithm,
+                random_iv,
+                iv_length,
+                tag_length,
+                fixed_field_length,
+                invocation_field_length,
+                counter_length,
+                initial_counter_value,
+            }
+            .format_with(formatter, Self::TAG),
+            &AttributeValue::CryptographicDomainParameters(q_length, recommended_curve) => {
+                CryptographicDomainParameters {
+                    q_length,
+                    recommended_curve,
+                }
+                .format_with(formatter, Self::TAG)
+            }
+            AttributeValue::State(this) => this.format_with(formatter, Self::TAG),
+            AttributeValue::ObjectGroup(v) => formatter.format_text(Self::TAG, v),
+            AttributeValue::Link(link_type, linked_object_identifier) => {
+                let mut formatter = formatter.format_struct(Self::TAG)?;
+                link_type.format(&mut formatter)?;
+                linked_object_identifier.format(&mut formatter)?;
+                Ok(formatter.finish())
+            }
+            AttributeValue::ApplicationSpecificInformation(application_namespace, application_data) => {
+                let mut formatter = formatter.format_struct(Self::TAG)?;
+                application_namespace.format(&mut formatter)?;
+                application_data.format(&mut formatter)?;
+                Ok(formatter.finish())
+            }
+            AttributeValue::ContactInformation(v) => formatter.format_text(Self::TAG, v),
+
+            AttributeValue::Structure(fields) => {
+                let mut formatter = formatter.format_struct(Self::TAG)?;
+                for field in fields {
+                    field.format(&mut formatter)?;
+                }
+                Ok(formatter.finish())
+            }
+            &AttributeValue::Integer(v) => formatter.format_int(Self::TAG, v),
+            &AttributeValue::LongInteger(v) => formatter.format_long_int(Self::TAG, v),
+            &AttributeValue::Enumeration(v) => formatter.format_enum(Self::TAG, v),
+            &AttributeValue::Boolean(v) => formatter.format_bool(Self::TAG, v),
+            AttributeValue::TextString(v) => formatter.format_text(Self::TAG, v),
+            AttributeValue::ByteString(v) => formatter.format_bytes(Self::TAG, v),
+            &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v as i64),
+        }
+    }
+}
+
 /// See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 // Use "Transparent" here because we must not write out the TLV of TTLV for
@@ -259,12 +396,84 @@ impl Display for KeyMaterial {
     }
 }
 
+impl KeyMaterial {
+    pub const TAG: Tag = Tag::new(0x420043);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>, format: &KeyFormatType) -> Result<Self, FastScanError> {
+        match format {
+            KeyFormatType::Raw
+            | KeyFormatType::Opaque
+            | KeyFormatType::PKCS1
+            | KeyFormatType::PKCS8
+            | KeyFormatType::X509 => scanner.scan_bytes(Self::TAG).map(|s| Self::Bytes(s.into())),
+
+            KeyFormatType::TransparentSymmetricKey => {
+                TransparentSymmetricKey::fast_scan(scanner).map(Self::TransparentSymmetricKey)
+            }
+            KeyFormatType::TransparentDSAPrivateKey => {
+                TransparentDSAPrivateKey::fast_scan(scanner).map(Self::TransparentDSAPrivateKey)
+            }
+            KeyFormatType::TransparentDSAPublicKey => {
+                TransparentDSAPublicKey::fast_scan(scanner).map(Self::TransparentDSAPublicKey)
+            }
+            KeyFormatType::TransparentRSAPrivateKey => {
+                TransparentRSAPrivateKey::fast_scan(scanner).map(Self::TransparentRSAPrivateKey)
+            }
+            KeyFormatType::TransparentRSAPublicKey => {
+                TransparentRSAPublicKey::fast_scan(scanner).map(Self::TransparentRSAPublicKey)
+            }
+            KeyFormatType::TransparentDHPrivateKey => {
+                TransparentDHPrivateKey::fast_scan(scanner).map(Self::TransparentDHPrivateKey)
+            }
+            KeyFormatType::TransparentDHPublicKey => {
+                TransparentDHPublicKey::fast_scan(scanner).map(Self::TransparentDHPublicKey)
+            }
+
+            _ => todo!(),
+        }
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        match self {
+            KeyMaterial::Bytes(v) => formatter.format_bytes(Self::TAG, v),
+
+            KeyMaterial::TransparentSymmetricKey(this) => this.format(formatter),
+            KeyMaterial::TransparentDSAPrivateKey(this) => this.format(formatter),
+            KeyMaterial::TransparentDSAPublicKey(this) => this.format(formatter),
+            KeyMaterial::TransparentRSAPrivateKey(this) => this.format(formatter),
+            KeyMaterial::TransparentRSAPublicKey(this) => this.format(formatter),
+            KeyMaterial::TransparentDHPrivateKey(this) => this.format(formatter),
+            KeyMaterial::TransparentDHPublicKey(this) => this.format(formatter),
+
+            KeyMaterial::Structure(_) => todo!(),
+        }
+    }
+}
+
 /// See KMIP 1.0 section 2.1.7.1 [Transparent Symmetric Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
 pub struct TransparentSymmetricKey {
     #[serde(with = "serde_bytes")]
     pub key: Vec<u8>,
+}
+
+impl TransparentSymmetricKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const KEY_TAG: Tag = Tag::new(0x42003F);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let key = scanner.scan_bytes(Self::KEY_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self { key })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_bytes(Self::KEY_TAG, &self.key)?;
+        Ok(formatter.finish())
+    }
 }
 
 /// See KMIP 1.0 section 2.1.7.2 [Transparent DSA Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
@@ -281,6 +490,33 @@ pub struct TransparentDSAPrivateKey {
     pub x: Vec<u8>,
 }
 
+impl TransparentDSAPrivateKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const P_TAG: Tag = Tag::new(0x42005E);
+    pub const Q_TAG: Tag = Tag::new(0x420071);
+    pub const G_TAG: Tag = Tag::new(0x420037);
+    pub const X_TAG: Tag = Tag::new(0x42009F);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let p = scanner.scan_big_int(Self::P_TAG)?.into();
+        let q = scanner.scan_big_int(Self::Q_TAG)?.into();
+        let g = scanner.scan_big_int(Self::G_TAG)?.into();
+        let x = scanner.scan_big_int(Self::X_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self { p, q, g, x })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::P_TAG, &self.p)?;
+        formatter.format_big_int(Self::Q_TAG, &self.q)?;
+        formatter.format_big_int(Self::G_TAG, &self.g)?;
+        formatter.format_big_int(Self::X_TAG, &self.x)?;
+        Ok(formatter.finish())
+    }
+}
+
 /// See KMIP 1.0 section 2.1.7.3 [Transparent DSA Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
@@ -293,6 +529,33 @@ pub struct TransparentDSAPublicKey {
     pub g: Vec<u8>,
     #[serde(with = "serde_bytes")]
     pub x: Vec<u8>,
+}
+
+impl TransparentDSAPublicKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const P_TAG: Tag = Tag::new(0x42005E);
+    pub const Q_TAG: Tag = Tag::new(0x420071);
+    pub const G_TAG: Tag = Tag::new(0x420037);
+    pub const X_TAG: Tag = Tag::new(0x42009F);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let p = scanner.scan_big_int(Self::P_TAG)?.into();
+        let q = scanner.scan_big_int(Self::Q_TAG)?.into();
+        let g = scanner.scan_big_int(Self::G_TAG)?.into();
+        let x = scanner.scan_big_int(Self::X_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self { p, q, g, x })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::P_TAG, &self.p)?;
+        formatter.format_big_int(Self::Q_TAG, &self.q)?;
+        formatter.format_big_int(Self::G_TAG, &self.g)?;
+        formatter.format_big_int(Self::X_TAG, &self.x)?;
+        Ok(formatter.finish())
+    }
 }
 
 /// See KMIP 1.0 section 2.1.7.4 [Transparent RSA Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
@@ -317,6 +580,68 @@ pub struct TransparentRSAPrivateKey {
     pub crt_coefficient: Option<Vec<u8>>,
 }
 
+impl TransparentRSAPrivateKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const MODULUS_TAG: Tag = Tag::new(0x420052);
+    pub const PRIVATE_EXPONENT_TAG: Tag = Tag::new(0x420063);
+    pub const PUBLIC_EXPONENT_TAG: Tag = Tag::new(0x42006C);
+    pub const P_TAG: Tag = Tag::new(0x42005E);
+    pub const Q_TAG: Tag = Tag::new(0x420071);
+    pub const PRIME_EXPONENT_P_TAG: Tag = Tag::new(0x420060);
+    pub const PRIME_EXPONENT_Q_TAG: Tag = Tag::new(0x420061);
+    pub const CRT_COEFFICIENT_TAG: Tag = Tag::new(0x420027);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let modulus = scanner.scan_big_int(Self::MODULUS_TAG)?.into();
+        let private_exponent = scanner.scan_opt_big_int(Self::PRIVATE_EXPONENT_TAG)?.map(Into::into);
+        let public_exponent = scanner.scan_opt_big_int(Self::PUBLIC_EXPONENT_TAG)?.map(Into::into);
+        let p = scanner.scan_opt_big_int(Self::P_TAG)?.map(Into::into);
+        let q = scanner.scan_opt_big_int(Self::Q_TAG)?.map(Into::into);
+        let prime_exponent_p = scanner.scan_opt_big_int(Self::PRIME_EXPONENT_P_TAG)?.map(Into::into);
+        let prime_exponent_q = scanner.scan_opt_big_int(Self::PRIME_EXPONENT_Q_TAG)?.map(Into::into);
+        let crt_coefficient = scanner.scan_opt_big_int(Self::CRT_COEFFICIENT_TAG)?.map(Into::into);
+        scanner.finish()?;
+        Ok(Self {
+            modulus,
+            private_exponent,
+            public_exponent,
+            p,
+            q,
+            prime_exponent_p,
+            prime_exponent_q,
+            crt_coefficient,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::MODULUS_TAG, &self.modulus)?;
+        if let Some(private_exponent) = &self.private_exponent {
+            formatter.format_big_int(Self::PRIVATE_EXPONENT_TAG, private_exponent)?;
+        }
+        if let Some(public_exponent) = &self.public_exponent {
+            formatter.format_big_int(Self::PUBLIC_EXPONENT_TAG, public_exponent)?;
+        }
+        if let Some(p) = &self.p {
+            formatter.format_big_int(Self::P_TAG, p)?;
+        }
+        if let Some(q) = &self.q {
+            formatter.format_big_int(Self::Q_TAG, q)?;
+        }
+        if let Some(prime_exponent_p) = &self.prime_exponent_p {
+            formatter.format_big_int(Self::PRIME_EXPONENT_P_TAG, prime_exponent_p)?;
+        }
+        if let Some(prime_exponent_q) = &self.prime_exponent_q {
+            formatter.format_big_int(Self::PRIME_EXPONENT_Q_TAG, prime_exponent_q)?;
+        }
+        if let Some(crt_coefficient) = &self.crt_coefficient {
+            formatter.format_big_int(Self::CRT_COEFFICIENT_TAG, crt_coefficient)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
 /// See KMIP 1.0 section 2.1.7.5 [Transparent RSA Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
@@ -326,6 +651,30 @@ pub struct TransparentRSAPublicKey {
 
     #[serde(rename = "0x42006C", with = "serde_bytes")]
     pub public_exponent: Vec<u8>,
+}
+
+impl TransparentRSAPublicKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const MODULUS_TAG: Tag = Tag::new(0x420052);
+    pub const PUBLIC_EXPONENT_TAG: Tag = Tag::new(0x42006C);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let modulus = scanner.scan_big_int(Self::MODULUS_TAG)?.into();
+        let public_exponent = scanner.scan_big_int(Self::PUBLIC_EXPONENT_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self {
+            modulus,
+            public_exponent,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::MODULUS_TAG, &self.modulus)?;
+        formatter.format_big_int(Self::PUBLIC_EXPONENT_TAG, &self.public_exponent)?;
+        Ok(formatter.finish())
+    }
 }
 
 /// See KMIP 1.0 section 2.1.7.6 [Transparent DH Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
@@ -344,6 +693,40 @@ pub struct TransparentDHPrivateKey {
     pub x: Vec<u8>,
 }
 
+impl TransparentDHPrivateKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const P_TAG: Tag = Tag::new(0x42005E);
+    pub const Q_TAG: Tag = Tag::new(0x420071);
+    pub const G_TAG: Tag = Tag::new(0x420037);
+    pub const J_TAG: Tag = Tag::new(0x42003E);
+    pub const X_TAG: Tag = Tag::new(0x42009F);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let p = scanner.scan_big_int(Self::P_TAG)?.into();
+        let q = scanner.scan_opt_big_int(Self::Q_TAG)?.map(Into::into);
+        let g = scanner.scan_big_int(Self::G_TAG)?.into();
+        let j = scanner.scan_opt_big_int(Self::J_TAG)?.map(Into::into);
+        let x = scanner.scan_big_int(Self::X_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self { p, q, g, j, x })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::P_TAG, &self.p)?;
+        if let Some(q) = &self.q {
+            formatter.format_big_int(Self::Q_TAG, q)?;
+        }
+        formatter.format_big_int(Self::G_TAG, &self.g)?;
+        if let Some(j) = &self.j {
+            formatter.format_big_int(Self::J_TAG, j)?;
+        }
+        formatter.format_big_int(Self::X_TAG, &self.x)?;
+        Ok(formatter.finish())
+    }
+}
+
 /// See KMIP 1.0 section 2.1.7.7 [Transparent DH Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581161).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420043")]
@@ -360,15 +743,53 @@ pub struct TransparentDHPublicKey {
     pub y: Vec<u8>,
 }
 
+impl TransparentDHPublicKey {
+    pub const TAG: Tag = Tag::new(0x420043);
+    pub const P_TAG: Tag = Tag::new(0x42005E);
+    pub const Q_TAG: Tag = Tag::new(0x420071);
+    pub const G_TAG: Tag = Tag::new(0x420037);
+    pub const J_TAG: Tag = Tag::new(0x42003E);
+    pub const Y_TAG: Tag = Tag::new(0x4200A0);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let p = scanner.scan_big_int(Self::P_TAG)?.into();
+        let q = scanner.scan_opt_big_int(Self::Q_TAG)?.map(Into::into);
+        let g = scanner.scan_big_int(Self::G_TAG)?.into();
+        let j = scanner.scan_opt_big_int(Self::J_TAG)?.map(Into::into);
+        let y = scanner.scan_big_int(Self::Y_TAG)?.into();
+        scanner.finish()?;
+        Ok(Self { p, q, g, j, y })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_big_int(Self::P_TAG, &self.p)?;
+        if let Some(q) = &self.q {
+            formatter.format_big_int(Self::Q_TAG, q)?;
+        }
+        formatter.format_big_int(Self::G_TAG, &self.g)?;
+        if let Some(j) = &self.j {
+            formatter.format_big_int(Self::J_TAG, j)?;
+        }
+        formatter.format_big_int(Self::Y_TAG, &self.y)?;
+        Ok(formatter.finish())
+    }
+}
+
 /// See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200C2")]
 pub struct Data(#[serde(with = "serde_bytes")] pub Vec<u8>);
 
+impl_ttlv_serde!(bytes Data as 0x4200C2);
+
 /// See KMIP 1.2 section 2.1.11 [Data Length](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613467).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200C4")]
 pub struct DataLength(pub i32);
+
+impl_ttlv_serde!(int DataLength as 0x4200C4);
 
 /// See KMIP 1.0 section 3.1 [Unique Identifier](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613482).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -389,6 +810,8 @@ impl std::cmp::PartialEq<str> for UniqueIdentifier {
     }
 }
 
+impl_ttlv_serde!(text UniqueIdentifier as 0x420094);
+
 /// See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420055")]
@@ -407,6 +830,8 @@ impl FromStr for NameValue {
         Ok(Self(s.to_string()))
     }
 }
+
+impl_ttlv_serde!(text NameValue as 0x420055);
 
 /// See KMIP 1.0 section 3.3 [Object Type](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581175).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -443,6 +868,8 @@ pub enum ObjectType {
     #[serde(rename = "0x00000009")]
     PGPKey,
 }
+
+impl_ttlv_serde!(enum ObjectType as 0x420057);
 
 /// See KMIP 1.0 section 3.4 [Cryptographic Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581176).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -530,10 +957,14 @@ pub enum CryptographicAlgorithm {
     EC,
 }
 
+impl_ttlv_serde!(enum CryptographicAlgorithm as 0x420028);
+
 /// See KMIP 1.0 section 3.5 [Cryptographic Length](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581177).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42002A")]
 pub struct CryptographicLength(pub i32);
+
+impl_ttlv_serde!(int CryptographicLength as 0x42002A);
 
 /// See KMIP 1.0 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -674,6 +1105,109 @@ impl CryptographicParameters {
     }
 }
 
+impl CryptographicParameters {
+    pub const TAG: Tag = Tag::new(0x42002B);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_inner(scanner.scan_struct(Self::TAG)?)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        Self::fast_scan_inner(scanner.scan_struct(tag)?)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        scanner
+            .scan_opt_struct(Self::TAG)?
+            .map(Self::fast_scan_inner)
+            .transpose()
+    }
+
+    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+        scanner.scan_opt_struct(tag)?.map(Self::fast_scan_inner).transpose()
+    }
+
+    fn fast_scan_inner(mut scanner: FastScanner<'_>) -> Result<Self, FastScanError> {
+        let block_cipher_mode = BlockCipherMode::fast_scan_opt(&mut scanner)?;
+        let padding_method = PaddingMethod::fast_scan_opt(&mut scanner)?;
+        let hashing_algorithm = HashingAlgorithm::fast_scan_opt(&mut scanner)?;
+        let key_role_type = KeyRoleType::fast_scan_opt(&mut scanner)?;
+        let digital_signature_algorithm = DigitalSignatureAlgorithm::fast_scan_opt(&mut scanner)?;
+        let cryptographic_algorithm = CryptographicAlgorithm::fast_scan_opt(&mut scanner)?;
+        let random_iv = RandomIV::fast_scan_opt(&mut scanner)?;
+        let iv_length = IVLength::fast_scan_opt(&mut scanner)?;
+        let tag_length = TagLength::fast_scan_opt(&mut scanner)?;
+        let fixed_field_length = FixedFieldLength::fast_scan_opt(&mut scanner)?;
+        let invocation_field_length = InvocationFieldLength::fast_scan_opt(&mut scanner)?;
+        let counter_length = CounterLength::fast_scan_opt(&mut scanner)?;
+        let initial_counter_value = InitialCounterValue::fast_scan_opt(&mut scanner)?;
+        scanner.finish()?;
+        Ok(Self {
+            block_cipher_mode,
+            padding_method,
+            hashing_algorithm,
+            key_role_type,
+            digital_signature_algorithm,
+            cryptographic_algorithm,
+            random_iv,
+            iv_length,
+            tag_length,
+            fixed_field_length,
+            invocation_field_length,
+            counter_length,
+            initial_counter_value,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        let mut formatter = formatter.format_struct(tag)?;
+        if let Some(block_cipher_mode) = &self.block_cipher_mode {
+            block_cipher_mode.format(&mut formatter)?;
+        }
+        if let Some(padding_method) = &self.padding_method {
+            padding_method.format(&mut formatter)?;
+        }
+        if let Some(hashing_algorithm) = &self.hashing_algorithm {
+            hashing_algorithm.format(&mut formatter)?;
+        }
+        if let Some(key_role_type) = &self.key_role_type {
+            key_role_type.format(&mut formatter)?;
+        }
+        if let Some(digital_signature_algorithm) = &self.digital_signature_algorithm {
+            digital_signature_algorithm.format(&mut formatter)?;
+        }
+        if let Some(cryptographic_algorithm) = &self.cryptographic_algorithm {
+            cryptographic_algorithm.format(&mut formatter)?;
+        }
+        if let Some(random_iv) = &self.random_iv {
+            random_iv.format(&mut formatter)?;
+        }
+        if let Some(iv_length) = &self.iv_length {
+            iv_length.format(&mut formatter)?;
+        }
+        if let Some(tag_length) = &self.tag_length {
+            tag_length.format(&mut formatter)?;
+        }
+        if let Some(fixed_field_length) = &self.fixed_field_length {
+            fixed_field_length.format(&mut formatter)?;
+        }
+        if let Some(invocation_field_length) = &self.invocation_field_length {
+            invocation_field_length.format(&mut formatter)?;
+        }
+        if let Some(counter_length) = &self.counter_length {
+            counter_length.format(&mut formatter)?;
+        }
+        if let Some(initial_counter_value) = &self.initial_counter_value {
+            initial_counter_value.format(&mut formatter)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
 impl From<CryptographicParameters> for AttributeValue {
     fn from(params: CryptographicParameters) -> Self {
         AttributeValue::CryptographicParameters(
@@ -699,35 +1233,49 @@ impl From<CryptographicParameters> for AttributeValue {
 #[serde(rename = "Transparent:0x4200C5")]
 pub struct RandomIV(pub bool);
 
+impl_ttlv_serde!(bool RandomIV as 0x4200C5);
+
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CD")]
 pub struct IVLength(pub i32);
+
+impl_ttlv_serde!(int IVLength as 0x4200CD);
 
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CE")]
 pub struct TagLength(pub i32);
 
+impl_ttlv_serde!(int TagLength as 0x4200CE);
+
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200CF")]
 pub struct FixedFieldLength(pub i32);
+
+impl_ttlv_serde!(int FixedFieldLength as 0x4200CF);
 
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D2")]
 pub struct InvocationFieldLength(pub i32);
 
+impl_ttlv_serde!(int InvocationFieldLength as 0x4200D2);
+
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D0")]
 pub struct CounterLength(pub i32);
 
+impl_ttlv_serde!(int CounterLength as 0x4200D0);
+
 /// See KMIP 1.2 section 3.6 [Cryptographic Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613487).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x4200D1")]
 pub struct InitialCounterValue(pub i32);
+
+impl_ttlv_serde!(int InitialCounterValue as 0x4200D1);
 
 /// See KMIP 1.0 section 3.7 [Cryptographic Domain Parameters](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613488).
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -754,39 +1302,102 @@ impl CryptographicDomainParameters {
     }
 }
 
+impl CryptographicDomainParameters {
+    pub const TAG: Tag = Tag::new(0x420029);
+    pub const Q_LENGTH_TAG: Tag = Tag::new(0x420073);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(tag)?;
+        let q_length = scanner.scan_opt_int(Self::Q_LENGTH_TAG)?;
+        let recommended_curve = RecommendedCurve::fast_scan_opt(&mut scanner)?;
+        scanner.finish()?;
+        Ok(Self {
+            q_length,
+            recommended_curve,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        let mut formatter = formatter.format_struct(tag)?;
+        if let Some(q_length) = self.q_length {
+            formatter.format_int(Self::Q_LENGTH_TAG, q_length)?;
+        }
+        if let Some(recommended_curve) = &self.recommended_curve {
+            recommended_curve.format(&mut formatter)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
 impl From<CryptographicDomainParameters> for AttributeValue {
     fn from(params: CryptographicDomainParameters) -> Self {
         AttributeValue::CryptographicDomainParameters(params.q_length, params.recommended_curve)
     }
 }
 
-/// See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
-// Note: This enum value is stored in a u32 but is serialized as an i32.
-#[repr(u32)]
-#[derive(EnumFlags, Clone, Copy, Deserialize, Serialize, Display, PartialEq, Eq)]
-#[rustfmt::skip]
-#[non_exhaustive]
-pub enum CryptographicUsageMask {
-    Sign                            = 0x00000001,
-    Verify                          = 0x00000002,
-    Encrypt                         = 0x00000004,
-    Decrypt                         = 0x00000008,
-    WrapKey                         = 0x00000010,
-    UnwrapKey                       = 0x00000020,
-    Export                          = 0x00000040,
-    MacGenerate                     = 0x00000080,
-    MacVerify                       = 0x00000100,
-    DeriveKey                       = 0x00000200,
-    ContentCommitmentNonRepudiation = 0x00000400,
-    KeyAgreement                    = 0x00000800,
-    CertificateSign                 = 0x00001000,
-    CrlSign                         = 0x00002000,
-    GenerateCryptogram              = 0x00004000,
-    ValidateCryptogram              = 0x00008000,
-    TranslateEncrypt                = 0x00010000,
-    TranslateDecrypt                = 0x00020000,
-    TranslateWrap                   = 0x00040000,
-    TranslateUnwrap                 = 0x00080000,
+bitflags::bitflags! {
+    /// See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub struct CryptographicUsageMask: i32 {
+        const Sign                            = 0x00000001;
+        const Verify                          = 0x00000002;
+        const Encrypt                         = 0x00000004;
+        const Decrypt                         = 0x00000008;
+        const WrapKey                         = 0x00000010;
+        const UnwrapKey                       = 0x00000020;
+        const Export                          = 0x00000040;
+        const MacGenerate                     = 0x00000080;
+        const MacVerify                       = 0x00000100;
+        const DeriveKey                       = 0x00000200;
+        const ContentCommitmentNonRepudiation = 0x00000400;
+        const KeyAgreement                    = 0x00000800;
+        const CertificateSign                 = 0x00001000;
+        const CrlSign                         = 0x00002000;
+        const GenerateCryptogram              = 0x00004000;
+        const ValidateCryptogram              = 0x00008000;
+        const TranslateEncrypt                = 0x00010000;
+        const TranslateDecrypt                = 0x00020000;
+        const TranslateWrap                   = 0x00040000;
+        const TranslateUnwrap                 = 0x00080000;
+
+        const _ = !0;
+    }
+}
+
+impl CryptographicUsageMask {
+    pub const TAG: Tag = Tag::new(0x42002C);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        scanner.scan_int(tag).map(Self::from_bits_retain)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        Self::fast_scan_opt_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+        scanner.scan_opt_int(tag).map(|s| s.map(Self::from_bits_retain))
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        formatter.format_int(tag, self.bits())
+    }
 }
 
 /// See KMIP 1.0 section 3.24 [Compromise Occurrence Date](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581198).
@@ -794,25 +1405,35 @@ pub enum CryptographicUsageMask {
 #[serde(rename = "Transparent:0x420021")]
 pub struct CompromiseOccurrenceDate(pub u64);
 
+impl_ttlv_serde!(date_time CompromiseOccurrenceDate as 0x420021);
+
 /// See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420080")]
 pub struct RevocationMessage(pub String);
+
+impl_ttlv_serde!(text RevocationMessage as 0x420080);
 
 /// See KMIP 1.0 section 3.29 [Linked Object Identifier](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581203).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42004C")]
 pub struct LinkedObjectIdentifier(pub String);
 
+impl_ttlv_serde!(text LinkedObjectIdentifier as 0x42004C);
+
 /// See KMIP 1.0 section 3.30 [Application Namespace](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420003")]
 pub struct ApplicationNamespace(pub String);
 
+impl_ttlv_serde!(text ApplicationNamespace as 0x420003);
+
 /// See KMIP 1.0 section 3.30 [Application Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581204).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x420002")]
 pub struct ApplicationData(pub String);
+
+impl_ttlv_serde!(text ApplicationData as 0x420002);
 
 /// See KMIP 1.0 section 6.4 [Unique Batch Item ID](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581242).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -824,6 +1445,8 @@ impl PartialEq<Vec<u8>> for &UniqueBatchItemID {
         &self.0 == other
     }
 }
+
+impl_ttlv_serde!(bytes UniqueBatchItemID as 0x420093);
 
 /// See KMIP 1.0 section 9.1.3.2.2 [Key Compression Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241603856).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -843,6 +1466,8 @@ pub enum KeyCompressionType {
     #[serde(rename = "0x00000004")]
     ECPUblicKeyTypeX962Hybrid,
 }
+
+impl_ttlv_serde!(enum KeyCompressionType as 0x420041);
 
 /// See KMIP 1.0 section 9.1.3.2.3 [Key Format Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241992670).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -908,6 +1533,8 @@ pub enum KeyFormatType {
     TransparentECMQVPublicKey,
 }
 
+impl_ttlv_serde!(enum KeyFormatType as 0x420042);
+
 /// See KMIP 1.0 section 9.1.3.2.5 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497874).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420075")]
@@ -961,6 +1588,8 @@ pub enum RecommendedCurve {
     B_571,
 }
 
+impl_ttlv_serde!(enum RecommendedCurve as 0x420075);
+
 /// See KMIP 1.0 section 9.1.3.2.6 [Certificate Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241994296).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42001D")]
@@ -968,11 +1597,13 @@ pub enum RecommendedCurve {
 #[repr(u32)]
 pub enum CertificateType {
     #[serde(rename = "0x00000001")]
-    X509,
+    X509 = 1,
 
     #[serde(rename = "0x00000002")]
     PGP,
 }
+
+impl_ttlv_serde!(enum CertificateType as 0x42001D);
 
 /// See KMIP 1.2 section 9.1.3.2.7 [Digital Signature Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Ref306812211).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1030,6 +1661,8 @@ pub enum DigitalSignatureAlgorithm {
     ECDSAWithSHA512,
 }
 
+impl_ttlv_serde!(enum DigitalSignatureAlgorithm as 0x4200AE);
+
 /// See KMIP 1.0 section 9.1.3.2.10 [Name Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582060).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420054")]
@@ -1042,6 +1675,8 @@ pub enum NameType {
     #[serde(rename = "0x00000002")]
     URI,
 }
+
+impl_ttlv_serde!(enum NameType as 0x420054);
 
 /// See KMIP 1.0 section 9.1.3.2.13 [Block Cipher Mode Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497881).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1102,6 +1737,8 @@ pub enum BlockCipherMode {
     X9_102_AKW2,
 }
 
+impl_ttlv_serde!(enum BlockCipherMode as 0x420011);
+
 /// See KMIP 1.0 section 9.1.3.2.14 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42005F")]
@@ -1139,6 +1776,8 @@ pub enum PaddingMethod {
     #[serde(rename = "0x0000000A")]
     PSS,
 }
+
+impl_ttlv_serde!(enum PaddingMethod as 0x42005F);
 
 /// See KMIP 1.0 section 9.1.3.2.15 [Hashing Algorithm Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497883).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1180,6 +1819,8 @@ pub enum HashingAlgorithm {
     #[serde(rename = "0x0000000B")]
     Whirlpool,
 }
+
+impl_ttlv_serde!(enum HashingAlgorithm as 0x420038);
 
 /// See KMIP 1.0 section 9.1.3.2.15 [Key Role Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497884).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1252,6 +1893,8 @@ pub enum KeyRoleType {
     PVKOTH,
 }
 
+impl_ttlv_serde!(enum KeyRoleType as 0x420083);
+
 /// See KMIP 1.0 section 9.1.3.2.17 [State Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582066).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42008D")]
@@ -1276,6 +1919,8 @@ pub enum State {
     #[serde(rename = "0x00000006")]
     DestroyedCompromised,
 }
+
+impl_ttlv_serde!(enum State as 0x42008D);
 
 /// See KMIP 1.0 section 9.1.3.2.18 [Revocation Reason Code Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241996204).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1305,6 +1950,8 @@ pub enum RevocationReasonCode {
     PrivilegeWithdrawn,
 }
 
+impl_ttlv_serde!(enum RevocationReasonCode as 0x420082);
+
 /// See KMIP 1.0 section 9.1.3.2.19 [Link Type Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262582069).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42004B")]
@@ -1332,6 +1979,8 @@ pub enum LinkType {
     #[serde(rename = "0x00000107")]
     ReplacedObjectLink,
 }
+
+impl_ttlv_serde!(enum LinkType as 0x42004B);
 
 /// See KMIP 1.0 section 9.1.3.2.26 [Operation Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497894).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
@@ -1465,6 +2114,8 @@ pub enum Operation {
     #[serde(rename = "0x00000029")]
     JoinSplitKey,
 }
+
+impl_ttlv_serde!(enum Operation as 0x42005C);
 
 #[cfg(test)]
 mod test {

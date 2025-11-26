@@ -22,7 +22,7 @@ async-tls = { version = "0.11.0", default-features = false, features = ["client"
 bb8 = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
 enum-display-derive = "0.1.1"
-enum-flags = "0.1.6"
+bitflags = "2.7.0"
 kmip-ttlv = { git = "https://github.com/NLnetLabs/kmip-ttlv", branch = "next", version = "0.4.0", default-features = false }
 hex = { version = "0.4.3" }
 log = "0.4.14"
