@@ -38,10 +38,8 @@ fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Deserializer comparison");
     group.throughput(criterion::Throughput::Bytes(ttlv_bytes.len() as u64));
-    let bytes = ttlv_bytes.clone();
-    group.bench_function("fast_deserializer", move |b| b.iter(|| fast(&bytes)));
-    let bytes = ttlv_bytes.clone();
-    group.bench_function("slow_deserializer", move |b| b.iter(|| slow(&bytes)));
+    group.bench_function("fast_deserializer", |b| b.iter(|| fast(&ttlv_bytes)));
+    group.bench_function("slow_deserializer", |b| b.iter(|| slow(&ttlv_bytes)));
     group.finish();
 }
 
