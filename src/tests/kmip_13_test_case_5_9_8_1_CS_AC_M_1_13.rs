@@ -4,10 +4,9 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
     response::from_slice,
+    ttlv::format::Formatter,
     types::{
         common::{
             AttributeIndex, AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength,
@@ -151,8 +150,10 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
     let expected_request_hex = expected_request_hex.replace("<ACTIVATION_DATE>", TIMESTAMP_STR);
     let expected_request_hex = expected_request_hex.replace("<KEY_MATERIAL_BYTES>", &use_case_key_material_hex);
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(4096);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
@@ -269,8 +270,10 @@ fn kmip_1_3_testcase_5_9_8_1_step_2_sign_request() {
     );
     let expected_request_hex = expected_request_hex.replace("<USE_CASE_BYTES_TO_SIGN>", use_case_bytes_to_sign);
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 

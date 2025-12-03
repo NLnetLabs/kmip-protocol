@@ -3,10 +3,9 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
     response::from_slice,
+    ttlv::format::Formatter,
     types::{
         common::{
             CryptographicAlgorithm, CryptographicUsageMask, LinkType, LinkedObjectIdentifier, ObjectType, Operation,
@@ -68,8 +67,10 @@ fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_request() {
         "0000040000000200000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
@@ -147,8 +148,10 @@ fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_request
         "53900000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
@@ -221,8 +224,10 @@ fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_request
         "43200000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
@@ -287,8 +292,10 @@ fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_request() {
         "2353900000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
@@ -350,8 +357,10 @@ fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_request() {
         "0343200000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 

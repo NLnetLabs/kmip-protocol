@@ -3,10 +3,9 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
     auth::{self, CredentialType},
+    ttlv::format::Formatter,
     types::{
         common::{
             BlockCipherMode, CryptographicAlgorithm, CryptographicParameters, CryptographicUsageMask, HashingAlgorithm,
@@ -76,8 +75,10 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
         "000042003805000000040000000400000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    let actual_request_hex = match use_case_request.format(&mut formatter) {
+        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
         Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
     };
 
