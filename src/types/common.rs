@@ -228,7 +228,7 @@ impl AttributeValue {
                 scanner.finish()?;
                 Ok(Self::Name(name_value, name_type))
             }
-            "ObjectType" => ObjectType::fast_scan_with(scanner, Self::TAG).map(Self::ObjectType),
+            "Object Type" => ObjectType::fast_scan_with(scanner, Self::TAG).map(Self::ObjectType),
             "Cryptographic Algorithm" => {
                 CryptographicAlgorithm::fast_scan_with(scanner, Self::TAG).map(Self::CryptographicAlgorithm)
             }
