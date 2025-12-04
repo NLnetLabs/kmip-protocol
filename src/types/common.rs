@@ -233,7 +233,23 @@ impl AttributeValue {
                 CryptographicAlgorithm::fast_scan_with(scanner, Self::TAG).map(Self::CryptographicAlgorithm)
             }
             "Cryptographic Length" => scanner.scan_int(Self::TAG).map(Self::Integer),
-            "Cryptographic Parameters" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
+            "Cryptographic Parameters" => CryptographicParameters::fast_scan_with(scanner, Self::TAG).map(|params| {
+                Self::CryptographicParameters(
+                    params.block_cipher_mode,
+                    params.padding_method,
+                    params.hashing_algorithm,
+                    params.key_role_type,
+                    params.digital_signature_algorithm,
+                    params.cryptographic_algorithm,
+                    params.random_iv,
+                    params.iv_length,
+                    params.tag_length,
+                    params.fixed_field_length,
+                    params.invocation_field_length,
+                    params.counter_length,
+                    params.initial_counter_value,
+                )
+            }),
             "Operation Policy Name" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
             "Cryptographic Usage Mask" => scanner.scan_int(Self::TAG).map(Self::Integer),
             "Activation Date" => scanner.scan_date_time(Self::TAG).map(|s| Self::DateTime(s as u64)),
