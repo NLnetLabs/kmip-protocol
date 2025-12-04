@@ -46,7 +46,6 @@ proptest = { version = "1.9.0", optional = true }
 
 [features]
 default = ["sync"]
-deserializer = []
 sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync", "sync-pool"]
 sync-pool = ["r2d2"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio", "async-pool"]
