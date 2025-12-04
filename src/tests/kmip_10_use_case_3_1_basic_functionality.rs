@@ -343,7 +343,7 @@ fn kmip_1_0_usecase_3_1_2_step_3_get_attributes_response() {
                 )
             );
             assert_eq!(&attributes[2].name, "Contact Information");
-            assert_eq!(attributes[2].value, AttributeValue::ContactInformation("Joe".into()));
+            assert_eq!(attributes[2].value, AttributeValue::TextString("Joe".into()));
             assert_eq!(&attributes[3].name, "x-Purpose");
             assert_eq!(attributes[3].value, AttributeValue::TextString("demonstration".into()));
         }

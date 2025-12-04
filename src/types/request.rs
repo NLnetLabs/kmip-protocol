@@ -187,7 +187,7 @@ impl Attribute {
         Attribute(
             AttributeName("Contact Information".into()),
             Option::<AttributeIndex>::None,
-            AttributeValue::ContactInformation(value),
+            AttributeValue::TextString(value),
         )
     }
 }

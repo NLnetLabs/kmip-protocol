@@ -166,9 +166,7 @@ pub enum AttributeValue {
     ApplicationSpecificInformation(ApplicationNamespace, ApplicationData),
 
     /// See KMIP 1.0 section 3.31 Contact Information.
-    #[serde(rename(deserialize = "if 0x42000A==Contact Information"))]
-    #[serde(rename(serialize = "Transparent"))]
-    ContactInformation(String),
+    // Should be encoded as a Text String.
 
     /// See KMIP 1.0 section 3.32 Last Change Date.
     // Not implemented
@@ -271,7 +269,7 @@ impl AttributeValue {
                     application_data,
                 ))
             }
-            "Contact Information" => scanner.scan_text(Self::TAG).map(|s| Self::ContactInformation(s.into())),
+            "Contact Information" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
             _ => Err(FastScanError::assert()),
         }
     }
@@ -337,7 +335,6 @@ impl AttributeValue {
                 application_data.format(&mut formatter)?;
                 Ok(formatter.finish())
             }
-            AttributeValue::ContactInformation(v) => formatter.format_text(Self::TAG, v),
 
             AttributeValue::Structure(fields) => {
                 let mut formatter = formatter.format_struct(Self::TAG)?;

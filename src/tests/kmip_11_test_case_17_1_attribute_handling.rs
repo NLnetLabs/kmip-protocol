@@ -329,7 +329,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_response() {
         assert_eq!(&payload.attribute.name, "Contact Information");
         assert_eq!(
             payload.attribute.value,
-            AttributeValue::ContactInformation("donald@localhost".into())
+            AttributeValue::TextString("donald@localhost".into())
         );
     }
 }
