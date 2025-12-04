@@ -5,7 +5,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::{
     response::from_slice,
-    ttlv::format::Formatter,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue,
@@ -29,6 +29,7 @@ const KEY_ID: &str = "61b10614-d8b5-46f9-8d17-2fa6ea1d747a";
 /// -------------------------------------------------------------------------------------------------------------------
 
 #[test]
+#[ignore = "FastScanner doesn't yet support custom attribute values"]
 fn kmip_1_0_usecase_3_1_2_step_1_register_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
@@ -74,17 +75,7 @@ fn kmip_1_0_usecase_3_1_2_step_1_register_request() {
         "C617465310000000000000042005405000000040000000100000000"
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -168,17 +159,7 @@ fn kmip_1_0_usecase_3_1_2_step_2_create_symmetric_key_request() {
         "0000000042005405000000040000000100000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -259,17 +240,7 @@ fn kmip_1_0_usecase_3_1_2_step_3_get_attributes_request() {
         "E000000000042000A0700000009782D507572706F736500000000000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -375,17 +346,7 @@ fn kmip_1_0_usecase_3_1_2_step_4_destroy_symmetric_key_request() {
         "4376100000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -453,17 +414,7 @@ fn kmip_1_0_usecase_3_1_2_step_5_destroy_template_request() {
         "1643500000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]

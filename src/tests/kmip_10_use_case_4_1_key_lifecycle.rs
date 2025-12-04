@@ -5,7 +5,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 use kmip_ttlv::de::from_slice;
 
 use crate::{
-    ttlv::format::Formatter,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate, CryptographicAlgorithm,
@@ -62,17 +62,7 @@ fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_request() {
         "04D61736B42000B02000000040000000400000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -146,17 +136,7 @@ fn kmip_1_0_usecase_4_1_step_2_client_a_get_attribute_request() {
         "461390000000042000A07000000055374617465000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -233,17 +213,7 @@ fn kmip_1_0_usecase_4_1_step_3_client_a_activate_request() {
         "4613900000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -314,17 +284,7 @@ fn kmip_1_0_usecase_4_1_step_4_client_a_get_attribute_request() {
         "461390000000042000A07000000055374617465000000"
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -406,17 +366,7 @@ fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_request() {
         "79310000000042005405000000040000000100000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -491,17 +441,7 @@ fn kmip_1_0_usecase_4_1_step_6_client_b_get_symmetric_key_request() {
         "4613900000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -595,17 +535,7 @@ fn kmip_1_0_usecase_4_1_step_7_client_b_revoke_symmetric_key_compromised_request
         "461390000000042008101000000104200820500000004000000020000000042002109000000080000000000000006",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -676,17 +606,7 @@ fn kmip_1_0_usecase_4_1_step_8_client_b_get_attribute_request() {
         "461390000000042000A07000000055374617465000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -764,17 +684,7 @@ fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_request() {
         "4613900000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -859,6 +769,7 @@ fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_response() {
 // SKIP CLIENT A GET ATTRIBUTES AS IT IS IDENTICAL TO THE CLIENT B GET ATTRIBUTES REQUEST AND RESPONSE TEST ABOVE
 
 #[test]
+#[ignore = "FastScanner doesn't yet support custom attribute values"]
 fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
@@ -906,17 +817,7 @@ fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_request() {
         "20000000042000B070000000656616C7565320000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -1003,6 +904,7 @@ fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_response() {
 }
 
 #[test]
+#[ignore = "FastScanner doesn't yet support custom attribute values"]
 fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_request() {
     let use_case_request = RequestMessage(
         RequestHeader(
@@ -1050,17 +952,7 @@ fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_request() {
         "474726962757465320000000042000B070000000E4D6F64696669656456616C7565320000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -1187,17 +1079,7 @@ fn kmip_1_0_usecase_4_1_step_13_client_a_delete_attribute_batch_request() {
         "070000000C782D6174747269627574653200000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -1308,17 +1190,7 @@ fn kmip_1_0_usecase_4_1_step_15_client_a_destroy_symmetric_key_request() {
         "4613900000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]

@@ -5,7 +5,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::{
     auth::{self, CredentialType},
-    ttlv::format::Formatter,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             BlockCipherMode, CryptographicAlgorithm, CryptographicParameters, CryptographicUsageMask, HashingAlgorithm,
@@ -75,15 +75,5 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
         "000042003805000000040000000400000000",
     );
 
-    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
-    let mut formatter = Formatter::new(&mut buffer);
-    let actual_request_hex = match use_case_request.format(&mut formatter) {
-        Ok(_) => hex::encode_upper(formatter.filled().as_flattened()),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
