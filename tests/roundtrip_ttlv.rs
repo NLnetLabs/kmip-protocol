@@ -157,7 +157,7 @@ impl Field {
                     Type::Interval => scanner.skip_opt_interval(self.tag)?,
                 };
 
-                if found != !matches!(self.data, FieldData::Missing(_)) {
+                if found == matches!(self.data, FieldData::Missing(_)) {
                     return Err(FastScanError::assert());
                 }
                 Ok(())
@@ -380,16 +380,14 @@ proptest! {
         let formatted_size = field.formatted_size() * 8;
         let mut buffer = Box::<[u8]>::new_uninit_slice(formatted_size);
         let mut formatter = Formatter::new(&mut buffer);
-        prop_assert!(field.format(&mut formatter).is_ok());
+        field.format(&mut formatter)?;
         prop_assert!(formatter.remaining().is_empty());
         let buffer = formatter.filled().as_flattened();
 
         // Scan the field.
-        let scanner = FastScanner::new(buffer);
-        prop_assert!(scanner.is_ok());
-        let mut scanner = scanner.unwrap();
-        prop_assert!(field.fast_scan(&mut scanner).is_ok());
-        prop_assert!(scanner.finish().is_ok());
+        let mut scanner = FastScanner::new(buffer)?;
+        field.fast_scan(&mut scanner)?;
+        scanner.finish()?;
     }
 }
 

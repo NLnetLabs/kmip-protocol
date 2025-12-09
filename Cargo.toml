@@ -11,7 +11,7 @@ keywords = ["KMIP", "TTLV", "serde", "serialization"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
 exclude = ["/.github"]
 readme = "README.md"
-rust-version = "1.87.0"
+rust-version = "1.88.0"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]

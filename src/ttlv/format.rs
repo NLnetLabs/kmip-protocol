@@ -1,4 +1,8 @@
-//! Formatting TTLV elements really fast.
+//! Serializing TTLV elements.
+//!
+//! This module provides low-level TTLV serialization support.  It is entirely
+//! manual -- it does not provide a declarative interface.  It is designed for
+//! fast, streaming operation.
 
 use core::{
     fmt,
