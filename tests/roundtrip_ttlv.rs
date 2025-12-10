@@ -106,7 +106,7 @@ impl Field {
     /// Format this field.
     fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
         match self.data {
-            FieldData::Missing(_) => Ok(FormatDone::definitely()),
+            FieldData::Missing(_) => Ok(FormatDone::assert()),
             FieldData::Structure(ref fields) => {
                 let mut f = formatter.format_struct(self.tag)?;
                 for field in fields {

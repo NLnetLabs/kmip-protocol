@@ -176,7 +176,11 @@ impl<'a> FastScanner<'a> {
 }
 
 /// # Scanning Helpers
-///
+//
+// Lemmas:
+// - `u64::from_be_bytes(*header) == u64::from_be(u64::from_ne_bytes(*header))`.
+// - `u64::from_ne_bytes(*header) == u64::from_be_bytes(*header).to_be()`.
+// - `a.to_be() ^ b.to_be() == (a ^ b).to_be()`.
 impl<'a> FastScanner<'a> {
     /// Verify that a header has a particular tag, type, and length.
     ///

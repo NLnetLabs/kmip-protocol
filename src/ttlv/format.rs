@@ -15,8 +15,18 @@ use super::types::{Tag, Type};
 //----------- Formatter ------------------------------------------------------
 
 /// A TTLV formatter.
+///
+/// ## Panics
+///
+/// TTLV uses 32-bit fields to express the size of serialized data, in units of
+/// bytes.  To guarantee panic-free operation, only the first 4GiB of a given
+/// input buffer will be used.  A write that would overflow a length field is
+/// guaranteed to return [`TruncationError`] instead.
 pub struct Formatter<'b> {
     /// The buffer to write into.
+    ///
+    /// - Invariant `size`:
+    ///   `buffer.as_flattened().len() <= 2^32`.
     buffer: &'b mut [MaybeUninit<[u8; 8]>],
 
     /// The current position into the buffer.
@@ -32,11 +42,19 @@ pub struct Formatter<'b> {
 impl<'b> Formatter<'b> {
     /// Construct a new [`Formatter`].
     ///
-    /// If the input is not a multiple of 8 bytes, the remainder (at most 7
-    /// bytes) will be ignored.  The input should ideally be aligned to an
-    /// 8-byte boundary.
+    /// The input will be truncated to the first 4GiB, and to a multiple of 8
+    /// bytes, as per limitations of the TTLV format.  It should ideally be
+    /// aligned to an 8-byte address boundary.
     pub const fn new(buffer: &'b mut [MaybeUninit<u8>]) -> Self {
-        let num_blocks = buffer.len() / 8;
+        let mut num_blocks = buffer.len() / 8;
+
+        // Equivalent to 'buffer.len() >= 2^32'.  If 'usize' is smaller than
+        // 'u32', this is equivalent to 'buffer.len() > usize::MAX', which is
+        // trivially false.
+        if buffer.len() > u32::MAX as usize {
+            num_blocks = 1usize << 29;
+        }
+
         let ptr = buffer.as_mut_ptr().cast::<MaybeUninit<[u8; 8]>>();
         let buffer = unsafe { core::slice::from_raw_parts_mut(ptr, num_blocks) };
 
@@ -50,8 +68,10 @@ impl<'b> Formatter<'b> {
     /// `Formatter::from_raw_parts(buffer, position)` is sound if and only if:
     /// - `position <= buffer.len()`.
     /// - `buffer[..position]` is initialized.
+    /// - `buffer.len() <= 2^32`.
     pub const unsafe fn from_raw_parts(buffer: &'b mut [MaybeUninit<[u8; 8]>], position: usize) -> Self {
         debug_assert!(position <= buffer.len());
+        debug_assert!(usize::BITS <= u32::BITS || buffer.len() <= (1usize << 32));
         Self { buffer, position }
     }
 
@@ -83,6 +103,7 @@ impl<'b> Formatter<'b> {
     /// For `(buffer, position) = self.into_raw_parts()`:
     /// - Invariant `coherent-position`: `position <= buffer.len()`.
     /// - Invariant `initialized`: `buffer[..position]` is initialized.
+    /// - Invariant `size`: `buffer.as_flattened().len() <= 2^32`.
     pub const fn into_raw_parts(self) -> (&'b mut [MaybeUninit<[u8; 8]>], usize) {
         (self.buffer, self.position)
     }
@@ -95,6 +116,7 @@ impl<'b> Formatter<'b> {
     /// `struct`; once it is finished, `self` can continue.
     #[inline]
     pub fn format_struct(&mut self, tag: Tag) -> Result<FieldFormatter<'_>, TruncationError> {
+        // Can't use 'self.remaining()', would borrow more than '.buffer'.
         let buffer = &mut self.buffer[self.position..];
         let (header_slot, rest) = buffer.split_first_mut().ok_or(TruncationError)?;
 
@@ -145,20 +167,29 @@ impl<'b> Formatter<'b> {
     }
 
     /// Format a big integer.
+    ///
+    /// `value` should be the bytewise digits of a signed (two's complement)
+    /// big-endian integer.  It will be padded (with leading sign-extension
+    /// bytes) into a multiple of 8 bytes before being stored.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the length of `value` (when rounded up to a multiple of 8
+    /// bytes) does not fit in a `u32`.
     #[inline]
     pub fn format_big_int(&mut self, tag: Tag, value: &[u8]) -> FormatResult {
-        let header = tag.with_type(Type::BigInteger).value() as u64;
-        let length = u32::try_from(value.len()).unwrap() as u64;
-        let length = (length + 7) & !7; // round up to 8 bytes
-        let header = header << 32 | length;
-
         let num_blocks = value.len().div_ceil(8);
         let buffer = &mut self.buffer[self.position..];
         if buffer.len() < 1 + num_blocks {
             return Err(TruncationError);
         }
 
+        let header = tag.with_type(Type::BigInteger).value();
+        // NOTE: 'buffer.len() * 8 <= 2^32' so 'num_blocks * 8 < 2^32'.
+        let length = (value.len() as u32).next_multiple_of(8);
+        let header = (header as u64) << 32 | length as u64;
         buffer[0].write(header.to_be_bytes());
+
         if let &[first, ..] = value {
             // Fill the first 8 bytes by sign extension.
             //
@@ -227,17 +258,18 @@ impl<'b> Formatter<'b> {
     /// Format a text string.
     #[inline]
     pub fn format_text(&mut self, tag: Tag, value: &str) -> FormatResult {
-        let header = tag.with_type(Type::TextString).value() as u64;
-        let length = u32::try_from(value.len()).unwrap() as u64;
-        let header = header << 32 | length;
-
         let num_blocks = value.len().div_ceil(8);
         let buffer = &mut self.buffer[self.position..];
         if buffer.len() < 1 + num_blocks {
             return Err(TruncationError);
         }
 
+        let header = tag.with_type(Type::TextString).value();
+        // NOTE: 'buffer.len() * 8 <= 2^32' so 'num_blocks * 8 < 2^32'.
+        let length = value.len() as u32;
+        let header = (header as u64) << 32 | length as u64;
         buffer[0].write(header.to_be_bytes());
+
         // Make sure the last block is completely initialized.
         if num_blocks > 0 {
             buffer[num_blocks].write([0; 8]);
@@ -252,17 +284,18 @@ impl<'b> Formatter<'b> {
     /// Format a byte string.
     #[inline]
     pub fn format_bytes(&mut self, tag: Tag, value: &[u8]) -> FormatResult {
-        let header = tag.with_type(Type::ByteString).value() as u64;
-        let length = u32::try_from(value.len()).unwrap() as u64;
-        let header = header << 32 | length;
-
         let num_blocks = value.len().div_ceil(8);
         let buffer = &mut self.buffer[self.position..];
         if buffer.len() < 1 + num_blocks {
             return Err(TruncationError);
         }
 
+        let header = tag.with_type(Type::ByteString).value();
+        // NOTE: 'buffer.len() * 8 <= 2^32' so 'num_blocks * 8 < 2^32'.
+        let length = value.len() as u32;
+        let header = (header as u64) << 32 | length as u64;
         buffer[0].write(header.to_be_bytes());
+
         // Make sure the last block is completely initialized.
         if num_blocks > 0 {
             buffer[num_blocks].write([0; 8]);
@@ -335,7 +368,10 @@ impl FieldFormatter<'_> {
     pub fn finish(self) -> FormatDone {
         // Update the length of the field.
         let length = self.inner.position;
-        assert!(length * 8 <= u32::MAX as usize);
+        // This is guaranteed by invariant 'size': since the input buffer is at
+        // most 4GiB, and we are writing an 8-byte TTL header (whose length does
+        // not include itself), we are encoding a length of at most 2^32 - 8.
+        debug_assert!(length * 8 <= u32::MAX as usize);
         let length = (length * 8) as u32;
         self.header[4..].copy_from_slice(&length.to_be_bytes());
 
@@ -372,7 +408,7 @@ pub struct FormatDone(());
 
 impl FormatDone {
     /// Manually assert that formatting is complete.
-    pub const fn definitely() -> Self {
+    pub const fn assert() -> Self {
         Self(())
     }
 }
