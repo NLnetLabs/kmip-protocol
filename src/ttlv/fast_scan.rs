@@ -6,6 +6,8 @@
 
 use core::fmt;
 
+use crate::ttlv::types::Type;
+
 use super::types::Tag;
 
 //----------- FastScanner ----------------------------------------------------
@@ -186,7 +188,7 @@ impl<'a> FastScanner<'a> {
     ///
     /// An incorrect header will result in a delayed error.
     #[inline(always)]
-    fn check_ttl(&mut self, header: &[u8; 8], tag: Tag, r#type: u8, length: u32) {
+    fn check_ttl(&mut self, header: &[u8; 8], tag: Tag, r#type: Type, length: u32) {
         self.failure_word |= Self::calc_ttl(header, tag, r#type, length);
     }
 
@@ -194,18 +196,18 @@ impl<'a> FastScanner<'a> {
     ///
     /// Returns `true` if it does.
     #[inline(always)]
-    fn test_ttl(&self, header: &[u8; 8], tag: Tag, r#type: u8, length: u32) -> Option<()> {
+    fn test_ttl(&self, header: &[u8; 8], tag: Tag, r#type: Type, length: u32) -> Option<()> {
         let mismatch = Self::calc_ttl(header, tag, r#type, length);
         (mismatch == 0).then_some(())
     }
 
     #[inline(always)]
-    fn calc_ttl(header: &[u8; 8], tag: Tag, r#type: u8, length: u32) -> u64 {
+    fn calc_ttl(header: &[u8; 8], tag: Tag, r#type: Type, length: u32) -> u64 {
         // Prepare an expected value as a big-endian integer.
         //
         // The compiler should be able to fold this computation into a simple
         // hard-coded 64-bit constant.
-        let expected = ((tag.value() as u64) << 40 | (r#type as u64) << 32 | (length as u64)).to_be();
+        let expected = ((tag.with_type(r#type).value() as u64) << 32 | (length as u64)).to_be();
 
         // Load the header without changing its endianness, so that it and
         // 'expected' have matching byte layouts.
@@ -223,7 +225,7 @@ impl<'a> FastScanner<'a> {
     ///
     /// An incorrect header will result in a delayed error.
     #[inline(always)]
-    fn check_tt_8l(&mut self, header: &[u8; 8], tag: Tag, r#type: u8) -> usize {
+    fn check_tt_8l(&mut self, header: &[u8; 8], tag: Tag, r#type: Type) -> usize {
         let (mismatch, length) = Self::calc_tt_8l(header, tag, r#type);
         self.failure_word |= mismatch;
         length
@@ -234,13 +236,13 @@ impl<'a> FastScanner<'a> {
     ///
     /// If the header matches, a length is returned, in units of 8-byte blocks.
     #[inline(always)]
-    fn test_tt_8l(&self, header: &[u8; 8], tag: Tag, r#type: u8) -> Option<usize> {
+    fn test_tt_8l(&self, header: &[u8; 8], tag: Tag, r#type: Type) -> Option<usize> {
         let (mismatch, length) = Self::calc_tt_8l(header, tag, r#type);
         (mismatch == 0).then_some(length)
     }
 
     #[inline(always)]
-    fn calc_tt_8l(header: &[u8; 8], tag: Tag, r#type: u8) -> (u64, usize) {
+    fn calc_tt_8l(header: &[u8; 8], tag: Tag, r#type: Type) -> (u64, usize) {
         // Generate a mask for the length.
         //
         // We need to make sure the low 3 bits of the length are zero.
@@ -265,7 +267,7 @@ impl<'a> FastScanner<'a> {
         //
         // The compiler should be able to fold this computation into a simple
         // hard-coded 64-bit constant.
-        let expected = (tag.value() as u64) << 40 | (r#type as u64) << 32;
+        let expected = (tag.with_type(r#type).value() as u64) << 32;
 
         // Load the header into the right endianness, as we need to read out its
         // low 32 bits for the length field.  Note that it and 'expected' have
@@ -293,20 +295,20 @@ impl<'a> FastScanner<'a> {
     ///
     /// An incorrect header will result in a delayed error.
     #[inline(always)]
-    fn check_tt(&mut self, header: &[u8; 8], tag: Tag, r#type: u8) -> usize {
+    fn check_tt(&mut self, header: &[u8; 8], tag: Tag, r#type: Type) -> usize {
         let (mismatch, length) = Self::calc_tt(header, tag, r#type);
         self.failure_word |= mismatch;
         length
     }
 
     #[inline(always)]
-    fn test_tt(&self, header: &[u8; 8], tag: Tag, r#type: u8) -> Option<usize> {
+    fn test_tt(&self, header: &[u8; 8], tag: Tag, r#type: Type) -> Option<usize> {
         let (mismatch, length) = Self::calc_tt(header, tag, r#type);
         (mismatch == 0).then_some(length)
     }
 
     #[inline(always)]
-    fn calc_tt(header: &[u8; 8], tag: Tag, r#type: u8) -> (u64, usize) {
+    fn calc_tt(header: &[u8; 8], tag: Tag, r#type: Type) -> (u64, usize) {
         // If 'u32' can fit in a 'usize', then the encoded length is always a
         // valid 'usize'.  Load the tag-type half and the length as separate
         // 32-bit words; that way, we only hard-code 32-bit integer constants.
@@ -317,7 +319,7 @@ impl<'a> FastScanner<'a> {
             //
             // The compiler should be able to fold this computation into a
             // simple hard-coded 32-bit constant.
-            let expected = (tag.value() << 8 | r#type as u32).to_be();
+            let expected = tag.with_type(r#type).value().to_be();
 
             // Load the tag-type part of the header without changing its
             // endianness, so that it and 'expected' have matching byte layouts.
@@ -357,7 +359,7 @@ impl<'a> FastScanner<'a> {
             //
             // The compiler should be able to fold this computation into a
             // simple hard-coded 64-bit constant.
-            let expected = (tag.value() as u64) << 40 | (r#type as u64) << 32;
+            let expected = (tag.with_type(r#type).value() as u64) << 32;
 
             // Load the header into the right endianness, as we need to read out
             // its low bits for the length field.  Note that it and 'expected'
@@ -387,7 +389,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt_8l(header, tag, 0x01);
+        let length = self.check_tt_8l(header, tag, Type::Structure);
         let (body, rest) = rest.split_at_checked(length).ok_or(FastScanError::assert())?;
         self.remaining = rest;
 
@@ -409,7 +411,7 @@ impl<'a> FastScanner<'a> {
             return Err(FastScanError::assert());
         }
         let (header, rest) = self.remaining.split_first().unwrap();
-        self.check_ttl(header, tag, 0x01, length);
+        self.check_ttl(header, tag, Type::Structure, length);
         let (body, rest) = rest.split_at(length as usize / 8);
         self.remaining = rest;
 
@@ -423,7 +425,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x02, 4);
+        self.check_ttl(header, tag, Type::Integer, 4);
         self.remaining = rest;
 
         Ok(i32::from_be_bytes(value[0..4].try_into().unwrap()))
@@ -436,7 +438,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x03, 8);
+        self.check_ttl(header, tag, Type::LongInteger, 8);
         self.remaining = rest;
 
         Ok(i64::from_be_bytes(*value))
@@ -449,7 +451,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt_8l(header, tag, 0x04);
+        let length = self.check_tt_8l(header, tag, Type::BigInteger);
         let (body, rest) = rest.split_at_checked(length).ok_or(FastScanError::assert())?;
         self.remaining = rest;
 
@@ -463,7 +465,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x05, 4);
+        self.check_ttl(header, tag, Type::Enumeration, 4);
         self.remaining = rest;
 
         Ok(u32::from_be_bytes(value[0..4].try_into().unwrap()))
@@ -476,7 +478,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x06, 8);
+        self.check_ttl(header, tag, Type::Boolean, 8);
         // Load the value without changing its endianness.
         let value = u64::from_ne_bytes(*value);
         // Check that it all bits except the lowest are zero.
@@ -493,7 +495,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt(header, tag, 0x07);
+        let length = self.check_tt(header, tag, Type::TextString);
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
         let body = core::str::from_utf8(body).map_err(|_| FastScanError::assert())?;
         self.remaining = &rest[length.div_ceil(8)..];
@@ -508,7 +510,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt(header, tag, 0x07);
+        let length = self.check_tt(header, tag, Type::TextString);
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
         self.remaining = &rest[length.div_ceil(8)..];
 
@@ -522,7 +524,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt(header, tag, 0x08);
+        let length = self.check_tt(header, tag, Type::ByteString);
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
         self.remaining = &rest[length.div_ceil(8)..];
 
@@ -536,7 +538,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x09, 8);
+        self.check_ttl(header, tag, Type::DateTime, 8);
         self.remaining = rest;
 
         Ok(i64::from_be_bytes(*value))
@@ -549,7 +551,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x0A, 4);
+        self.check_ttl(header, tag, Type::Interval, 4);
         self.remaining = rest;
 
         Ok(u32::from_be_bytes(value[0..4].try_into().unwrap()))
@@ -563,7 +565,7 @@ impl FastScanner<'_> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt_8l(header, tag, 0x01);
+        let length = self.check_tt_8l(header, tag, Type::Structure);
         self.remaining = rest.get(length..).ok_or(FastScanError::assert())?;
 
         Ok(())
@@ -576,7 +578,7 @@ impl FastScanner<'_> {
         if self.remaining.len() < 1 + length as usize / 8 {
             return Err(FastScanError::assert());
         }
-        self.check_ttl(&self.remaining[0], tag, 0x01, length);
+        self.check_ttl(&self.remaining[0], tag, Type::Structure, length);
         self.remaining = &self.remaining[1 + length as usize / 8..];
 
         Ok(())
@@ -588,7 +590,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x02, 4);
+        self.check_ttl(header, tag, Type::Integer, 4);
         self.remaining = rest;
 
         Ok(())
@@ -600,7 +602,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x03, 8);
+        self.check_ttl(header, tag, Type::LongInteger, 8);
         self.remaining = rest;
 
         Ok(())
@@ -612,7 +614,7 @@ impl FastScanner<'_> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt_8l(header, tag, 0x04);
+        let length = self.check_tt_8l(header, tag, Type::BigInteger);
         self.remaining = rest.get(length..).ok_or(FastScanError::assert())?;
 
         Ok(())
@@ -624,7 +626,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x05, 4);
+        self.check_ttl(header, tag, Type::Enumeration, 4);
         self.remaining = rest;
 
         Ok(())
@@ -636,7 +638,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x06, 8);
+        self.check_ttl(header, tag, Type::Boolean, 8);
         self.remaining = rest;
 
         Ok(())
@@ -648,7 +650,7 @@ impl FastScanner<'_> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt(header, tag, 0x07);
+        let length = self.check_tt(header, tag, Type::TextString);
         self.remaining = rest.get(length.div_ceil(8)..).ok_or(FastScanError::assert())?;
 
         Ok(())
@@ -660,7 +662,7 @@ impl FastScanner<'_> {
         let [header, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        let length = self.check_tt(header, tag, 0x08);
+        let length = self.check_tt(header, tag, Type::ByteString);
         self.remaining = rest.get(length.div_ceil(8)..).ok_or(FastScanError::assert())?;
 
         Ok(())
@@ -672,7 +674,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x09, 8);
+        self.check_ttl(header, tag, Type::DateTime, 8);
         self.remaining = rest;
 
         Ok(())
@@ -684,7 +686,7 @@ impl FastScanner<'_> {
         let [header, _, rest @ ..] = self.remaining else {
             return Err(FastScanError::assert());
         };
-        self.check_ttl(header, tag, 0x0A, 4);
+        self.check_ttl(header, tag, Type::Interval, 4);
         self.remaining = rest;
 
         Ok(())
@@ -703,7 +705,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(length) = self.test_tt_8l(header, tag, 0x01) else {
+        let Some(length) = self.test_tt_8l(header, tag, Type::Structure) else {
             return Ok(None);
         };
         let (body, rest) = rest.split_at_checked(length).ok_or(FastScanError::assert())?;
@@ -728,7 +730,7 @@ impl<'a> FastScanner<'a> {
             return Ok(None);
         }
         let (header, rest) = self.remaining.split_first().unwrap();
-        let Some(()) = self.test_ttl(header, tag, 0x01, length) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Structure, length) else {
             return Ok(None);
         };
         let (body, rest) = rest.split_at(length as usize / 8);
@@ -744,7 +746,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x02, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Integer, 4) else {
             return Ok(None);
         };
         self.remaining = rest;
@@ -759,7 +761,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x03, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::LongInteger, 8) else {
             return Ok(None);
         };
         self.remaining = rest;
@@ -774,7 +776,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(length) = self.test_tt_8l(header, tag, 0x04) else {
+        let Some(length) = self.test_tt_8l(header, tag, Type::BigInteger) else {
             return Ok(None);
         };
         let (body, rest) = rest.split_at_checked(length).ok_or(FastScanError::assert())?;
@@ -790,7 +792,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x05, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Enumeration, 4) else {
             return Ok(None);
         };
         self.remaining = rest;
@@ -805,7 +807,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x06, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Boolean, 8) else {
             return Ok(None);
         };
         // Load the value without changing its endianness.
@@ -824,7 +826,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(length) = self.test_tt(header, tag, 0x07) else {
+        let Some(length) = self.test_tt(header, tag, Type::TextString) else {
             return Ok(None);
         };
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
@@ -841,7 +843,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(length) = self.test_tt(header, tag, 0x07) else {
+        let Some(length) = self.test_tt(header, tag, Type::TextString) else {
             return Ok(None);
         };
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
@@ -857,7 +859,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(length) = self.test_tt(header, tag, 0x08) else {
+        let Some(length) = self.test_tt(header, tag, Type::ByteString) else {
             return Ok(None);
         };
         let body = rest.as_flattened().get(..length).ok_or(FastScanError::assert())?;
@@ -873,7 +875,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x09, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::DateTime, 8) else {
             return Ok(None);
         };
         self.remaining = rest;
@@ -888,7 +890,7 @@ impl<'a> FastScanner<'a> {
         let [header, value, rest @ ..] = self.remaining else {
             return Ok(None);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x0A, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Interval, 4) else {
             return Ok(None);
         };
         self.remaining = rest;
@@ -904,7 +906,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(length) = self.test_tt_8l(header, tag, 0x01) else {
+        let Some(length) = self.test_tt_8l(header, tag, Type::Structure) else {
             return Ok(false);
         };
         self.remaining = rest.get(length..).ok_or(FastScanError::assert())?;
@@ -920,7 +922,7 @@ impl<'a> FastScanner<'a> {
             return Ok(false);
         }
         let (header, rest) = self.remaining.split_first().unwrap();
-        let Some(()) = self.test_ttl(header, tag, 0x01, length) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Structure, length) else {
             return Ok(false);
         };
         self.remaining = &rest[length as usize / 8..];
@@ -934,7 +936,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x02, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Integer, 4) else {
             return Ok(false);
         };
         self.remaining = rest;
@@ -948,7 +950,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x03, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::LongInteger, 8) else {
             return Ok(false);
         };
         self.remaining = rest;
@@ -962,7 +964,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(length) = self.test_tt_8l(header, tag, 0x04) else {
+        let Some(length) = self.test_tt_8l(header, tag, Type::BigInteger) else {
             return Ok(false);
         };
         self.remaining = rest.get(length..).ok_or(FastScanError::assert())?;
@@ -976,7 +978,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x05, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Enumeration, 4) else {
             return Ok(false);
         };
         self.remaining = rest;
@@ -990,7 +992,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x06, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Boolean, 8) else {
             return Ok(false);
         };
         self.remaining = rest;
@@ -1004,7 +1006,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(length) = self.test_tt(header, tag, 0x07) else {
+        let Some(length) = self.test_tt(header, tag, Type::TextString) else {
             return Ok(false);
         };
         self.remaining = rest.get(length.div_ceil(8)..).ok_or(FastScanError::assert())?;
@@ -1018,7 +1020,7 @@ impl<'a> FastScanner<'a> {
         let [header, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(length) = self.test_tt(header, tag, 0x08) else {
+        let Some(length) = self.test_tt(header, tag, Type::ByteString) else {
             return Ok(false);
         };
         self.remaining = rest.get(length.div_ceil(8)..).ok_or(FastScanError::assert())?;
@@ -1032,7 +1034,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x09, 8) else {
+        let Some(()) = self.test_ttl(header, tag, Type::DateTime, 8) else {
             return Ok(false);
         };
         self.remaining = rest;
@@ -1046,7 +1048,7 @@ impl<'a> FastScanner<'a> {
         let [header, _, rest @ ..] = self.remaining else {
             return Ok(false);
         };
-        let Some(()) = self.test_ttl(header, tag, 0x0A, 4) else {
+        let Some(()) = self.test_ttl(header, tag, Type::Interval, 4) else {
             return Ok(false);
         };
         self.remaining = rest;
