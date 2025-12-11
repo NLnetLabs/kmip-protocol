@@ -418,7 +418,7 @@ impl KeyMaterial {
             | KeyFormatType::Opaque
             | KeyFormatType::PKCS1
             | KeyFormatType::PKCS8
-            | KeyFormatType::X509 => scanner.scan_bytes(Self::TAG).map(|s| Self::Bytes(s.into())),
+            | KeyFormatType::ECPrivateKey => scanner.scan_bytes(Self::TAG).map(|s| Self::Bytes(s.into())),
 
             KeyFormatType::TransparentSymmetricKey => {
                 TransparentSymmetricKey::fast_scan(scanner).map(Self::TransparentSymmetricKey)
@@ -442,7 +442,8 @@ impl KeyMaterial {
                 TransparentDHPublicKey::fast_scan(scanner).map(Self::TransparentDHPublicKey)
             }
 
-            _ => todo!(),
+            // TODO: Handle this more elegantly.
+            _ => Ok(Self::Structure(Vec::new())),
         }
     }
 
@@ -458,7 +459,7 @@ impl KeyMaterial {
             KeyMaterial::TransparentDHPrivateKey(this) => this.format(formatter),
             KeyMaterial::TransparentDHPublicKey(this) => this.format(formatter),
 
-            KeyMaterial::Structure(_) => todo!(),
+            KeyMaterial::Structure(_) => unimplemented!(),
         }
     }
 }

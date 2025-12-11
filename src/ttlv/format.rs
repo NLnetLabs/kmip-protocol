@@ -44,7 +44,7 @@ impl<'b> Formatter<'b> {
     ///
     /// The input will be truncated to the first 4GiB, and to a multiple of 8
     /// bytes, as per limitations of the TTLV format.  It should ideally be
-    /// aligned to an 8-byte address boundary.
+    /// aligned to an 8-byte address boundary (for better performance).
     pub const fn new(buffer: &'b mut [MaybeUninit<u8>]) -> Self {
         let mut num_blocks = buffer.len() / 8;
 
@@ -68,10 +68,10 @@ impl<'b> Formatter<'b> {
     /// `Formatter::from_raw_parts(buffer, position)` is sound if and only if:
     /// - `position <= buffer.len()`.
     /// - `buffer[..position]` is initialized.
-    /// - `buffer.len() <= 2^32`.
+    /// - `buffer.len() * 8 <= 2^32`.
     pub const unsafe fn from_raw_parts(buffer: &'b mut [MaybeUninit<[u8; 8]>], position: usize) -> Self {
         debug_assert!(position <= buffer.len());
-        debug_assert!(usize::BITS <= u32::BITS || buffer.len() <= (1usize << 32));
+        debug_assert!(usize::BITS <= u32::BITS || buffer.len() <= (1usize << 29));
         Self { buffer, position }
     }
 
@@ -114,6 +114,7 @@ impl<'b> Formatter<'b> {
     ///
     /// The returned sub-formatter should be used to format the fields of the
     /// `struct`; once it is finished, `self` can continue.
+    #[must_use = "Use the returned formatter to fill the structure, and call `.finish()` when it is ready"]
     #[inline]
     pub fn format_struct(&mut self, tag: Tag) -> Result<FieldFormatter<'_>, TruncationError> {
         // Can't use 'self.remaining()', would borrow more than '.buffer'.
@@ -207,7 +208,7 @@ impl<'b> Formatter<'b> {
             buffer[1].write(ext.to_be_bytes());
 
             // Fill the remaining bytes.
-            let ptr = buffer[1..].as_mut_ptr_range().end.cast::<u8>();
+            let ptr = buffer[1..1 + num_blocks].as_mut_ptr_range().end.cast::<u8>();
             unsafe {
                 ptr.sub(value.len())
                     .copy_from_nonoverlapping(value.as_ptr(), value.len())
@@ -347,14 +348,14 @@ impl<'b> Formatter<'b> {
 /// A [`Formatter`] can delegate to a [`FieldFormatter`] to format a TTLV
 /// field such as a structure.  This provides an incremental API to fill the
 /// field.
-#[must_use = "Complete the formatter using `.finish()`"]
 pub struct FieldFormatter<'f> {
     /// The position of the outer formatter.
     outer_pos: &'f mut usize,
 
     /// The header slot.
     ///
-    /// The length of the created field will be written here.
+    /// The length of the created field will be written here.  The tag and type
+    /// (i.e. the top 4 bytes) are already initialized.
     header: &'f mut [u8; 8],
 
     /// The inner formatter.
@@ -404,10 +405,18 @@ pub type FormatResult = Result<FormatDone, TruncationError>;
 //----------- FormatDone -----------------------------------------------------
 
 /// A token showing that formatting completed successfully.
+///
+/// This is an opaque struct instead of a simple alias to `()`, to prevent users
+/// from creating it without understanding the implications of doing so.  It is
+/// usually incorrect to create this token yourself.
 pub struct FormatDone(());
 
 impl FormatDone {
     /// Manually assert that formatting is complete.
+    ///
+    /// It is not recommended to call this yourself; a [`FormatDone`] will be
+    /// provided to you by the primitive formatting methods, as well as
+    /// [`FieldFormatter::finish()`].
     pub const fn assert() -> Self {
         Self(())
     }

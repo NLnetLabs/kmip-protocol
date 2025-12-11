@@ -47,6 +47,35 @@ use super::types::Tag;
 /// Note that [`Self::new()`] should not be used in this scenario; it expects
 /// the input to be exhaustive.  Use [`Self::from_partial()`] for the most part,
 /// and only use [`Self::new()`] when the stream has terminated.
+///
+/// ```no_run
+/// # use std::{io::Read, net::TcpStream};
+/// # use kmip_protocol::ttlv::FastScanner;
+/// #
+/// // Buffer data in a `Vec`.
+/// let mut buffer = Vec::new();
+///
+/// // Read some data from the network.
+/// let mut stream = TcpStream::connect("127.0.0.1:8000").unwrap();
+/// stream.set_nonblocking(true).unwrap();
+/// loop {
+///     // Fill the buffer as much as possible.
+///     // NOTE: Only ignore 'std::io::ErrorKind::WouldBlock'.
+///     let _ = stream.read_to_end(&mut buffer);
+///
+///     // Try parsing whole TTLV elements from the buffer.
+///     while let Some((mut scanner, rest)) = FastScanner::next_element(&buffer) {
+///         // Read the TTLV element out.
+///         //...
+///
+///         // Remove the parsed data from the buffer.
+///         // NOTE: This is quite inefficient, use a better data structure.
+///         let remaining = rest.len();
+///         let consumed = buffer.len() - remaining;
+///         buffer.drain(0..consumed);
+///     }
+/// }
+/// ```
 #[derive(Clone)]
 pub struct FastScanner<'a> {
     /// The currently remaining input.
@@ -58,9 +87,23 @@ pub struct FastScanner<'a> {
     /// a time, which is far more efficient than byte-by-byte scanning.
     remaining: &'a [[u8; 8]],
 
-    /// A failure word.
+    /// A machine word indicating failure.
     ///
-    /// This is non-zero if an error was detected and delayed.
+    /// This is non-zero if an error was detected and delayed.  Conceptually, it
+    /// is just a boolean.  Most operations here deal with 64-bit units of data
+    /// (i.e. "machine words") from TTLV; representing failure data in the same
+    /// way unlocks many simplifications.
+    ///
+    /// So what exactly is the problem with defining this as a `bool`?  A `bool`
+    /// is represented in memory as a 0 or a 1.  But during scanning, failure
+    /// could be represented in other ways, e.g. a 64-bit integer with certain
+    /// bits set.  The generated code would have to convert all representations
+    /// of failure into a 0 or 1, and this cost adds up.
+    ///
+    /// Side note: in some cases, LLVM could optimize around a `bool` by keeping
+    /// it in a register and then changing its representation; but this heavily
+    /// depends on the local control flow it can see.  Its "vision" is limited
+    /// and gets obscured by function calls.
     failure_word: u64,
 }
 
@@ -84,16 +127,33 @@ impl<'a> FastScanner<'a> {
         Ok(Self::from_blocks(input))
     }
 
-    /// Construct a new [`FastScanner`] from non-exhaustive input.
+    /// Prepare to parse the next TTLV element from a buffer.
     ///
-    /// This should be preferred over [`Self::new()`] if more input may be
-    /// appended in the future (e.g. during streaming operation).  It will
-    /// round down the input, ignoring partial data.
-    pub const fn from_partial(input: &'a [u8]) -> Self {
-        // Ignore a trailing partial 8-byte block.
-        let (input, _) = input.as_chunks();
+    /// If a whole TTLV element is present in the input, [`Some`] is returned,
+    /// with a scanner ready to parse that element and the unused portion of
+    /// the buffer.  Otherwise, [`None`] is returned, and more data needs to be
+    /// collected for parsing.
+    ///
+    /// See [the `FastScanner` documentation on streaming
+    /// operation](Self#streaming-operation) for more details.
+    pub fn next_element(input: &'a [u8]) -> Option<(Self, &'a [u8])> {
+        // Retrieve the header of the next element.
+        let header = input.first_chunk::<8>()?;
 
-        Self::from_blocks(input)
+        // Determine how many bytes are needed to parse this element.
+        let length = u32::from_be_bytes(header[4..].try_into().unwrap());
+        // If this fails, the element will never fit in memory.
+        let length = usize::try_from(length).ok()?;
+        // Round up to a whole number of blocks and count the header.
+        let length = 8 + length.next_multiple_of(8);
+
+        // Try extracting the whole element from the input.
+        let (elem, rest) = input.split_at_checked(length)?;
+
+        // SAFETY: 'length' is always a multiple of 8.
+        let elem = unsafe { elem.as_chunks_unchecked() };
+
+        Some((Self::from_blocks(elem), rest))
     }
 
     /// Construct a new [`FastScanner`] from a slice of 8-byte blocks.
@@ -109,6 +169,10 @@ impl<'a> FastScanner<'a> {
     }
 
     /// The remaining input to the scanner.
+    ///
+    /// Note: in case an error has occurred (delayed or otherwise), the amount
+    /// of remaining data is not well specified.  It might not include the data
+    /// causing the failure.
     pub const fn remaining(&self) -> &'a [[u8; 8]] {
         self.remaining
     }
@@ -120,9 +184,10 @@ impl<'a> FastScanner<'a> {
 
     /// Whether an error has been delayed.
     ///
-    /// This should only be checked if the consistency of the previously
-    /// scanned data is important, e.g. if acting on it.  It can be ignored
-    /// while parsing.
+    /// This should be checked before acting on any parsed data.  If an error
+    /// has been delayed, all previously-returned data should be assumed to be
+    /// garbage.  See [the `FastScanner` documentation](Self#delayed-errors) for
+    /// more information about delayed errors.
     pub const fn has_delayed_error(&self) -> bool {
         self.failure_word != 0
     }
@@ -183,6 +248,11 @@ impl<'a> FastScanner<'a> {
 // - `u64::from_be_bytes(*header) == u64::from_be(u64::from_ne_bytes(*header))`.
 // - `u64::from_ne_bytes(*header) == u64::from_be_bytes(*header).to_be()`.
 // - `a.to_be() ^ b.to_be() == (a ^ b).to_be()`.
+//
+// Conventions:
+// - `check_*` updates `self.failure_word` on error.
+// - `test_*` returns `None` on error.
+// - `calc_*` returns a non-zero `u64` on error.
 impl<'a> FastScanner<'a> {
     /// Verify that a header has a particular tag, type, and length.
     ///
@@ -481,7 +551,7 @@ impl<'a> FastScanner<'a> {
         self.check_ttl(header, tag, Type::Boolean, 8);
         // Load the value without changing its endianness.
         let value = u64::from_ne_bytes(*value);
-        // Check that it all bits except the lowest are zero.
+        // Check that all bits except the lowest are zero.
         self.failure_word |= value & !u64::from_be(1);
         self.remaining = rest;
 
@@ -812,7 +882,7 @@ impl<'a> FastScanner<'a> {
         };
         // Load the value without changing its endianness.
         let value = u64::from_ne_bytes(*value);
-        // Check that it all bits except the lowest are zero.
+        // Check that all bits except the lowest are zero.
         self.failure_word |= value & !u64::from_be(1);
         self.remaining = rest;
 

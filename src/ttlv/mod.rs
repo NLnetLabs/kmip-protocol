@@ -6,3 +6,7 @@
 pub mod fast_scan;
 pub mod format;
 pub mod types;
+
+pub use fast_scan::{FastScanError, FastScanner};
+pub use format::{FormatResult, Formatter};
+pub use types::{Tag, TagType, Type};

@@ -5,8 +5,24 @@
 //! trees for serialization into the binary TTLV format and uses the response types to deserialize the binary KMIP
 //! response format into rich Rust types.
 //!
-//! The attributes on the Rust types are used by the `kmip-ttlv` crate to guide the (de)serialization correctly to/from
-//! the KMIP binary TTLV format.
+//! Rust types defined by this module are specially augmented to provide
+//! (de)serialization support.
+//!
+//! - Serde crate attributes provide support for using the "old" Serde based
+//!   (de)serializer which is powered by the `kmip-ttlv` crate. This support can
+//!   be accessed via the `from_slice()` and `to_vec()` functions.
+//!
+//! - `fast_scan()`/`format()` functions, mostly generated using the
+//!   `impl_ttlv_serde!` macro defined below, offer a new faster
+//!   (de)serialization implementation.
+//!
+//! Note: Support for the new fast (de)serializer is currently limited to
+//! request related KMIP types, (de)serializing response types must still be
+//! done using the "old" Serde based (de)serializer. Also not yet implemented is
+//! support for a new fallback "slow" (de)serializer capable of reporting useful
+//! information about (de)serialization errors. The "old" (de)serializer can be
+//! used as a fallback but may not encounter the same (de)serialization failures
+//! as the "new" fast (de)serializer.
 
 pub mod common;
 pub mod request;

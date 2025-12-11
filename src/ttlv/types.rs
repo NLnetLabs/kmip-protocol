@@ -234,7 +234,7 @@ mod proptest {
         type Strategy = prop::strategy::Map<Range<u8>, fn(u8) -> Type>;
 
         fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
-            (1..11).prop_map(|x| unsafe { core::mem::transmute(x) })
+            (0x01..0x0B).prop_map(|x| unsafe { core::mem::transmute(x) })
         }
     }
 }

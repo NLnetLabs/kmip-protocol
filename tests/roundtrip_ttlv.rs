@@ -162,174 +162,172 @@ impl Field {
                 }
                 Ok(())
             }
-        } else {
-            if self.required {
-                match self.data {
-                    FieldData::Missing(_) => unreachable!(),
-                    FieldData::Structure(ref fields) => {
-                        let mut s = scanner.scan_struct(self.tag)?;
-                        for field in fields {
-                            field.fast_scan(&mut s)?;
-                        }
-                        s.finish()?;
+        } else if self.required {
+            match self.data {
+                FieldData::Missing(_) => unreachable!(),
+                FieldData::Structure(ref fields) => {
+                    let mut s = scanner.scan_struct(self.tag)?;
+                    for field in fields {
+                        field.fast_scan(&mut s)?;
                     }
-                    FieldData::Integer(v) => {
-                        if scanner.scan_int(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::LongInteger(v) => {
-                        if scanner.scan_long_int(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::BigInteger(ref v) => {
-                        let p = scanner.scan_big_int(self.tag)?;
-                        if strip_sign_ext(p) != strip_sign_ext(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Enumeration(v) => {
-                        if scanner.scan_enum(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Boolean(v) => {
-                        if scanner.scan_bool(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::TextString(ref v) => {
-                        if scanner.scan_text(self.tag)? != &**v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::ByteString(ref v) => {
-                        if scanner.scan_bytes(self.tag)? != &**v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::DateTime(v) => {
-                        if scanner.scan_date_time(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Interval(v) => {
-                        if scanner.scan_interval(self.tag)? != v {
-                            return Err(FastScanError::assert());
-                        }
+                    s.finish()?;
+                }
+                FieldData::Integer(v) => {
+                    if scanner.scan_int(self.tag)? != v {
+                        return Err(FastScanError::assert());
                     }
                 }
-                Ok(())
-            } else {
-                match self.data {
-                    FieldData::Missing(Type::Structure) => {
-                        if scanner.scan_opt_struct(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::Integer) => {
-                        if scanner.scan_opt_int(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::LongInteger) => {
-                        if scanner.scan_opt_long_int(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::BigInteger) => {
-                        if scanner.scan_opt_big_int(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::Enumeration) => {
-                        if scanner.scan_opt_enum(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::Boolean) => {
-                        if scanner.scan_opt_bool(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::TextString) => {
-                        if scanner.scan_opt_text(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::ByteString) => {
-                        if scanner.scan_opt_bytes(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::DateTime) => {
-                        if scanner.scan_opt_date_time(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Missing(Type::Interval) => {
-                        if scanner.scan_opt_interval(self.tag)?.is_some() {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-
-                    FieldData::Structure(ref fields) => {
-                        let mut s = scanner.scan_opt_struct(self.tag)?.ok_or(FastScanError::assert())?;
-                        for field in fields {
-                            field.fast_scan(&mut s)?;
-                        }
-                        s.finish()?;
-                    }
-                    FieldData::Integer(v) => {
-                        if scanner.scan_opt_int(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::LongInteger(v) => {
-                        if scanner.scan_opt_long_int(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::BigInteger(ref v) => {
-                        let p = scanner.scan_opt_big_int(self.tag)?;
-                        if p.map(strip_sign_ext) != Some(strip_sign_ext(v)) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Enumeration(v) => {
-                        if scanner.scan_opt_enum(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Boolean(v) => {
-                        if scanner.scan_opt_bool(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::TextString(ref v) => {
-                        if scanner.scan_opt_text(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::ByteString(ref v) => {
-                        if scanner.scan_opt_bytes(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::DateTime(v) => {
-                        if scanner.scan_opt_date_time(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
-                    }
-                    FieldData::Interval(v) => {
-                        if scanner.scan_opt_interval(self.tag)? != Some(v) {
-                            return Err(FastScanError::assert());
-                        }
+                FieldData::LongInteger(v) => {
+                    if scanner.scan_long_int(self.tag)? != v {
+                        return Err(FastScanError::assert());
                     }
                 }
-                Ok(())
+                FieldData::BigInteger(ref v) => {
+                    let p = scanner.scan_big_int(self.tag)?;
+                    if strip_sign_ext(p) != strip_sign_ext(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Enumeration(v) => {
+                    if scanner.scan_enum(self.tag)? != v {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Boolean(v) => {
+                    if scanner.scan_bool(self.tag)? != v {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::TextString(ref v) => {
+                    if scanner.scan_text(self.tag)? != &**v {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::ByteString(ref v) => {
+                    if scanner.scan_bytes(self.tag)? != &**v {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::DateTime(v) => {
+                    if scanner.scan_date_time(self.tag)? != v {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Interval(v) => {
+                    if scanner.scan_interval(self.tag)? != v {
+                        return Err(FastScanError::assert());
+                    }
+                }
             }
+            Ok(())
+        } else {
+            match self.data {
+                FieldData::Missing(Type::Structure) => {
+                    if scanner.scan_opt_struct(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::Integer) => {
+                    if scanner.scan_opt_int(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::LongInteger) => {
+                    if scanner.scan_opt_long_int(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::BigInteger) => {
+                    if scanner.scan_opt_big_int(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::Enumeration) => {
+                    if scanner.scan_opt_enum(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::Boolean) => {
+                    if scanner.scan_opt_bool(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::TextString) => {
+                    if scanner.scan_opt_text(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::ByteString) => {
+                    if scanner.scan_opt_bytes(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::DateTime) => {
+                    if scanner.scan_opt_date_time(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Missing(Type::Interval) => {
+                    if scanner.scan_opt_interval(self.tag)?.is_some() {
+                        return Err(FastScanError::assert());
+                    }
+                }
+
+                FieldData::Structure(ref fields) => {
+                    let mut s = scanner.scan_opt_struct(self.tag)?.ok_or(FastScanError::assert())?;
+                    for field in fields {
+                        field.fast_scan(&mut s)?;
+                    }
+                    s.finish()?;
+                }
+                FieldData::Integer(v) => {
+                    if scanner.scan_opt_int(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::LongInteger(v) => {
+                    if scanner.scan_opt_long_int(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::BigInteger(ref v) => {
+                    let p = scanner.scan_opt_big_int(self.tag)?;
+                    if p.map(strip_sign_ext) != Some(strip_sign_ext(v)) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Enumeration(v) => {
+                    if scanner.scan_opt_enum(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Boolean(v) => {
+                    if scanner.scan_opt_bool(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::TextString(ref v) => {
+                    if scanner.scan_opt_text(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::ByteString(ref v) => {
+                    if scanner.scan_opt_bytes(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::DateTime(v) => {
+                    if scanner.scan_opt_date_time(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+                FieldData::Interval(v) => {
+                    if scanner.scan_opt_interval(self.tag)? != Some(v) {
+                        return Err(FastScanError::assert());
+                    }
+                }
+            }
+            Ok(())
         }
     }
 }
@@ -360,6 +358,7 @@ fn arb_field() -> impl Strategy<Value = Field> {
         any::<Type>().prop_map(FieldData::Missing),
         any::<i32>().prop_map(FieldData::Integer),
         any::<i64>().prop_map(FieldData::LongInteger),
+        any::<Box<[u8]>>().prop_map(FieldData::BigInteger),
         any::<u32>().prop_map(FieldData::Enumeration),
         any::<bool>().prop_map(FieldData::Boolean),
         any::<Box<str>>().prop_map(FieldData::TextString),
@@ -368,6 +367,9 @@ fn arb_field() -> impl Strategy<Value = Field> {
         any::<u32>().prop_map(FieldData::Interval),
     ];
 
+    // These parameters bound recursive generation.  They are quite arbitrary,
+    // but should be large enough to cover any kind of error we expect.  Making
+    // them too large would hurt testing speed.
     field(leaf_data.prop_recursive(3, 27, 3, |inner| {
         prop::collection::vec(field(inner), 0..10).prop_map(|fields| FieldData::Structure(fields.into_boxed_slice()))
     }))
