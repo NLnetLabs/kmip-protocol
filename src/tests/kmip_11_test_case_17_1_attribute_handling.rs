@@ -3,20 +3,18 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
     response::from_slice,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             AttributeIndex, AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, NameType,
             NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
-            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
         },
-        request::{Attribute, TemplateAttribute},
         response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
     },
 };
@@ -69,15 +67,7 @@ fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
         "00000F61646D696E406C6F63616C686F737400"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -139,15 +129,7 @@ fn kmip_1_1_testcase_17_1_time_1_get_attributes_invalid_request() {
         "650000000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -204,15 +186,7 @@ fn kmip_1_1_testcase_17_1_time_2_get_attributes_request() {
         "938320000000042000A070000000B4F626A65637420547970650000000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -283,15 +257,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_request() {
         "090200000004000000000000000042000B0700000010646F6E616C64406C6F63616C686F7374",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -323,7 +289,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_response() {
         assert_eq!(&payload.attribute.name, "Contact Information");
         assert_eq!(
             payload.attribute.value,
-            AttributeValue::ContactInformation("donald@localhost".into())
+            AttributeValue::TextString("donald@localhost".into())
         );
     }
 }
@@ -355,15 +321,7 @@ fn kmip_1_1_testcase_17_1_time_4_delete_attribute_request() {
         "938320000000042000A07000000044E616D6500000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -423,15 +381,7 @@ fn kmip_1_1_testcase_17_1_time_5_destroy_request() {
         "9383200000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]

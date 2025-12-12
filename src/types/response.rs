@@ -1,13 +1,21 @@
 //! Rust types for deserializing KMIP responses.
+use enum_ordinalize::Ordinalize;
 use serde_derive::{Deserialize, Serialize};
 
 use enum_display_derive::Display;
 use std::fmt::Display;
 
+use crate::ttlv::fast_scan::{FastScanError, FastScanner};
+use crate::ttlv::format::{FormatResult, Formatter};
+use crate::ttlv::types::Tag;
+use crate::types::common::CryptographicLength;
+
 use super::common::{
     AttributeIndex, AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType,
     KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
+
+use super::impl_ttlv_serde;
 
 ///  See KMIP 1.0 section 2.1.3 [Key Block](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581157).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -36,6 +44,28 @@ pub struct KeyBlock {
     pub key_wrapping_data: Option<()>, // TODO
 }
 
+impl_ttlv_serde!(struct KeyBlock as 0x420040 {
+    fast_scan = |scanner| {
+        let key_format_type = KeyFormatType::fast_scan(&mut scanner)?;
+        Self {
+            key_format_type,
+            key_compression_type: KeyCompressionType::fast_scan_opt(&mut scanner)?,
+            key_value: KeyValue::fast_scan(&mut scanner, &key_format_type)?,
+            cryptographic_algorithm: CryptographicAlgorithm::fast_scan_opt(&mut scanner)?,
+            cryptographic_length: CryptographicLength::fast_scan_opt(&mut scanner)?.map(|s| s.0),
+            key_wrapping_data: None,
+        }
+    };
+
+    format = |&self, formatter| {
+        self.key_format_type.format(&mut formatter)?;
+        if let Some(x) = &self.key_compression_type { x.format(&mut formatter)?; }
+        self.key_value.format(&mut formatter)?;
+        if let Some(x) = self.cryptographic_algorithm { x.format(&mut formatter)?; }
+        if let Some(x) = self.cryptographic_length { CryptographicLength(x).format(&mut formatter)?; }
+    };
+});
+
 ///  See KMIP 1.0 section 2.1.4 [Key Value](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581158).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420045")]
@@ -48,17 +78,63 @@ pub struct KeyValue {
     pub attributes: Option<Vec<Attribute>>,
 }
 
+impl KeyValue {
+    pub const TAG: Tag = Tag::new(0x420045);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>, format: &KeyFormatType) -> Result<Self, FastScanError> {
+        let mut scanner = scanner.scan_struct(Self::TAG)?;
+        let key_material = KeyMaterial::fast_scan(&mut scanner, format)?;
+        let attributes =
+            std::iter::from_fn(|| Attribute::fast_scan_opt(&mut scanner).transpose()).collect::<Result<Vec<_>, _>>()?;
+        let attributes = Some(attributes).filter(|a| !a.is_empty());
+        scanner.finish()?;
+        Ok(Self {
+            key_material,
+            attributes,
+        })
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>, format: &KeyFormatType) -> Result<Option<Self>, FastScanError> {
+        let Some(mut scanner) = scanner.scan_opt_struct(Self::TAG)? else {
+            return Ok(None);
+        };
+        let key_material = KeyMaterial::fast_scan(&mut scanner, format)?;
+        let attributes =
+            std::iter::from_fn(|| Attribute::fast_scan_opt(&mut scanner).transpose()).collect::<Result<Vec<_>, _>>()?;
+        let attributes = Some(attributes).filter(|a| !a.is_empty());
+        scanner.finish()?;
+        Ok(Some(Self {
+            key_material,
+            attributes,
+        }))
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        self.key_material.format(&mut formatter)?;
+        for attribute in self.attributes.iter().flatten() {
+            attribute.format(&mut formatter)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
 ///  See KMIP 1.0 section 2.1.8 [Template Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420091")]
 pub struct TemplateAttribute {
     #[serde(rename = "0x420043")]
-    pub name: KeyMaterial,
+    pub names: Option<Vec<Name>>,
 
     #[serde(rename = "0x420008")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attributes: Option<Vec<Attribute>>,
 }
+
+impl_ttlv_serde!(struct TemplateAttribute {
+    #[option+vec] names: Name,
+    #[option+vec] attributes: Attribute,
+} as 0x420091);
 
 ///  See KMIP 1.0 section 2.2 [Managed Objects](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581163).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -118,6 +194,8 @@ pub struct SymmetricKey {
     pub key_block: KeyBlock,
 }
 
+impl_ttlv_serde!(struct SymmetricKey { key_block: KeyBlock } as 0x42008F);
+
 ///  See KMIP 1.0 section 2.2.3 [Public Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581166).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42006D")]
@@ -125,6 +203,8 @@ pub struct PublicKey {
     #[serde(rename = "0x420040")]
     pub key_block: KeyBlock,
 }
+
+impl_ttlv_serde!(struct PublicKey { key_block: KeyBlock } as 0x42006D);
 
 ///  See KMIP 1.0 section 2.2.4 [Private Key](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581167).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -134,6 +214,8 @@ pub struct PrivateKey {
     pub key_block: KeyBlock,
 }
 
+impl_ttlv_serde!(struct PrivateKey { key_block: KeyBlock } as 0x420064);
+
 ///  See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x420053")]
@@ -141,6 +223,11 @@ pub struct Name {
     pub name: NameValue,
     pub r#type: NameType,
 }
+
+impl_ttlv_serde!(struct Name {
+    name: NameValue,
+    r#type: NameType,
+} as 0x420053);
 
 ///  See KMIP 1.0 section 4.1 [Create](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -151,6 +238,12 @@ pub struct CreateResponsePayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub object_attributes: Option<Vec<Attribute>>,
 }
+
+impl_ttlv_serde!(struct CreateResponsePayload {
+    object_type: ObjectType,
+    unique_identifier: UniqueIdentifier,
+    #[option+vec] object_attributes: Attribute,
+} as 0x42007C);
 
 ///  See KMIP 1.0 section 4.2 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -336,9 +429,10 @@ pub struct ProtocolVersion {
 }
 
 ///  See KMIP 1.0 section 6.9 [Result Status](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007F")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum ResultStatus {
     #[serde(rename = "0x00000000")]
     Success,
@@ -353,13 +447,16 @@ pub enum ResultStatus {
     OperationUndone,
 }
 
+impl_ttlv_serde!(enum ResultStatus as 0x42007F);
+
 ///  See KMIP 1.0 section 6.10 [Result Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007E")]
 #[non_exhaustive]
+#[repr(u32)]
 pub enum ResultReason {
     #[serde(rename = "0x00000001")]
-    ItemNotFound,
+    ItemNotFound = 1,
 
     #[serde(rename = "0x00000002")]
     ResponseTooLarge,
@@ -412,6 +509,8 @@ pub enum ResultReason {
     #[serde(rename = "0x00000100")]
     GeneralFailure,
 }
+
+impl_ttlv_serde!(enum ResultReason as 0x42007E);
 
 ///  See KMIP 1.0 section 6.16 [Message Extension](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -618,3 +717,20 @@ pub struct Attribute {
     #[serde(rename = "0x42000B")]
     pub value: AttributeValue,
 }
+
+impl_ttlv_serde!(struct Attribute as 0x420008 {
+    fast_scan = |scanner| {
+        let name = AttributeName::fast_scan(&mut scanner)?;
+        let index = AttributeIndex::fast_scan_opt(&mut scanner)?;
+        let value = AttributeValue::fast_scan(&mut scanner, &name)?;
+        Self{name, index, value}
+    };
+
+    format = |&self, formatter| {
+        self.name.format(&mut formatter)?;
+        if let Some(index) = &self.index {
+            index.format(&mut formatter)?;
+        }
+        self.value.format(&mut formatter)?;
+    };
+});

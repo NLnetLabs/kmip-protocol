@@ -3,10 +3,9 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
     response::from_slice,
+    tests::util::assert_req_ser_de,
     types::{
         common::{ObjectType, Operation, UniqueBatchItemID},
         request::{
@@ -56,15 +55,7 @@ fn kmip_1_0_usecase_12_1_step_1_query_operations_objects_max_response_size_256_r
         "0000200000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -129,15 +120,7 @@ fn kmip_1_0_usecase_12_1_step_2_query_operations_objects_max_response_size_2048_
         "0000200000000"
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]

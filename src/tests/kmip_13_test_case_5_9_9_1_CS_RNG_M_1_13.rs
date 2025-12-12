@@ -4,15 +4,18 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::{de::from_slice, ser::to_vec};
+use kmip_ttlv::de::from_slice;
 
-use crate::types::{
-    common::{DataLength, Operation, UniqueBatchItemID},
-    request::{
-        self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload,
+use crate::{
+    tests::util::assert_req_ser_de,
+    types::{
+        common::{DataLength, Operation, UniqueBatchItemID},
+        request::{
+            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+        },
+        response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
-    response::{ResponseMessage, ResponsePayload, ResultStatus},
 };
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -44,15 +47,7 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
         "007901000000104200C402000000040000002000000000",
     );
 
-    let actual_request_hex = match to_vec(&use_case_request) {
-        Ok(ttlv_bytes) => hex::encode_upper(ttlv_bytes),
-        Err(err) => panic!("Failed to encode KMIP request as TTLV: {}", err),
-    };
-
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
