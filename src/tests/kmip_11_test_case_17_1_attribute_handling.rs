@@ -13,8 +13,7 @@ use crate::{
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
-        },
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute, TimeStamp},
         response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
     },
 };
@@ -32,6 +31,7 @@ fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -106,6 +106,7 @@ fn kmip_1_1_testcase_17_1_time_1_get_attributes_invalid_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -167,6 +168,7 @@ fn kmip_1_1_testcase_17_1_time_2_get_attributes_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -233,6 +235,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -301,6 +304,7 @@ fn kmip_1_1_testcase_17_1_time_4_delete_attribute_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -365,6 +369,7 @@ fn kmip_1_1_testcase_17_1_time_5_destroy_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

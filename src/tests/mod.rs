@@ -1,4 +1,5 @@
 mod kmip_10_use_case_11_1_access_control;
+mod timestamp_support;
 mod kmip_10_use_case_12_1_query;
 mod kmip_10_use_case_3_1_basic_functionality;
 mod kmip_10_use_case_4_1_key_lifecycle;

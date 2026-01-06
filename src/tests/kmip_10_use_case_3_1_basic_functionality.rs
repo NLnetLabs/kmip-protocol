@@ -14,8 +14,7 @@ use crate::{
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, ManagedObject, MaximumResponseSize,
             ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, Template,
-            TemplateAttribute,
-        },
+            TemplateAttribute, TimeStamp},
         response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
 };
@@ -36,6 +35,7 @@ fn kmip_1_0_usecase_3_1_2_step_1_register_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -127,6 +127,7 @@ fn kmip_1_0_usecase_3_1_2_step_2_create_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -214,6 +215,7 @@ fn kmip_1_0_usecase_3_1_2_step_3_get_attributes_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -330,6 +332,7 @@ fn kmip_1_0_usecase_3_1_2_step_4_destroy_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -398,6 +401,7 @@ fn kmip_1_0_usecase_3_1_2_step_5_destroy_template_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

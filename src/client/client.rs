@@ -20,7 +20,7 @@ use crate::{
         request::{
             self, Authentication, BatchCount, CommonTemplateAttribute, KeyWrappingSpecification, MaximumResponseSize,
             PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute, QueryFunction, RequestHeader, RequestMessage,
-            RequestPayload, RevocationReason,
+            RequestPayload, RevocationReason, TimeStamp,
         },
         response::{
             self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
@@ -332,6 +332,7 @@ impl<T: ReadWrite> Client<T> {
                 protocol_version,
                 Option::<MaximumResponseSize>::None,
                 self.auth().map(Authentication::build),
+                Option::<TimeStamp>::None,
                 BatchCount(batch_items.len() as i32),
             ),
             batch_items,

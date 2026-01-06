@@ -10,6 +10,7 @@ use crate::{
         common::UniqueBatchItemID,
         request::{
             Authentication, BatchCount, BatchItem, MaximumResponseSize, RequestHeader, RequestMessage, RequestPayload,
+            TimeStamp,
         },
     },
 };
@@ -23,6 +24,7 @@ pub fn to_vec(payload: RequestPayload, credential: Option<CredentialType>) -> Re
             payload.protocol_version(),
             Option::<MaximumResponseSize>::None,
             credential.map(Authentication::build),
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(operation, Option::<UniqueBatchItemID>::None, payload)],

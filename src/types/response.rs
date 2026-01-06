@@ -14,6 +14,7 @@ use super::common::{
     AttributeIndex, AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType,
     KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
+use super::request::IVOrCounterOrNonce;
 
 use super::impl_ttlv_serde;
 
@@ -405,6 +406,33 @@ pub struct DiscoverVersionsResponsePayload {
     pub supported_versions: Option<Vec<ProtocolVersion>>,
 }
 
+///  See KMIP 1.2 section 4.27 [Encrypt](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613554).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42007C")]
+pub struct EncryptResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x4200C2")]
+    #[serde(with = "serde_bytes")]
+    pub data: Vec<u8>,
+
+    #[serde(rename = "0x42003D", skip_serializing_if = "Option::is_none", default)]
+    pub iv_counter_nonce: Option<IVOrCounterOrNonce>,
+}
+
+///  See KMIP 1.2 section 4.28 [Decrypt](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613555).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42007C")]
+pub struct DecryptResponsePayload {
+    #[serde(rename = "0x420094")]
+    pub unique_identifier: UniqueIdentifier,
+
+    #[serde(rename = "0x4200C2")]
+    #[serde(with = "serde_bytes")]
+    pub data: Vec<u8>,
+}
+
 ///  See KMIP 1.2 section 4.31 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42007C")]
@@ -534,6 +562,91 @@ pub struct MessageExtension {
 #[serde(rename = "0x42009C")]
 pub struct VendorExtension;
 
+/// KMIP Timestamp for response headers.
+///
+/// This type handles the asymmetry in kmip-ttlv's DateTime handling:
+/// - Serialization: Uses u64 internally, which kmip-ttlv encodes as DateTime (type 0x09)
+/// - Deserialization: Accepts i64, which kmip-ttlv decodes from DateTime
+///
+/// This allows correct KMIP protocol encoding while maintaining compatibility with
+/// kmip-ttlv's deserialization limitations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Timestamp(pub i64);
+
+impl Timestamp {
+    /// Create a new Timestamp from a Unix epoch time.
+    pub fn new(epoch_secs: i64) -> Self {
+        Self(epoch_secs)
+    }
+
+    /// Create a new Timestamp from a u64 Unix epoch time.
+    pub fn from_u64(epoch_secs: u64) -> Self {
+        Self(epoch_secs as i64)
+    }
+
+    /// Get the timestamp as i64.
+    pub fn as_i64(&self) -> i64 {
+        self.0
+    }
+
+    /// Get the timestamp as u64 (for serialization).
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+}
+
+impl From<i64> for Timestamp {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<u64> for Timestamp {
+    fn from(value: u64) -> Self {
+        Self(value as i64)
+    }
+}
+
+// Allow direct comparison with integer types for backwards compatibility in tests
+impl PartialEq<i32> for Timestamp {
+    fn eq(&self, other: &i32) -> bool {
+        self.0 == *other as i64
+    }
+}
+
+impl PartialEq<i64> for Timestamp {
+    fn eq(&self, other: &i64) -> bool {
+        self.0 == *other
+    }
+}
+
+impl PartialEq<u64> for Timestamp {
+    fn eq(&self, other: &u64) -> bool {
+        self.0 as u64 == *other
+    }
+}
+
+impl serde::Serialize for Timestamp {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Serialize as u64 so kmip-ttlv encodes it as DateTime (type 0x09)
+        serializer.serialize_u64(self.0 as u64)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Timestamp {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // Deserialize as i64 because kmip-ttlv decodes DateTime to i64
+        let value = i64::deserialize(deserializer)?;
+        Ok(Timestamp(value))
+    }
+}
+
 ///  See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42007B")]
@@ -553,7 +666,7 @@ pub struct ResponseHeader {
     pub protocol_version: ProtocolVersion,
 
     #[serde(rename = "0x420092")]
-    pub timestamp: i64,
+    pub timestamp: Timestamp,
 
     #[serde(rename = "0x42000D")]
     pub batch_count: i32,
@@ -689,6 +802,18 @@ pub enum ResponsePayload {
     #[serde(rename(serialize = "Transparent"))]
     DiscoverVersions(DiscoverVersionsResponsePayload),
 
+    /// See KMIP 1.2 section 4.27 Encrypt.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613554
+    #[serde(rename(deserialize = "if 0x42005C==0x0000001F"))]
+    #[serde(rename(serialize = "Transparent"))]
+    Encrypt(EncryptResponsePayload),
+
+    /// See KMIP 1.2 section 4.28 Decrypt.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613555
+    #[serde(rename(deserialize = "if 0x42005C==0x00000020"))]
+    #[serde(rename(serialize = "Transparent"))]
+    Decrypt(DecryptResponsePayload),
+
     /// See KMIP 1.2 section 4.31 Sign.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     #[serde(rename(deserialize = "if 0x42005C==0x00000021"))]
@@ -734,3 +859,176 @@ impl_ttlv_serde!(struct Attribute as 0x420008 {
         self.value.format(&mut formatter)?;
     };
 });
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::{Serialize, Deserialize};
+
+    /// Test Timestamp creation from different integer types.
+    #[test]
+    fn test_timestamp_creation() {
+        // From i64
+        let ts1 = Timestamp::new(1704067200);
+        assert_eq!(ts1.as_i64(), 1704067200);
+
+        // From u64
+        let ts2 = Timestamp::from_u64(1704067200u64);
+        assert_eq!(ts2.as_u64(), 1704067200);
+
+        // From trait
+        let ts3: Timestamp = 1704067200i64.into();
+        assert_eq!(ts3.0, 1704067200);
+
+        let ts4: Timestamp = 1704067200u64.into();
+        assert_eq!(ts4.0, 1704067200);
+    }
+
+    /// Test Timestamp comparison with integer types.
+    #[test]
+    fn test_timestamp_comparison() {
+        let ts = Timestamp::new(1704067200);
+
+        // Compare with i32 (hex literals default to i32)
+        assert_eq!(ts, 1704067200i32);
+
+        // Compare with i64
+        assert_eq!(ts, 1704067200i64);
+
+        // Compare with u64
+        assert_eq!(ts, 1704067200u64);
+    }
+
+    /// Test Timestamp serialization produces u64 (DateTime type 0x09).
+    ///
+    /// This verifies that the custom Serialize impl outputs u64, which kmip-ttlv
+    /// encodes as DateTime (type 0x09) rather than LongInteger (type 0x03).
+    #[test]
+    fn test_timestamp_serializes_as_u64() {
+        use serde::ser::Serializer;
+
+        struct TestSerializer {
+            serialized_as_u64: bool,
+        }
+
+        impl serde::Serializer for TestSerializer {
+            type Ok = ();
+            type Error = serde::de::value::Error;
+            type SerializeSeq = serde::ser::Impossible<(), Self::Error>;
+            type SerializeTuple = serde::ser::Impossible<(), Self::Error>;
+            type SerializeTupleStruct = serde::ser::Impossible<(), Self::Error>;
+            type SerializeTupleVariant = serde::ser::Impossible<(), Self::Error>;
+            type SerializeMap = serde::ser::Impossible<(), Self::Error>;
+            type SerializeStruct = serde::ser::Impossible<(), Self::Error>;
+            type SerializeStructVariant = serde::ser::Impossible<(), Self::Error>;
+
+            fn serialize_u64(self, _v: u64) -> Result<Self::Ok, Self::Error> {
+                // This is what we expect - serialization as u64
+                Ok(())
+            }
+
+            fn serialize_i64(self, _v: i64) -> Result<Self::Ok, Self::Error> {
+                panic!("Timestamp should serialize as u64, not i64");
+            }
+
+            // Required trait methods with default panic implementations
+            fn serialize_bool(self, _: bool) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_i8(self, _: i8) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_i16(self, _: i16) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_i32(self, _: i32) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_u8(self, _: u8) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_u16(self, _: u16) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_u32(self, _: u32) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_f32(self, _: f32) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_f64(self, _: f64) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_char(self, _: char) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_str(self, _: &str) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_bytes(self, _: &[u8]) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_none(self) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_some<T: ?Sized + serde::Serialize>(self, _: &T) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_unit(self) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_unit_variant(self, _: &'static str, _: u32, _: &'static str) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _: &'static str, _: &T) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, _: &'static str, _: u32, _: &'static str, _: &T) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+            fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> { unimplemented!() }
+            fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> { unimplemented!() }
+            fn serialize_tuple_struct(self, _: &'static str, _: usize) -> Result<Self::SerializeTupleStruct, Self::Error> { unimplemented!() }
+            fn serialize_tuple_variant(self, _: &'static str, _: u32, _: &'static str, _: usize) -> Result<Self::SerializeTupleVariant, Self::Error> { unimplemented!() }
+            fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> { unimplemented!() }
+            fn serialize_struct(self, _: &'static str, _: usize) -> Result<Self::SerializeStruct, Self::Error> { unimplemented!() }
+            fn serialize_struct_variant(self, _: &'static str, _: u32, _: &'static str, _: usize) -> Result<Self::SerializeStructVariant, Self::Error> { unimplemented!() }
+        }
+
+        let ts = Timestamp::new(1704067200);
+        let serializer = TestSerializer { serialized_as_u64: false };
+
+        // This should succeed (serialize_u64 is called)
+        // If serialize_i64 were called instead, it would panic
+        ts.serialize(serializer).expect("Timestamp should serialize as u64");
+    }
+
+    /// Test Timestamp deserialization accepts i64 (from kmip-ttlv DateTime decoding).
+    #[test]
+    fn test_timestamp_deserializes_from_i64() {
+        use serde::de::{Deserializer, Visitor};
+
+        struct I64Deserializer(i64);
+
+        impl<'de> Deserializer<'de> for I64Deserializer {
+            type Error = serde::de::value::Error;
+
+            fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+            where
+                V: Visitor<'de>,
+            {
+                visitor.visit_i64(self.0)
+            }
+
+            fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+            where
+                V: Visitor<'de>,
+            {
+                self.deserialize_i64(visitor)
+            }
+
+            // Required trait methods
+            serde::forward_to_deserialize_any! {
+                bool i8 i16 i32 u8 u16 u32 u64 f32 f64 char str string bytes
+                byte_buf option unit unit_struct newtype_struct seq tuple
+                tuple_struct map struct enum identifier ignored_any
+            }
+        }
+
+        let deserializer = I64Deserializer(1704067200);
+        let ts = Timestamp::deserialize(deserializer).expect("Should deserialize from i64");
+        assert_eq!(ts.0, 1704067200);
+    }
+
+    /// Test round-trip: Timestamp can be created, serialized, and the value is preserved.
+    #[test]
+    fn test_timestamp_value_preservation() {
+        let original_value: i64 = 1704067200;
+        let ts = Timestamp::new(original_value);
+
+        // Value should be preserved through conversions
+        assert_eq!(ts.as_i64(), original_value);
+        assert_eq!(ts.as_u64(), original_value as u64);
+    }
+
+    /// Test Timestamp with edge cases.
+    #[test]
+    fn test_timestamp_edge_cases() {
+        // Zero timestamp
+        let ts_zero = Timestamp::new(0);
+        assert_eq!(ts_zero, 0i64);
+
+        // Max reasonable timestamp (year 3000 or so)
+        let ts_future = Timestamp::new(32503680000);
+        assert_eq!(ts_future.as_i64(), 32503680000);
+
+        // Large u64 value (within i64 range)
+        let ts_large = Timestamp::from_u64(i64::MAX as u64);
+        assert_eq!(ts_large.as_i64(), i64::MAX);
+    }
+}

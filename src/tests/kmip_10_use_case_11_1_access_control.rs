@@ -13,7 +13,7 @@ use crate::{
         },
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute, TimeStamp,
         },
     },
 };
@@ -33,6 +33,7 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             credential.map(Authentication::build),
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

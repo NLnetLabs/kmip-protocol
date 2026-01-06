@@ -14,8 +14,7 @@ use crate::{
         request::{
             self, Attribute, Authentication, BatchCount, BatchItem, CommonTemplateAttribute, MaximumResponseSize,
             PrivateKeyTemplateAttribute, ProtocolVersionMajor, ProtocolVersionMinor, PublicKeyTemplateAttribute,
-            RequestHeader, RequestMessage, RequestPayload,
-        },
+            RequestHeader, RequestMessage, RequestPayload, TimeStamp},
         response::{ResponseMessage, ResponsePayload, ResultStatus},
     },
 };
@@ -31,6 +30,7 @@ fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -114,6 +114,7 @@ fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_request
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -180,6 +181,7 @@ fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_request
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -246,6 +248,7 @@ fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -301,6 +304,7 @@ fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<TimeStamp>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

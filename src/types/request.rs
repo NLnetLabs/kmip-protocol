@@ -697,7 +697,24 @@ impl_ttlv_serde!(bytes MACOrSignature as 0x42004D);
 /// See KMIP 1.0 section 2.1.5 [Key Wrapping Data](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581159).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "Transparent:0x42003D")]
-pub struct IVOrCounterOrNonce(#[serde(with = "serde_bytes")] Vec<u8>);
+pub struct IVOrCounterOrNonce(#[serde(with = "serde_bytes")] pub Vec<u8>);
+
+impl IVOrCounterOrNonce {
+    /// Create a new IVOrCounterOrNonce from bytes.
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+
+    /// Get the inner bytes as a slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    /// Consume and return the inner bytes.
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.0
+    }
+}
 
 impl_ttlv_serde!(bytes IVOrCounterOrNonce as 0x42003D);
 
@@ -938,6 +955,42 @@ pub struct BatchCount(pub i32);
 
 impl_ttlv_serde!(int BatchCount as 0x42000D);
 
+/// See KMIP 1.0 section 6.7 [Time Stamp](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581245).
+/// Time Stamp is a DateTime value containing the date and time when the request was created.
+/// Note: Uses i64 instead of u64 because kmip-ttlv's serde deserializer only supports i64 for DateTime.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x420092")]
+pub struct TimeStamp(pub i64);
+
+// Manual implementation for TimeStamp using i64 (not u64 like impl_ttlv_serde! date_time macro assumes)
+impl TimeStamp {
+    pub const TAG: Tag = Tag::new(0x420092);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        scanner.scan_date_time(tag).map(Self)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        Self::fast_scan_opt_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+        scanner.scan_opt_date_time(tag).map(|s| s.map(Self))
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        formatter.format_date_time(tag, self.0)
+    }
+}
+
 /// See KMIP 1.0 section 6.15 [Batch Item](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42000F(0x42005C,0x420093,0x420079)")]
@@ -994,7 +1047,7 @@ impl RequestMessage {
 impl_ttlv_serde!(struct RequestMessage as 0x420078 {
     fast_scan = |scanner| {
         let header = RequestHeader::fast_scan(&mut scanner)?;
-        let BatchCount(count) = header.3;
+        let BatchCount(count) = header.4;
         let items = (0..count)
             .map(|_| BatchItem::fast_scan(&mut scanner))
             .collect::<Result<Vec<_>, _>>()?;
@@ -1011,11 +1064,12 @@ impl_ttlv_serde!(struct RequestMessage as 0x420078 {
 
 /// See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420077(0x420069,0x420050,0x42000C,0x42000D)")]
+#[serde(rename = "0x420077(0x420069,0x420050,0x42000C,0x420092,0x42000D)")]
 pub struct RequestHeader(
     pub ProtocolVersion,
     #[serde(skip_serializing_if = "Option::is_none", default)] pub Option<MaximumResponseSize>,
     #[serde(skip_serializing_if = "Option::is_none", default)] pub Option<Authentication>,
+    #[serde(skip_serializing_if = "Option::is_none", default)] pub Option<TimeStamp>,
     #[serde(default)] pub BatchCount,
 );
 
@@ -1032,8 +1086,12 @@ impl RequestHeader {
         self.2.as_ref()
     }
 
+    pub fn timestamp(&self) -> Option<&TimeStamp> {
+        self.3.as_ref()
+    }
+
     pub fn batch_count(&self) -> &BatchCount {
-        &self.3
+        &self.4
     }
 }
 
@@ -1042,6 +1100,7 @@ impl_ttlv_serde!(struct RequestHeader as 0x420077 {
         ProtocolVersion::fast_scan(&mut scanner)?,
         MaximumResponseSize::fast_scan_opt(&mut scanner)?,
         Authentication::fast_scan_opt(&mut scanner)?,
+        TimeStamp::fast_scan_opt(&mut scanner)?,
         BatchCount::fast_scan_opt(&mut scanner)?.unwrap_or_default(),
     );
 
@@ -1049,7 +1108,8 @@ impl_ttlv_serde!(struct RequestHeader as 0x420077 {
         self.0.format(&mut formatter)?;
         if let Some(x) = &self.1 { x.format(&mut formatter)?; }
         if let Some(x) = &self.2 { x.format(&mut formatter)?; }
-        if self.3.0 != 0 { self.3.format(&mut formatter)?; }
+        if let Some(x) = &self.3 { x.format(&mut formatter)?; }
+        if self.4.0 != 0 { self.4.format(&mut formatter)?; }
     };
 });
 
@@ -1182,9 +1242,26 @@ pub enum RequestPayload {
     #[serde(rename = "if 0x42005C==0x0000001E")]
     DiscoverVersions(Vec<ProtocolVersion>),
 
-    // TODO? Missing operation code mappings to request payloads
-    // Encrypt = 1F
-    // Decrypt = 20
+    /// See KMIP 1.2 section 4.27 Encrypt.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613554
+    #[serde(rename = "if 0x42005C==0x0000001F")]
+    Encrypt(
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<CryptographicParameters>,
+        Data,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<IVOrCounterOrNonce>,
+    ),
+
+    /// See KMIP 1.2 section 4.28 Decrypt.
+    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613555
+    #[serde(rename = "if 0x42005C==0x00000020")]
+    Decrypt(
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<UniqueIdentifier>,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<CryptographicParameters>,
+        Data,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<IVOrCounterOrNonce>,
+    ),
+
     /// See KMIP 1.2 section 4.31 Sign.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
     #[serde(rename = "if 0x42005C==0x00000021")]
@@ -1235,8 +1312,8 @@ impl RequestPayload {
             RequestPayload::DiscoverVersions(..) => Operation::DiscoverVersions,
             // Not implemented: Cancel (KMIP 1.0)
             // Not implemented: Poll (KMIP 1.0)
-            // Not implemented: Encrypt (KMIP 1.2)
-            // Not implemented: Decrypt (KMIP 1.2)
+            RequestPayload::Encrypt(..) => Operation::Encrypt,
+            RequestPayload::Decrypt(..) => Operation::Decrypt,
             RequestPayload::Sign(..) => Operation::Sign,
             // Not implemented: Signature Verify (KMIP 1.2)
             // Not implemented: MAC (KMIP 1.2)
@@ -1271,7 +1348,10 @@ impl RequestPayload {
                 // These KMIP operations are defined in the KMIP 1.1 specification
                 ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1))
             }
-            RequestPayload::Sign(..) | RequestPayload::RNGRetrieve(..) => {
+            RequestPayload::Encrypt(..)
+            | RequestPayload::Decrypt(..)
+            | RequestPayload::Sign(..)
+            | RequestPayload::RNGRetrieve(..) => {
                 // These KMIP operations are defined in the KMIP 1.2 specification
                 ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(2))
             }
@@ -1356,6 +1436,18 @@ impl RequestPayload {
             Operation::DiscoverVersions => Self::DiscoverVersions(
                 std::iter::from_fn(|| ProtocolVersion::fast_scan_opt(&mut scanner).transpose())
                     .collect::<Result<_, _>>()?,
+            ),
+            Operation::Encrypt => Self::Encrypt(
+                UniqueIdentifier::fast_scan_opt(&mut scanner)?,
+                CryptographicParameters::fast_scan_opt(&mut scanner)?,
+                Data::fast_scan(&mut scanner)?,
+                IVOrCounterOrNonce::fast_scan_opt(&mut scanner)?,
+            ),
+            Operation::Decrypt => Self::Decrypt(
+                UniqueIdentifier::fast_scan_opt(&mut scanner)?,
+                CryptographicParameters::fast_scan_opt(&mut scanner)?,
+                Data::fast_scan(&mut scanner)?,
+                IVOrCounterOrNonce::fast_scan_opt(&mut scanner)?,
             ),
             Operation::Sign => Self::Sign(
                 UniqueIdentifier::fast_scan_opt(&mut scanner)?,
@@ -1483,6 +1575,30 @@ impl RequestPayload {
             }
             RequestPayload::DiscoverVersions(protocol_versions) => {
                 for x in protocol_versions {
+                    x.format(&mut formatter)?;
+                }
+            }
+            RequestPayload::Encrypt(unique_identifier, cryptographic_parameters, data, iv_counter_nonce) => {
+                if let Some(x) = unique_identifier {
+                    x.format(&mut formatter)?;
+                }
+                if let Some(x) = cryptographic_parameters {
+                    x.format(&mut formatter)?;
+                }
+                data.format(&mut formatter)?;
+                if let Some(x) = iv_counter_nonce {
+                    x.format(&mut formatter)?;
+                }
+            }
+            RequestPayload::Decrypt(unique_identifier, cryptographic_parameters, data, iv_counter_nonce) => {
+                if let Some(x) = unique_identifier {
+                    x.format(&mut formatter)?;
+                }
+                if let Some(x) = cryptographic_parameters {
+                    x.format(&mut formatter)?;
+                }
+                data.format(&mut formatter)?;
+                if let Some(x) = iv_counter_nonce {
                     x.format(&mut formatter)?;
                 }
             }
