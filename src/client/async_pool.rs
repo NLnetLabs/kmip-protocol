@@ -216,13 +216,3 @@ impl bb8::ManageConnection for ConnectionManager {
         conn.connection_error_count() > 1
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn create_pool() {
-        todo!()
-    }
-}
