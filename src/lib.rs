@@ -205,7 +205,6 @@ pub mod response;
 pub mod tag_map;
 
 #[cfg(any(
-    feature = "tls-with-async-tls",
     feature = "tls-with-openssl",
     feature = "tls-with-openssl-vendored",
     feature = "tls-with-rustls",

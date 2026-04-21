@@ -47,7 +47,6 @@ jobs:
           "--no-default-features --example demo --features tls-with-rustls",
           "--no-default-features --example demo --features tls-with-tokio-native-tls",
           "--no-default-features --example demo --features tls-with-tokio-rustls",
-          "--no-default-features --example demo --features tls-with-async-tls",
         ]
     steps:
     - uses: actions/checkout@v4
