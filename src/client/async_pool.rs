@@ -15,11 +15,12 @@ use std::{sync::Arc, time::Duration};
 use crate::client::ConnectionSettings;
 
 use bb8::PooledConnection;
-use log::error;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "tls-with-tokio-rustls")] {
         use crate::client::tls::tokio_rustls::{Client, connect};
+    } else if #[cfg(feature = "tls-with-tokio-native-tls")] {
+        use crate::client::tls::tokio_native_tls::{Client, connect};
     } else if #[cfg(feature = "async-with-tokio")] {
         pub type Client = crate::client::Client<tokio::net::TcpStream>;
     } else {
@@ -213,15 +214,5 @@ impl bb8::ManageConnection for ConnectionManager {
     /// connection related errors.
     fn has_broken(&self, conn: &mut Self::Connection) -> bool {
         conn.connection_error_count() > 1
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn create_pool() {
-        todo!()
     }
 }
