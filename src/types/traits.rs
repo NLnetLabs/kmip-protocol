@@ -9,7 +9,6 @@
 //! |------------------------|------------------------------------------|
 //! | `sync` (default)       | `std::io::Read + std::io::Write`         |
 //! | `async-with-tokio`     | `tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin` |
-//! | `async-with-async-std` | `async_std::io::ReadExt + async_std::io::WriteExt + std::marker::Unpin` |
 //!
 //! This enables code that is otherwise identical to be re-used.
 
