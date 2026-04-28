@@ -17,7 +17,6 @@ rust-version = "1.88.0"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-async-std = { version = "1.10.0", features = ["attributes"], optional = true }
 bb8 = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
 enum-display-derive = "0.1.1"
@@ -47,7 +46,6 @@ default = ["sync"]
 sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync", "sync-pool"]
 sync-pool = ["r2d2"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio", "async-pool"]
-async-with-async-std = ["kmip-ttlv/high-level", "async-std", "rustls", "kmip-ttlv/async-with-async-std", "async-pool"]
 async-pool = ["bb8"]
 tls = []
 tls-with-openssl = ["tls", "sync", "openssl"]

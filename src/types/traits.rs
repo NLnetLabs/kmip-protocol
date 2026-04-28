@@ -22,9 +22,5 @@ cfg_if::cfg_if! {
         pub trait ReadWrite: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin {}
 
         impl<T: ?Sized + tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin> ReadWrite for T {}
-    } else if #[cfg(feature = "async-with-async-std")] {
-        pub trait ReadWrite: async_std::io::ReadExt + async_std::io::WriteExt + std::marker::Unpin {}
-
-        impl<T: ?Sized + async_std::io::ReadExt + async_std::io::WriteExt + std::marker::Unpin> ReadWrite for T {}
-    }
+    } 
 }
