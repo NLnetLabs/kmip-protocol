@@ -23,10 +23,8 @@ cfg_if::cfg_if! {
         use crate::client::tls::tokio_native_tls::{Client, connect};
     } else if #[cfg(feature = "async-with-tokio")] {
         pub type Client = crate::client::Client<tokio::net::TcpStream>;
-    } else if #[cfg(feature = "async-with-async-std")] {
-        use crate::client::Client;
     } else {
-        unreachable!();
+        compile_error!("async_pool enabled without any async feature.");
     }
 }
 
