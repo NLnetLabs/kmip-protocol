@@ -24,7 +24,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "async-with-tokio")] {
         pub type Client = crate::client::Client<tokio::net::TcpStream>;
     } else {
-        unreachable!();
+        compile_error!("async_pool enabled without any async feature.");
     }
 }
 

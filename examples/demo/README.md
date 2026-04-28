@@ -86,11 +86,6 @@ Tokio (RustLS):
 cargo run --no-default-features --features tls-with-tokio-rustls --example demo -- --server-cert $CONFDIR/server.crt --ca-cert $CONFDIR/ca.crt --client-cert $CONFDIR/server.crt --client-key $CONFDIR/server.key
 ```
 
-Async TLS:
-```
-cargo run --no-default-features --features tls-with-async-tls --example demo -- --server-cert $CONFDIR/server.crt --ca-cert $CONFDIR/ca.crt --client-cert $CONFDIR/server.crt --client-key $CONFDIR/server.key
-```
-
 You can also run the example demo with the `SSLKEYLOGFILE` environment variable set to the path to a file you want TLS
 secrets to be stored in, which can be used to decrypt the communication using a program like Wireshark.
 

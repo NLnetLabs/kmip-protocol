@@ -17,8 +17,6 @@ rust-version = "1.88.0"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-async-std = { version = "1.10.0", features = ["attributes"], optional = true }
-async-tls = { version = "0.11.0", default-features = false, features = ["client"], optional = true }
 bb8 = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
 enum-display-derive = "0.1.1"
@@ -48,7 +46,6 @@ default = ["sync"]
 sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync", "sync-pool"]
 sync-pool = ["r2d2"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio", "async-pool"]
-async-with-async-std = ["kmip-ttlv/high-level", "async-std", "rustls", "kmip-ttlv/async-with-async-std", "async-pool"]
 async-pool = ["bb8"]
 tls = []
 tls-with-openssl = ["tls", "sync", "openssl"]
@@ -56,7 +53,6 @@ tls-with-openssl-vendored = ["tls", "sync", "openssl/vendored"]
 tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki-roots"]
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
-tls-with-async-tls = ["tls", "async-with-async-std", "async-tls", "rustls-pemfile", "webpki" ]
 proptest = ["dep:proptest"]
 
 [[example]]
