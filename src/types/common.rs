@@ -206,7 +206,7 @@ pub enum AttributeValue {
 
     #[serde(rename(deserialize = "if type==DateTime"))]
     #[serde(rename(serialize = "Transparent"))]
-    DateTime(u64),
+    DateTime(i64),
     // TODO
     // #[serde(rename = "if type==Interval")]
     // Interval(??),
@@ -249,7 +249,7 @@ impl AttributeValue {
             }),
             "Operation Policy Name" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
             "Cryptographic Usage Mask" => scanner.scan_int(Self::TAG).map(Self::Integer),
-            "Activation Date" => scanner.scan_date_time(Self::TAG).map(|s| Self::DateTime(s as u64)),
+            "Activation Date" => scanner.scan_date_time(Self::TAG).map(Self::DateTime),
             "Object Group" => scanner.scan_text(Self::TAG).map(|s| Self::ObjectGroup(s.into())),
             "Link" => {
                 let mut scanner = scanner.scan_struct(Self::TAG)?;
@@ -348,7 +348,7 @@ impl AttributeValue {
             &AttributeValue::Boolean(v) => formatter.format_bool(Self::TAG, v),
             AttributeValue::TextString(v) => formatter.format_text(Self::TAG, v),
             AttributeValue::ByteString(v) => formatter.format_bytes(Self::TAG, v),
-            &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v as i64),
+            &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v),
         }
     }
 }
