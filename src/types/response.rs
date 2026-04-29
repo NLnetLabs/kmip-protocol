@@ -10,7 +10,8 @@ use crate::types::common::{CryptographicLength, Data};
 
 use super::common::{
     AttributeIndex, AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType,
-    KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+    KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, OpaqueObject, Operation, UniqueBatchItemID,
+    UniqueIdentifier,
 };
 
 use super::impl_ttlv_serde;
@@ -151,7 +152,7 @@ pub enum ManagedObject {
     // SplitKey(SplitKey),
     // Template(Template),
     // SecretData(SecretData),
-    // OpaqueObject(OpaqueObject),
+    OpaqueObject(OpaqueObject),
 }
 
 impl ManagedObject {
@@ -172,6 +173,7 @@ impl ManagedObject {
             ManagedObject::SymmetricKey(symmetric_key) => symmetric_key.format(formatter)?,
             ManagedObject::PublicKey(public_key) => public_key.format(formatter)?,
             ManagedObject::PrivateKey(private_key) => private_key.format(formatter)?,
+            ManagedObject::OpaqueObject(opaque_object) => opaque_object.format(formatter)?,
         };
         Ok(FormatDone::assert())
     }
@@ -184,6 +186,7 @@ impl fmt::Display for ManagedObject {
             ManagedObject::SymmetricKey(_) => write!(f, "SymmetricKey"),
             ManagedObject::PublicKey(_) => write!(f, "PublicKey"),
             ManagedObject::PrivateKey(_) => write!(f, "PrivateKey"),
+            ManagedObject::OpaqueObject(_) => write!(f, "OpaqueObject"),
         }
     }
 }
