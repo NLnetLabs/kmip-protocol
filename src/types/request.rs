@@ -763,8 +763,7 @@ pub enum ManagedObject {
     // SecretData(SecretData),
     // Not implemented
 
-    // OpaqueObject(OpaqueObject),
-    // Not implemented
+    OpaqueObject(OpaqueObject),
 }
 
 impl ManagedObject {
@@ -774,12 +773,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan(scanner).map(Self::PublicKey),
             ObjectType::PrivateKey => PrivateKey::fast_scan(scanner).map(Self::PrivateKey),
             ObjectType::Template => Template::fast_scan(scanner).map(Self::Template),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan(scanner).map(Self::OpaqueObject),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -789,12 +787,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan_opt(scanner).map(|s| s.map(Self::PublicKey)),
             ObjectType::PrivateKey => PrivateKey::fast_scan_opt(scanner).map(|s| s.map(Self::PrivateKey)),
             ObjectType::Template => Template::fast_scan_opt(scanner).map(|s| s.map(Self::Template)),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan_opt(scanner).map(|s| s.map(Self::OpaqueObject)),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -804,6 +801,7 @@ impl ManagedObject {
             ManagedObject::PublicKey(this) => this.format(formatter),
             ManagedObject::PrivateKey(this) => this.format(formatter),
             ManagedObject::Template(this) => this.format(formatter),
+            ManagedObject::OpaqueObject(this) => this.format(formatter),
         }
     }
 }
@@ -835,6 +833,33 @@ impl_ttlv_serde!(struct PrivateKey(block: KeyBlock) as 0x420064);
 pub struct Template(pub Vec<Attribute>);
 
 impl_ttlv_serde!(struct Template(#[vec] attrs: Attribute) as 0x420090);
+
+/// See KMIP 1.0 section 2.2.8 [Opaque Object](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581171)
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42005B(0x420059,0x42005A)")]
+pub struct OpaqueObject(pub OpaqueDataType, pub OpaqueDataValue);
+
+impl_ttlv_serde!(struct OpaqueObject(a: OpaqueDataType, b: OpaqueDataValue) as 0x42005B);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[serde(rename = "0x420059")]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum OpaqueDataType {
+    // This doesn't actually have any values
+    // Values starting at 0x80000000 are considered extentions.
+    // This matches the assumption in PyKMIP
+    #[serde(rename = "0x80000000")]
+    None,
+}
+
+impl_ttlv_serde!(enum OpaqueDataType as 0x420059);
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42005A")]
+pub struct OpaqueDataValue(#[serde(with = "serde_bytes")] pub Vec<u8>);
+
+impl_ttlv_serde!(bytes OpaqueDataValue as 0x42005A);
 
 /// See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
