@@ -144,7 +144,7 @@ impl Attribute {
         Attribute(
             AttributeName("Activation Date".into()),
             Option::<AttributeIndex>::None,
-            AttributeValue::DateTime(value),
+            AttributeValue::DateTime(value as i64),
         )
     }
 
