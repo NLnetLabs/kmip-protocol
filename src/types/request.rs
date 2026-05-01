@@ -1,7 +1,7 @@
 //! Rust types for sserializing KMIP requests.
-use std::{fmt::Display, ops::Deref, str::FromStr};
+use std::fmt;
+use std::{ops::Deref, str::FromStr};
 
-use enum_display_derive::Display;
 use enum_ordinalize::Ordinalize;
 use serde_derive::{Deserialize, Serialize};
 
@@ -500,7 +500,7 @@ impl_ttlv_serde!(struct Credential as 0x420023 {
 });
 
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420024")]
 #[non_exhaustive]
 #[repr(u32)]
@@ -510,6 +510,16 @@ pub enum CredentialType {
 }
 
 impl_ttlv_serde!(enum CredentialType as 0x420024);
+
+impl fmt::Display for CredentialType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(
+            match self {
+                Self::UsernameAndPassword => "UsernameAndPassword"
+            }
+        )
+    }
+}
 
 /// See KMIP 1.0 section 2.1.2 [Credential](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581156).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -849,8 +859,8 @@ impl FromStr for Name {
     }
 }
 
-impl std::fmt::Display for Name {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
     }
 }
@@ -1504,7 +1514,7 @@ impl RequestPayload {
 }
 
 /// See KMIP 1.0 section 9.1.3.2.4 [Wrapping Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref241993348).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42009E")]
 #[non_exhaustive]
 #[repr(u32)]
@@ -1527,8 +1537,22 @@ pub enum WrappingMethod {
 
 impl_ttlv_serde!(enum WrappingMethod as 0x42009E);
 
+impl fmt::Display for WrappingMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(
+            match self {
+                Self::Encrypt => "Encrypt",
+                Self::MACSign => "MACSign",
+                Self::EncryptThenMACSign => "EncryptThenMACSign",
+                Self::MACSignThenEncrypt => "MACSignThenEncrypt",
+                Self::TR31 => "TR31"
+            }
+        )
+    }
+}
+
 /// See KMIP 1.0 section 9.1.3.2.23 [Query Function Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Ref242030554).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420074")]
 #[non_exhaustive]
 #[repr(u32)]
@@ -1545,3 +1569,16 @@ pub enum QueryFunction {
 }
 
 impl_ttlv_serde!(enum QueryFunction as 0x420074);
+
+impl fmt::Display for QueryFunction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(
+            match self {
+                Self::QueryOperations => "QueryOperations",
+                Self::QueryObjects => "QueryObjects",
+                Self::QueryServerInformation => "QueryServerInformation",
+            }
+        )
+    }
+}
+
