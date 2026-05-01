@@ -1,9 +1,8 @@
 //! Rust types for deserializing KMIP responses.
+use std::fmt;
+
 use enum_ordinalize::Ordinalize;
 use serde_derive::{Deserialize, Serialize};
-
-use enum_display_derive::Display;
-use std::fmt::Display;
 
 use crate::ttlv::fast_scan::{FastScanError, FastScanner};
 use crate::ttlv::format::{FormatResult, Formatter};
@@ -166,8 +165,8 @@ pub enum ManagedObject {
     // OpaqueObject(OpaqueObject),
 }
 
-impl Display for ManagedObject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ManagedObject {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ManagedObject::Certificate(_) => write!(f, "Certificate"),
             ManagedObject::SymmetricKey(_) => write!(f, "SymmetricKey"),
@@ -429,7 +428,7 @@ pub struct ProtocolVersion {
 }
 
 ///  See KMIP 1.0 section 6.9 [Result Status](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581247).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007F")]
 #[non_exhaustive]
 #[repr(u32)]
@@ -449,8 +448,21 @@ pub enum ResultStatus {
 
 impl_ttlv_serde!(enum ResultStatus as 0x42007F);
 
+impl fmt::Display for ResultStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(
+            match self {
+                Self::Success => "Success",
+                Self::OperationFailed => "OperationFailed",
+                Self::OperationPending => "OperationPending",
+                Self::OperationUndone => "OperationUndone",
+            }
+        )
+    }
+}
+
 ///  See KMIP 1.0 section 6.10 [Result Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581248).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Display, PartialEq, Eq, Ordinalize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x42007E")]
 #[non_exhaustive]
 #[repr(u32)]
@@ -511,6 +523,41 @@ pub enum ResultReason {
 }
 
 impl_ttlv_serde!(enum ResultReason as 0x42007E);
+
+impl fmt::Display for ResultReason {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(
+            match self {
+                Self::ItemNotFound => "ItemNotFound",
+                Self::ResponseTooLarge => "ResponseTooLarge",
+                Self::AuthenticationNotSuccessful => {
+                    "AuthenticationNotSuccessful"
+                }
+                Self::InvalidMessage => "InvalidMessage",
+                Self::OperationNotSupported => "OperationNotSupported",
+                Self::MissingData => "MissingData",
+                Self::InvalidField => "InvalidField",
+                Self::FeatureNotSupported => "FeatureNotSupported",
+                Self::OperationCanceledByRequester => {
+                    "OperationCanceledByRequester"
+                }
+                Self::CryptographicFailure => "CryptographicFailure",
+                Self::IllegalOperation => "IllegalOperation",
+                Self::PermissionDenied => "PermissionDenied",
+                Self::ObjectArchived => "ObjectArchived",
+                Self::IndexOutOfBounds => "IndexOutOfBounds",
+                Self::ApplicationNamespaceNotSupported => {
+                    "ApplicationNamespaceNotSupported"
+                }
+                Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
+                Self::KeyCompressionTypeNotSupported => {
+                    "KeyCompressionTypeNotSupported"
+                }
+                Self::GeneralFailure => "GeneralFailure",
+            }
+        )
+    }
+}
 
 ///  See KMIP 1.0 section 6.16 [Message Extension](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581254).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
