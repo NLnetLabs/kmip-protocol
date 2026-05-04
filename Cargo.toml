@@ -12,6 +12,7 @@ categories = ["cryptography", "data-structures", "encoding", "parser-implementat
 exclude = ["/.github"]
 readme = "README.md"
 build = "build.rs"
+rust-version = "1.88"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
