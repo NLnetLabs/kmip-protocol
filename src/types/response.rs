@@ -11,7 +11,7 @@ use crate::types::common::CryptographicLength;
 
 use super::common::{
     AttributeIndex, AttributeName, AttributeValue, CertificateType, CryptographicAlgorithm, KeyCompressionType,
-    KeyFormatType, KeyMaterial, NameType, NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
+    KeyFormatType, KeyMaterial, Name, ObjectType, OpaqueObject, Operation, UniqueBatchItemID, UniqueIdentifier,
 };
 
 use super::impl_ttlv_serde;
@@ -161,8 +161,8 @@ pub enum ManagedObject {
     // #[serde(rename = "if 0x420057==0x00000007")]
     // SecretData(SecretData),
 
-    // #[serde(rename = "if 0x420057==0x00000008")]
-    // OpaqueObject(OpaqueObject),
+    #[serde(rename = "if 0x420057==0x00000008")]
+    OpaqueObject(OpaqueObject),
 }
 
 impl fmt::Display for ManagedObject {
@@ -172,6 +172,7 @@ impl fmt::Display for ManagedObject {
             ManagedObject::SymmetricKey(_) => write!(f, "SymmetricKey"),
             ManagedObject::PublicKey(_) => write!(f, "PublicKey"),
             ManagedObject::PrivateKey(_) => write!(f, "PrivateKey"),
+            ManagedObject::OpaqueObject(_) => write!(f, "OpaqueObject"),
         }
     }
 }
@@ -214,19 +215,6 @@ pub struct PrivateKey {
 }
 
 impl_ttlv_serde!(struct PrivateKey { key_block: KeyBlock } as 0x420064);
-
-///  See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420053")]
-pub struct Name {
-    pub name: NameValue,
-    pub r#type: NameType,
-}
-
-impl_ttlv_serde!(struct Name {
-    name: NameValue,
-    r#type: NameType,
-} as 0x420053);
 
 ///  See KMIP 1.0 section 4.1 [Create](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
