@@ -64,9 +64,9 @@ where
                 cert_bytes,
                 key_bytes: Some(key_bytes),
             } => {
-                let cert_chain = bytes_to_cert_chain(&cert_bytes)?;
+                let cert_chain = bytes_to_cert_chain(cert_bytes)?;
 
-                let key_der = bytes_to_private_key(&key_bytes).map_err(|err| {
+                let key_der = bytes_to_private_key(key_bytes).map_err(|err| {
                     Error::ConfigurationError(format!(
                         "Cannot parse PEM client certificate private key bytes: {}",
                         err

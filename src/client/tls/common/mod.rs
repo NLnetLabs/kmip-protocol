@@ -13,4 +13,4 @@ pub(crate) mod util;
     feature = "tls-with-rustls",
     feature = "tls-with-tokio-rustls",
 ))]
-pub(crate) const SSLKEYLOGFILE_ENV_VAR_NAME: &'static str = "SSLKEYLOGFILE";
+pub(crate) const SSLKEYLOGFILE_ENV_VAR_NAME: &str = "SSLKEYLOGFILE";

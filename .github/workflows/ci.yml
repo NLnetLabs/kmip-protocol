@@ -25,11 +25,11 @@ jobs:
       with:
         rust-version: ${{ matrix.rust }}
 
-    - name: Build
-      run: cargo build --verbose
+    - name: Clippy
+      if: matrix.rust == 'stable'
+      run: cargo clippy ${{ matrix.args }} --verbose
 
     - name: Run tests
-      if: matrix.rust != '1.49.0'
       run: cargo test --verbose
 
   build_and_test_with_extra_features:
@@ -52,8 +52,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build
-      run: cargo build ${{ matrix.args }} --verbose
+    - name: Clippy
+      if: matrix.rust == 'stable'
+      run: cargo clippy ${{ matrix.args }} --verbose
 
     - name: Run tests
       run: cargo test ${{ matrix.args }} --verbose
