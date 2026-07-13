@@ -233,8 +233,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn create_pool() {
         todo!()
