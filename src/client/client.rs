@@ -562,16 +562,17 @@ impl<T> Client<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "sync"))]
 mod test {
     use std::{
         io::{Cursor, Read, Write},
         net::TcpStream,
+        sync::Arc,
     };
 
     use kmip_ttlv::Config;
 
-    #[cfg(feature = "tls-with-openssl")]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{
@@ -684,6 +685,11 @@ mod test {
     #[test]
     #[ignore = "Requires a running PyKMIP instance"]
     fn test_pykmip_query_against_server_with_rustls() {
+        use rustls::pki_types::pem;
+        use rustls::pki_types::pem::PemObject;
+        use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
+        use std::convert::TryFrom;
+
         // To setup input files for PyKMIP and RustLS to work together we must use a cipher they have in common, either
         // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA384.
         //
@@ -768,27 +774,16 @@ mod test {
             Ok(buf)
         }
 
-        fn bytes_to_cert_chain(bytes: &[u8]) -> std::io::Result<Vec<rustls::Certificate>> {
-            let cert_chain = rustls_pemfile::read_all(&mut BufReader::new(bytes))?
-                .iter()
-                .map(|i: &rustls_pemfile::Item| match i {
-                    rustls_pemfile::Item::X509Certificate(bytes) => rustls::Certificate(bytes.clone()),
-                    rustls_pemfile::Item::RSAKey(_) => panic!("Expected an X509 certificate, got an RSA key"),
-                    rustls_pemfile::Item::PKCS8Key(_) => panic!("Expected an X509 certificate, got a PKCS8 key"),
-                })
-                .collect();
-            Ok(cert_chain)
+        fn bytes_to_cert_chain(bytes: &[u8]) -> Result<Vec<CertificateDer<'static>>, pem::Error> {
+            let mut res = Vec::new();
+            for item in CertificateDer::pem_slice_iter(bytes) {
+                res.push(item?.into_owned());
+            }
+            Ok(res)
         }
 
-        fn bytes_to_private_key(bytes: &[u8]) -> std::io::Result<rustls::PrivateKey> {
-            let private_key = rustls_pemfile::read_one(&mut BufReader::new(bytes))?
-                .map(|i: rustls_pemfile::Item| match i {
-                    rustls_pemfile::Item::X509Certificate(_) => panic!("Expected a PKCS8 key, got an X509 certificate"),
-                    rustls_pemfile::Item::RSAKey(_) => panic!("Expected a PKCS8 key, got an RSA key"),
-                    rustls_pemfile::Item::PKCS8Key(bytes) => rustls::PrivateKey(bytes.clone()),
-                })
-                .unwrap();
-            Ok(private_key)
+        fn bytes_to_private_key(bytes: &[u8]) -> Result<PrivateKeyDer<'static>, pem::Error> {
+            Ok(PrivateKeyDer::from_pem_slice(bytes)?.clone_key())
         }
 
         // Load files
@@ -796,23 +791,25 @@ mod test {
         let server_cert_pem = load_binary_file("/etc/pykmip/server.crt").unwrap();
         let server_key_pem = load_binary_file("/etc/pykmip/server.key").unwrap();
 
-        let mut config = rustls::ClientConfig::new();
-        config
-            .root_store
-            .add_pem_file(&mut BufReader::new(ca_cert_pem.as_slice()))
-            .unwrap();
-        config
-            .root_store
-            .add_pem_file(&mut BufReader::new(server_cert_pem.as_slice()))
-            .unwrap();
+        let mut root_store = rustls::RootCertStore::empty();
+        for item in CertificateDer::pem_slice_iter(ca_cert_pem.as_slice()) {
+            root_store.add(item.unwrap()).unwrap();
+        }
+        for item in CertificateDer::pem_slice_iter(server_cert_pem.as_slice()) {
+            root_store.add(item.unwrap()).unwrap();
+        }
 
         let cert_chain = bytes_to_cert_chain(&server_cert_pem).unwrap();
         let key_der = bytes_to_private_key(&server_key_pem).unwrap();
-        config.set_single_client_cert(cert_chain, key_der).unwrap();
+
+        let config = rustls::ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_client_auth_cert(cert_chain, key_der)
+            .unwrap();
 
         let rc_config = Arc::new(config);
-        let localhost = webpki::DNSNameRef::try_from_ascii_str("localhost").unwrap();
-        let mut sess = rustls::ClientSession::new(&rc_config, localhost);
+        let localhost = ServerName::try_from("localhost").unwrap();
+        let mut sess = rustls::ClientConnection::new(rc_config, localhost).unwrap();
         let mut stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
@@ -826,6 +823,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     #[ignore = "Requires a running Kryptus instance"]
     fn test_kryptus_query_against_server() {
         let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
