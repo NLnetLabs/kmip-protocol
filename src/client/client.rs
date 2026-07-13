@@ -191,11 +191,7 @@ impl<T: ReadWrite> Client<T> {
 
     /// Write request bytes to the given stream and read, deserialize and sanity check the response.
     #[maybe_async::maybe_async]
-    async fn send_and_receive(
-        &self,
-        operation: Operation,
-        req_bytes: &[u8],
-    ) -> Result<ResponsePayload> {
+    async fn send_and_receive(&self, operation: Operation, req_bytes: &[u8]) -> Result<ResponsePayload> {
         let mut lock = self.stream().await?;
         let stream = lock.deref_mut();
 
