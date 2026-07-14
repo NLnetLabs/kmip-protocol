@@ -580,7 +580,6 @@ mod test {
     use std::{
         io::{Cursor, Read, Write},
         net::TcpStream,
-        sync::Arc,
     };
 
     use kmip_ttlv::Config;
@@ -702,6 +701,7 @@ mod test {
         use rustls::pki_types::pem::PemObject;
         use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
         use std::convert::TryFrom;
+        use std::sync::Arc;
 
         // To setup input files for PyKMIP and RustLS to work together we must use a cipher they have in common, either
         // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA384.
