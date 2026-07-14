@@ -4,7 +4,6 @@
     feature = "tls-with-rustls",
     feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
-    feature = "tls-with-async-tls"
 )))]
 compile_error!("This demo requires one of the tls-with-xxx features to be enabled.");
 
@@ -57,20 +56,6 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-}
-
-#[cfg(feature = "tls-with-async-tls")]
-#[async_std::main]
-async fn main() {
-    let opt = Opt::from_args();
-
-    init_logging(&opt);
-
-    let client = kmip_protocol::client::tls::async_tls::connect(&opt.into()).await;
-
-    let client = client.expect("Failed to establish TLS connection");
-
-    exec_test_requests(client, "test").await.unwrap();
 }
 
 #[cfg(any(feature = "tls-with-tokio-native-tls", feature = "tls-with-tokio-rustls",))]

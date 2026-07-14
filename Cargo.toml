@@ -1,6 +1,6 @@
 [package]
 name = "kmip-protocol"
-version = "0.4.4-dev"
+version = "0.5.0-dev"
 authors = ["NLnet Labs <rpki-team@nlnetlabs.nl>"]
 edition = "2018"
 description = "KMIP protocol object (de)serialization"
@@ -17,8 +17,6 @@ rust-version = "1.88"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-async-std = { version = "1.10.0", features = ["attributes"], optional = true }
-async-tls = { version = "0.11.0", default-features = false, features = ["client"], optional = true }
 cfg-if = "1.0.0"
 enum-display-derive = "0.1.1"
 enum-flags = "0.1.6"
@@ -42,14 +40,12 @@ webpki-roots = { version = "1", optional = true }
 default = ["sync"]
 sync = ["kmip-ttlv/high-level", "maybe-async/is_sync", "kmip-ttlv/sync"]
 async-with-tokio = ["kmip-ttlv/high-level", "tokio", "kmip-ttlv/async-with-tokio"]
-async-with-async-std = ["kmip-ttlv/high-level", "async-std", "rustls", "kmip-ttlv/async-with-async-std"]
 tls = []
 tls-with-openssl = ["tls", "sync", "openssl"]
 tls-with-openssl-vendored = ["tls", "sync", "openssl/vendored"]
 tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki", "webpki-roots"]
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
-tls-with-async-tls = ["tls", "async-with-async-std", "async-tls", "rustls-pemfile", "webpki" ]
 
 [[example]]
 name = "demo"

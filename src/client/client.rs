@@ -14,10 +14,7 @@ use log::trace;
 #[cfg(feature = "tokio")]
 use tokio::sync::Mutex;
 
-#[cfg(feature = "async-std")]
-use async_std::sync::Mutex;
-
-#[cfg(not(any(feature = "tokio", feature = "async-std")))]
+#[cfg(not(feature = "tokio"))]
 use std::sync::Mutex;
 
 use crate::{
@@ -179,12 +176,12 @@ impl<T: ReadWrite> Client<T> {
         self.stream.clone()
     }
 
-    #[cfg(any(feature = "tokio", feature = "async-std"))]
+    #[cfg(feature = "tokio")]
     async fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
         Ok(self.stream.lock().await)
     }
 
-    #[cfg(not(any(feature = "tokio", feature = "async-std")))]
+    #[cfg(not(feature = "tokio"))]
     fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
         Ok(self.stream.lock()?)
     }
