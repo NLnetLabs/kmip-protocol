@@ -4,12 +4,21 @@ use std::{
     ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicU8, Ordering},
-        Arc, Mutex, PoisonError,
+        Arc, PoisonError,
     },
 };
 
 use kmip_ttlv::{error::ErrorKind, Config, PrettyPrinter};
 use log::trace;
+
+#[cfg(feature = "tokio")]
+use tokio::sync::Mutex;
+
+#[cfg(feature = "async-std")]
+use async_std::sync::Mutex;
+
+#[cfg(not(any(feature = "tokio", feature = "async-std")))]
+use std::sync::Mutex;
 
 use crate::{
     auth::{self, CredentialType},
@@ -170,16 +179,20 @@ impl<T: ReadWrite> Client<T> {
         self.stream.clone()
     }
 
+    #[cfg(any(feature = "tokio", feature = "async-std"))]
+    async fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
+        Ok(self.stream.lock().await)
+    }
+
+    #[cfg(not(any(feature = "tokio", feature = "async-std")))]
+    fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
+        Ok(self.stream.lock()?)
+    }
+
     /// Write request bytes to the given stream and read, deserialize and sanity check the response.
     #[maybe_async::maybe_async]
-    async fn send_and_receive(
-        &self,
-        operation: Operation,
-        reader_config: &Config,
-        req_bytes: &[u8],
-        stream: Arc<Mutex<T>>,
-    ) -> Result<ResponsePayload> {
-        let mut lock = stream.lock()?;
+    async fn send_and_receive(&self, operation: Operation, req_bytes: &[u8]) -> Result<ResponsePayload> {
+        let mut lock = self.stream().await?;
         let stream = lock.deref_mut();
 
         stream
@@ -188,7 +201,7 @@ impl<T: ReadWrite> Client<T> {
             .map_err(|e| Error::RequestWriteError(e.to_string()))?;
 
         // Read and deserialize the response
-        let mut res: ResponseMessage = kmip_ttlv::from_reader(stream, reader_config)
+        let mut res: ResponseMessage = kmip_ttlv::from_reader(stream, &self.reader_config)
             .await
             .map_err(|err| match err.kind() {
                 ErrorKind::IoError(e) => Error::ResponseReadError(e.to_string()),
@@ -283,7 +296,7 @@ impl<T: ReadWrite> Client<T> {
         // captured then generate, record and log the diagnostic representation of the request.
         if self.reader_config.has_buf() {
             let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
-            trace!("KMIP TTLV request: {}", &diag_str);
+            trace!("KMIP TTLV request: {}", diag_str);
             self.last_req_diag_str.borrow_mut().replace(diag_str);
         }
 
@@ -297,7 +310,7 @@ impl<T: ReadWrite> Client<T> {
 
         // Send the serialized request and receive (and deserialize) the response.
         let res = self
-            .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
+            .send_and_receive(operation, &req_bytes)
             .await
             .or_else(incr_err_count);
 
@@ -305,7 +318,7 @@ impl<T: ReadWrite> Client<T> {
         // captured, then generate, record and log the diagnostic representation of the response.
         if let Some(buf) = self.reader_config.read_buf() {
             let diag_str = self.pretty_printer.to_diag_string(&buf);
-            trace!("KMIP TTLV response: {}", &diag_str);
+            trace!("KMIP TTLV response: {}", diag_str);
             self.last_res_diag_str.borrow_mut().replace(diag_str);
         }
 
