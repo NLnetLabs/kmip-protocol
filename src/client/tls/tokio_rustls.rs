@@ -11,11 +11,11 @@ use tokio_rustls::client::TlsStream;
 use tokio_rustls::webpki::DNSNameRef;
 use tokio_rustls::TlsConnector;
 
-async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
+async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
@@ -38,7 +38,7 @@ where
     let hostname = DNSNameRef::try_from_ascii_str(&host_str).map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
     })?;
-    let connect_timeout = conn_settings.connect_timeout.clone();
+    let connect_timeout = conn_settings.connect_timeout;
 
     let connect = async { (tcpstream_factory)(addr, conn_settings).await };
 

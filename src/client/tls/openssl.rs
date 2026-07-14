@@ -41,7 +41,7 @@ where
     tcp_stream.set_read_timeout(conn_settings.read_timeout)?;
     tcp_stream.set_write_timeout(conn_settings.write_timeout)?;
 
-    let tls_connector = create_tls_connector(&conn_settings)
+    let tls_connector = create_tls_connector(conn_settings)
         .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
     let tls_stream = tls_connector
@@ -59,7 +59,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
         tls_connector.set_verify(SslVerifyMode::NONE);
     } else {
         if let Some(cert_bytes) = &conn_settings.server_cert {
-            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+            let x509_cert = openssl::x509::X509::from_pem(cert_bytes)
                 .map_err(|err| Error::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
             tls_connector
                 .cert_store_mut()
@@ -68,7 +68,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
         }
 
         if let Some(cert_bytes) = &conn_settings.ca_cert {
-            let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+            let x509_cert = openssl::x509::X509::from_pem(cert_bytes)
                 .map_err(|err| Error::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
             tls_connector
                 .cert_store_mut()
@@ -85,7 +85,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
                 ));
             }
             ClientCertificate::SeparatePem { cert_bytes, key_bytes } => {
-                let x509_cert = openssl::x509::X509::from_pem(&cert_bytes)
+                let x509_cert = openssl::x509::X509::from_pem(cert_bytes)
                     .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
                 tls_connector
                     .set_certificate(&x509_cert)
@@ -106,7 +106,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
                     //
                     // So, the client certificate private key is used to sign the
                     // CertificateVerify message sent from client to server.
-                    let pkey = openssl::pkey::PKey::private_key_from_pem(&key_bytes).map_err(|err| {
+                    let pkey = openssl::pkey::PKey::private_key_from_pem(key_bytes).map_err(|err| {
                         Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
                     })?;
                     tls_connector.set_private_key(&pkey).map_err(|err| {
@@ -120,7 +120,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         tls_connector.set_keylog_callback(|_, line| {
             if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
-                if let Ok(mut file) = OpenOptions::new().write(true).append(true).open(path) {
+                if let Ok(mut file) = OpenOptions::new().append(true).open(path) {
                     use std::io::Write;
                     writeln!(file, "{}", line).ok();
                 }

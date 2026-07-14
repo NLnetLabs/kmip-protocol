@@ -11,7 +11,6 @@ keywords = ["KMIP", "TTLV", "serde", "serialization"]
 categories = ["cryptography", "data-structures", "encoding", "parser-implementations"]
 exclude = ["/.github"]
 readme = "README.md"
-build = "build.rs"
 rust-version = "1.88"
 
 [package.metadata.docs.rs]
