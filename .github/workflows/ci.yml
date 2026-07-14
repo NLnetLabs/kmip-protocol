@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test_with_default_features:
+  with_default_features:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,7 +32,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
-  build_and_test_with_extra_features:
+  with_extra_features:
     runs-on: ubuntu-latest
     strategy:
       matrix:
