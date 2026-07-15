@@ -12,8 +12,8 @@ use crate::ttlv::types::Tag;
 use super::common::{
     ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate,
     CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, Data, DataLength,
-    KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
-    Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
+    KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, Name, NameType, NameValue, ObjectType,
+    OpaqueObject, Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 use super::impl_ttlv_serde;
@@ -144,7 +144,7 @@ impl Attribute {
         Attribute(
             AttributeName("Activation Date".into()),
             Option::<AttributeIndex>::None,
-            AttributeValue::DateTime(value),
+            AttributeValue::DateTime(value as i64),
         )
     }
 
@@ -773,8 +773,7 @@ pub enum ManagedObject {
     // SecretData(SecretData),
     // Not implemented
 
-    // OpaqueObject(OpaqueObject),
-    // Not implemented
+    OpaqueObject(OpaqueObject),
 }
 
 impl ManagedObject {
@@ -784,12 +783,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan(scanner).map(Self::PublicKey),
             ObjectType::PrivateKey => PrivateKey::fast_scan(scanner).map(Self::PrivateKey),
             ObjectType::Template => Template::fast_scan(scanner).map(Self::Template),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan(scanner).map(Self::OpaqueObject),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -799,12 +797,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan_opt(scanner).map(|s| s.map(Self::PublicKey)),
             ObjectType::PrivateKey => PrivateKey::fast_scan_opt(scanner).map(|s| s.map(Self::PrivateKey)),
             ObjectType::Template => Template::fast_scan_opt(scanner).map(|s| s.map(Self::Template)),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan_opt(scanner).map(|s| s.map(Self::OpaqueObject)),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -814,6 +811,7 @@ impl ManagedObject {
             ManagedObject::PublicKey(this) => this.format(formatter),
             ManagedObject::PrivateKey(this) => this.format(formatter),
             ManagedObject::Template(this) => this.format(formatter),
+            ManagedObject::OpaqueObject(this) => this.format(formatter),
         }
     }
 }
@@ -845,30 +843,6 @@ impl_ttlv_serde!(struct PrivateKey(block: KeyBlock) as 0x420064);
 pub struct Template(pub Vec<Attribute>);
 
 impl_ttlv_serde!(struct Template(#[vec] attrs: Attribute) as 0x420090);
-
-/// See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename = "0x420053(0x420055,0x420054)")]
-pub struct Name(pub NameValue, pub NameType);
-
-impl FromStr for Name {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(NameValue::from_str(s)?, NameType::UninterpretedTextString))
-    }
-}
-
-impl fmt::Display for Name {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
-    }
-}
-
-impl_ttlv_serde!(struct Name(
-    value: NameValue,
-    r#type: NameType,
-) as 0x420053);
 
 /// See KMIP 1.0 section 3.26 [Revocation Reason](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581200).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

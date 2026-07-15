@@ -206,7 +206,7 @@ pub enum AttributeValue {
 
     #[serde(rename(deserialize = "if type==DateTime"))]
     #[serde(rename(serialize = "Transparent"))]
-    DateTime(u64),
+    DateTime(i64),
     // TODO
     // #[serde(rename = "if type==Interval")]
     // Interval(??),
@@ -249,7 +249,7 @@ impl AttributeValue {
             }),
             "Operation Policy Name" => scanner.scan_text(Self::TAG).map(|s| Self::TextString(s.into())),
             "Cryptographic Usage Mask" => scanner.scan_int(Self::TAG).map(Self::Integer),
-            "Activation Date" => scanner.scan_date_time(Self::TAG).map(|s| Self::DateTime(s as u64)),
+            "Activation Date" => scanner.scan_date_time(Self::TAG).map(Self::DateTime),
             "Object Group" => scanner.scan_text(Self::TAG).map(|s| Self::ObjectGroup(s.into())),
             "Link" => {
                 let mut scanner = scanner.scan_struct(Self::TAG)?;
@@ -348,7 +348,7 @@ impl AttributeValue {
             &AttributeValue::Boolean(v) => formatter.format_bool(Self::TAG, v),
             AttributeValue::TextString(v) => formatter.format_text(Self::TAG, v),
             AttributeValue::ByteString(v) => formatter.format_bytes(Self::TAG, v),
-            &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v as i64),
+            &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v),
         }
     }
 }
@@ -789,6 +789,57 @@ impl TransparentDHPublicKey {
         Ok(formatter.finish())
     }
 }
+
+/// See KMIP 1.0 section 3.2 [Name](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581174).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420053(0x420055,0x420054)")]
+pub struct Name(pub NameValue, pub NameType);
+
+impl FromStr for Name {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(NameValue::from_str(s)?, NameType::UninterpretedTextString))
+    }
+}
+
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+impl_ttlv_serde!(struct Name(
+    value: NameValue,
+    r#type: NameType,
+) as 0x420053);
+
+/// See KMIP 1.0 section 2.2.8 [Opaque Object](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581171)
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x42005B(0x420059,0x42005A)")]
+pub struct OpaqueObject(pub OpaqueDataType, pub OpaqueDataValue);
+
+impl_ttlv_serde!(struct OpaqueObject(a: OpaqueDataType, b: OpaqueDataValue) as 0x42005B);
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
+#[serde(rename = "0x420059")]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum OpaqueDataType {
+    // This doesn't actually have any values
+    // Values starting at 0x80000000 are considered extentions.
+    // This matches the assumption in PyKMIP
+    #[serde(rename = "0x80000000")]
+    None,
+}
+
+impl_ttlv_serde!(enum OpaqueDataType as 0x420059);
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent:0x42005A")]
+pub struct OpaqueDataValue(#[serde(with = "serde_bytes")] pub Vec<u8>);
+
+impl_ttlv_serde!(bytes OpaqueDataValue as 0x42005A);
 
 /// See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
