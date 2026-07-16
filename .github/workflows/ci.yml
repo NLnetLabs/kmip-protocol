@@ -27,10 +27,10 @@ jobs:
 
     - name: Clippy
       if: matrix.rust == 'stable'
-      run: cargo clippy ${{ matrix.args }} --verbose
+      run: cargo clippy ${{ matrix.args }} --all-targets --verbose
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all-targets --verbose
 
   with_extra_features:
     runs-on: ubuntu-latest
@@ -42,19 +42,17 @@ jobs:
           "--features tls-with-rustls --example demo",
           "--no-default-features --features sync",
           "--no-default-features --features async-with-tokio",
-          "--no-default-features --features async-with-async-std",
           "--no-default-features --example demo --features tls-with-openssl",
           "--no-default-features --example demo --features tls-with-rustls",
           "--no-default-features --example demo --features tls-with-tokio-native-tls",
           "--no-default-features --example demo --features tls-with-tokio-rustls",
-          "--no-default-features --example demo --features tls-with-async-tls",
         ]
     steps:
     - uses: actions/checkout@v3
 
     - name: Clippy
       if: matrix.rust == 'stable'
-      run: cargo clippy ${{ matrix.args }} --verbose
+      run: cargo clippy ${{ matrix.args }} --all-targets --verbose
 
     - name: Run tests
-      run: cargo test ${{ matrix.args }} --verbose
+      run: cargo test ${{ matrix.args }} --all-targets --verbose

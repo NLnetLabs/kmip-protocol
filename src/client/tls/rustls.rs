@@ -1,4 +1,5 @@
 use std::{
+    convert::TryFrom,
     net::{SocketAddr, TcpStream, ToSocketAddrs},
     sync::Arc,
 };
@@ -8,11 +9,13 @@ use crate::client::{
     Error,
 };
 
-use crate::client::{Client, ConnectionSettings, Result};
+use crate::client::{ConnectionSettings, Result};
 
-use rustls::{ClientConfig, ClientSession, StreamOwned};
+use rustls::{pki_types::ServerName, ClientConfig, ClientConnection, StreamOwned};
 
-pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<StreamOwned<ClientSession, TcpStream>>> {
+pub type Client = crate::client::Client<StreamOwned<ClientConnection, TcpStream>>;
+
+pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, |addr, settings| {
         let tcpstream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
@@ -23,10 +26,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<StreamOwned<
     })
 }
 
-pub fn connect_with_tcpstream_factory<F>(
-    conn_settings: &ConnectionSettings,
-    tcpstream_factory: F,
-) -> Result<Client<StreamOwned<ClientSession, TcpStream>>>
+pub fn connect_with_tcpstream_factory<F>(conn_settings: &ConnectionSettings, tcpstream_factory: F) -> Result<Client>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>,
 {
@@ -38,12 +38,12 @@ where
         ))?;
 
     let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
-    let hostname = webpki::DNSNameRef::try_from_ascii_str(&conn_settings.host).map_err(|err| {
-        Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
-    })?;
-    let sess = rustls::ClientSession::new(&Arc::new(rustls_config), hostname);
-    let tcp_stream = (tcpstream_factory)(&addr, conn_settings)?;
-    let tls_stream = StreamOwned::new(sess, tcp_stream);
+    let name = ServerName::try_from(conn_settings.host.clone())
+        .map_err(|err| Error::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
+    let conn = rustls::ClientConnection::new(Arc::new(rustls_config), name)
+        .map_err(|err| Error::ConfigurationError(format!("Unreachable host '{}': {err}", conn_settings.host)))?;
+    let sock = (tcpstream_factory)(&addr, conn_settings)?;
+    let tls_stream = rustls::StreamOwned::new(conn, sock);
 
     Ok(create_kmip_client(tls_stream, conn_settings))
 }

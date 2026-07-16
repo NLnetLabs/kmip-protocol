@@ -83,9 +83,6 @@
 #[doc(hidden)]
 pub mod common;
 
-#[cfg(feature = "tls-with-async-tls")]
-pub mod async_tls;
-
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
 pub mod openssl;
 

@@ -91,28 +91,26 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
                     .set_certificate(&x509_cert)
                     .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
 
-                if let Some(key_bytes) = key_bytes {
-                    // Quoting RFC-5246 Transport Layer Security (TLS) Protocol Version 1.2
-                    // section 7.3 Handshake Protocol Overview:
-                    //
-                    // "The ClientKeyExchange message is now sent, and the content
-                    //  of that message will depend on the public key algorithm selected
-                    //  between the ClientHello and the ServerHello.  If the client has sent
-                    //  a certificate with signing ability, a digitally-signed
-                    //  CertificateVerify message is sent to explicitly verify possession of
-                    //  the private key in the certificate."
-                    //
-                    // From: https://datatracker.ietf.org/doc/html/rfc5246#section-7.3
-                    //
-                    // So, the client certificate private key is used to sign the
-                    // CertificateVerify message sent from client to server.
-                    let pkey = openssl::pkey::PKey::private_key_from_pem(key_bytes).map_err(|err| {
-                        Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
-                    })?;
-                    tls_connector.set_private_key(&pkey).map_err(|err| {
-                        Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
-                    })?;
-                }
+                // Quoting RFC-5246 Transport Layer Security (TLS) Protocol Version 1.2
+                // section 7.3 Handshake Protocol Overview:
+                //
+                // "The ClientKeyExchange message is now sent, and the content
+                //  of that message will depend on the public key algorithm selected
+                //  between the ClientHello and the ServerHello.  If the client has sent
+                //  a certificate with signing ability, a digitally-signed
+                //  CertificateVerify message is sent to explicitly verify possession of
+                //  the private key in the certificate."
+                //
+                // From: https://datatracker.ietf.org/doc/html/rfc5246#section-7.3
+                //
+                // So, the client certificate private key is used to sign the
+                // CertificateVerify message sent from client to server.
+                let pkey = openssl::pkey::PKey::private_key_from_pem(key_bytes).map_err(|err| {
+                    Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
+                })?;
+                tls_connector.set_private_key(&pkey).map_err(|err| {
+                    Error::ConfigurationError(format!("Failed to parse client certificate private key: {}", err))
+                })?;
             }
         }
     }

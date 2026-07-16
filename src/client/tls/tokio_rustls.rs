@@ -1,28 +1,30 @@
+use std::convert::TryInto;
 use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use crate::client::tls::common::rustls::create_rustls_config;
 use crate::client::tls::common::util::create_kmip_client;
-use crate::client::{Client, ConnectionSettings, Error, Result};
+use crate::client::{ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
 use tokio_rustls::client::TlsStream;
-use tokio_rustls::webpki::DNSNameRef;
 use tokio_rustls::TlsConnector;
 
-async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
+pub type Client = crate::client::Client<TlsStream<TcpStream>>;
+
+async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect(conn_settings: &ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> Result<Client<TlsStream<TcpStream>>>
+) -> Result<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,
@@ -35,7 +37,7 @@ where
         ))?;
 
     let host_str = conn_settings.host.clone();
-    let hostname = DNSNameRef::try_from_ascii_str(&host_str).map_err(|err| {
+    let hostname = host_str.try_into().map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
     })?;
     let connect_timeout = conn_settings.connect_timeout;
