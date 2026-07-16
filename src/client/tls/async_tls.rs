@@ -7,11 +7,11 @@ use crate::client::{Client, ConnectionSettings, Error, Result};
 use async_std::net::TcpStream;
 use async_tls::{client::TlsStream, TlsConnector};
 
-async fn default_tcp_stream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
+async fn default_tcp_stream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
     connect_with_tcp_stream_factory(conn_settings, default_tcp_stream_factory).await
 }
 
@@ -30,7 +30,7 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    let connect_timeout = conn_settings.connect_timeout.clone();
+    let connect_timeout = conn_settings.connect_timeout;
 
     let connect = async { (tcp_stream_factory)(addr, conn_settings).await };
 

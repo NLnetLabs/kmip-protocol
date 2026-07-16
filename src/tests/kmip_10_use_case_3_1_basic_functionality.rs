@@ -21,8 +21,8 @@ use crate::{
     },
 };
 
-const UUID_ID: &'static str = "a6ebbb6f-4c54-4bbb-ad29-be6bad4ecad5";
-const KEY_ID: &'static str = "61b10614-d8b5-46f9-8d17-2fa6ea1d747a";
+const UUID_ID: &str = "a6ebbb6f-4c54-4bbb-ad29-be6bad4ecad5";
+const KEY_ID: &str = "61b10614-d8b5-46f9-8d17-2fa6ea1d747a";
 
 /// -------------------------------------------------------------------------------------------------------------------
 /// 3.1.2 Use-case: Register / Create / Get attributes / Destroy

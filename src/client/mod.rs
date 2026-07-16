@@ -1,5 +1,6 @@
 //! For sending KMIP requests and receiving responses.
 
+#[allow(clippy::module_inception)]
 mod client;
 
 #[doc(hidden)]

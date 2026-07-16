@@ -18,7 +18,7 @@ use crate::types::{
     response::{ManagedObject, ResponseMessage, ResponsePayload, ResultStatus},
 };
 
-const KEY_ID: &'static str = "21d28b8a-06df-43c0-b72f-2a161633ada9";
+const KEY_ID: &str = "21d28b8a-06df-43c0-b72f-2a161633ada9";
 
 /// -------------------------------------------------------------------------------------------------------------------
 /// 4.1 Use-case: Revoke scenario

@@ -169,9 +169,9 @@ fn load_binary_file(path: &std::path::PathBuf) -> Vec<u8> {
 
     let mut bytes = Vec::new();
     File::open(path)
-        .expect(&format!("Failed to open open file '{:?}'", path))
+        .unwrap_or_else(|_| panic!("Failed to open open file '{:?}'", path))
         .read_to_end(&mut bytes)
-        .expect(&format!("Failed to read data from file '{:?}'", path));
+        .unwrap_or_else(|_| panic!("Failed to read data from file '{:?}'", path));
     bytes
 }
 
