@@ -446,8 +446,8 @@ pub struct ResponseMessage {
     pub batch_items: Vec<BatchItem>,
 }
 
-///  See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+/// See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42007A")]
 pub struct ResponseHeader {
     #[serde(rename = "0x420069")]
@@ -455,6 +455,24 @@ pub struct ResponseHeader {
 
     #[serde(rename = "0x420092")]
     pub timestamp: i64,
+
+    #[serde(rename = "0x4200C8")]
+    #[serde(skip_deserializing)] // We don't support this yet
+    #[serde(default)]
+    pub nonce: Option<()>,
+
+    #[serde(rename = "0x4200C7")]
+    #[serde(skip_deserializing)] // We don't support this yet
+    #[serde(default)]
+    pub attestation_type: Option<()>,
+
+    #[serde(rename = "0x420105")]
+    #[serde(default)]
+    pub client_correlation_value: Option<String>,
+
+    #[serde(rename = "0x420106")]
+    #[serde(default)]
+    pub server_correlation_value: Option<String>,
 
     #[serde(rename = "0x42000D")]
     pub batch_count: i32,

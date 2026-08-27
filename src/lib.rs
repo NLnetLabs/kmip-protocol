@@ -194,11 +194,8 @@
 //! - [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
 #![forbid(unsafe_code)]
 
-#[cfg(all(
-    feature = "sync",
-    any(feature = "async-with-async-std", feature = "async-with-tokio")
-))]
-compile_error!("feature \"sync\" cannot be enabled at the same time as either of the \"async-with-async-std\" or \"async-with-tokio\" features");
+#[cfg(all(feature = "sync", feature = "async-with-tokio"))]
+compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-with-tokio\" features");
 
 pub mod auth;
 pub mod request;
