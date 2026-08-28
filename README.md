@@ -38,7 +38,7 @@ stability is made at this time. At the time of writing limited manual testing wi
 See [`examples/demo/`](examples/demo/). For more information about running the example see:
 
 ```bash
-cargo run --example demo --features tls-with-rustls -- --help
+cargo run --example demo --features tls-with-rustls,rustls/aws_lc_rs -- --help
 ```
 
 ### Diagnosing problems
