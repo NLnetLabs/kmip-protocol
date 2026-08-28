@@ -4,12 +4,12 @@ use std::sync::Arc;
 use tokio_rustls::rustls;
 
 use rustls::{
-    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
-    pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
     ClientConfig, KeyLogFile, RootCertStore, SignatureScheme,
+    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
+    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 
-use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientCertificate, ConnectionSettings, Error, Result};
+use crate::client::{ClientCertificate, ConnectionSettings, Error, Result, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;
@@ -74,17 +74,29 @@ where
     };
 
     if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
-        root_store
-            .add(CertificateDer::from_slice(cert_bytes.as_slice()))
+        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
+            .next()
+            .ok_or(Error::ConfigurationError(format!(
+                "Failed to parse PEM bytes for server certificate"
+            )))?
             .map_err(|err| {
                 Error::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
             })?;
+        root_store.add(cert_bytes).map_err(|err| {
+            Error::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
+        })?;
     }
 
     if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
-        root_store
-            .add(CertificateDer::from_slice(cert_bytes.as_slice()))
+        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
+            .next()
+            .ok_or(Error::ConfigurationError(format!(
+                "Failed to parse PEM bytes for CA certificate"
+            )))?
             .map_err(|err| Error::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}")))?;
+        root_store.add(cert_bytes).map_err(|err| {
+            Error::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
+        })?;
     }
 
     let rustls_config_builder = rustls::ClientConfig::builder().with_root_certificates(root_store);
