@@ -3,12 +3,12 @@ use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicU8, Ordering},
         Arc, Mutex, PoisonError,
+        atomic::{AtomicU8, Ordering},
     },
 };
 
-use kmip_ttlv::{de::CaptureMode, error::ErrorKind, Config, PrettyPrinter};
+use kmip_ttlv::{Config, PrettyPrinter, de::CaptureMode, error::ErrorKind};
 use tracing::trace;
 
 use crate::{
@@ -684,7 +684,7 @@ mod test {
     use kmip_ttlv::Config;
 
     #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-    use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
+    use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 
     use crate::{
         client::ClientBuilder,
@@ -874,12 +874,12 @@ mod test {
         //         .init()
         //         .unwrap();
 
-        use std::fs;
-        use std::convert::TryFrom;
-        use std::sync::Arc;
         use rustls::pki_types::pem;
         use rustls::pki_types::pem::PemObject;
         use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
+        use std::convert::TryFrom;
+        use std::fs;
+        use std::sync::Arc;
 
         fn bytes_to_cert_chain(bytes: &[u8]) -> Result<Vec<CertificateDer<'static>>, pem::Error> {
             let mut res = Vec::new();

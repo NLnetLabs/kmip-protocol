@@ -25,6 +25,7 @@ cfg_if::cfg_if! {
         pub type Client = crate::client::Client<std::net::TcpStream>;
     }
 }
+
 //------------ KmipConnError -------------------------------------------------
 
 #[derive(Clone, Debug)]
@@ -235,17 +236,30 @@ where
 mod tests {
     use std::{fs::File, io::Read};
 
-    use crate::client::{Error, tls::rustls::connect_with_tcpstream_factory};
+    cfg_if::cfg_if! {
+        if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
+            use crate::client::tls::openssl::connect_with_tcpstream_factory;
+        } else if #[cfg(feature = "tls-with-rustls")] {
+            use crate::client::tls::rustls::connect_with_tcpstream_factory;
+        }
+    }
 
     use super::*;
 
     #[test]
+    #[cfg(any(
+        feature = "tls-with-openssl",
+        feature = "tls-with-openssl-vendored",
+        feature = "tls-with-rustls"
+    ))]
     fn parse_pem_files_correctly() {
         // Server certificate was generated using command:
         //   rustls-cert-gen --country-name=NL --organization-name="NLnet Labs" --ed25519 --output=.
         //
         // Client certificate was generated using command.
         //   rustls-cert-gen --country-name=NL --organization-name="NLnet Labs" --ed25519 --output=. --client-auth --cert-file-name client-cert
+
+        use crate::client::Error;
 
         let mut server_cert = vec![];
         File::open("test-data/cert.pem")
