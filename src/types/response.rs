@@ -393,7 +393,7 @@ pub struct RNGRetrieveResponsePayload {
 ///  See KMIP 1.0 section 4.24 [Server Information](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
 #[serde(rename = "0x420088")]
-pub struct ServerInformation;
+pub struct ServerInformation {}
 
 ///  See KMIP 1.1 section 4.26 [Discover Versions](https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -450,14 +450,12 @@ impl_ttlv_serde!(enum ResultStatus as 0x42007F);
 
 impl fmt::Display for ResultStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Success => "Success",
-                Self::OperationFailed => "OperationFailed",
-                Self::OperationPending => "OperationPending",
-                Self::OperationUndone => "OperationUndone",
-            }
-        )
+        f.write_str(match self {
+            Self::Success => "Success",
+            Self::OperationFailed => "OperationFailed",
+            Self::OperationPending => "OperationPending",
+            Self::OperationUndone => "OperationUndone",
+        })
     }
 }
 
@@ -526,36 +524,26 @@ impl_ttlv_serde!(enum ResultReason as 0x42007E);
 
 impl fmt::Display for ResultReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::ItemNotFound => "ItemNotFound",
-                Self::ResponseTooLarge => "ResponseTooLarge",
-                Self::AuthenticationNotSuccessful => {
-                    "AuthenticationNotSuccessful"
-                }
-                Self::InvalidMessage => "InvalidMessage",
-                Self::OperationNotSupported => "OperationNotSupported",
-                Self::MissingData => "MissingData",
-                Self::InvalidField => "InvalidField",
-                Self::FeatureNotSupported => "FeatureNotSupported",
-                Self::OperationCanceledByRequester => {
-                    "OperationCanceledByRequester"
-                }
-                Self::CryptographicFailure => "CryptographicFailure",
-                Self::IllegalOperation => "IllegalOperation",
-                Self::PermissionDenied => "PermissionDenied",
-                Self::ObjectArchived => "ObjectArchived",
-                Self::IndexOutOfBounds => "IndexOutOfBounds",
-                Self::ApplicationNamespaceNotSupported => {
-                    "ApplicationNamespaceNotSupported"
-                }
-                Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
-                Self::KeyCompressionTypeNotSupported => {
-                    "KeyCompressionTypeNotSupported"
-                }
-                Self::GeneralFailure => "GeneralFailure",
-            }
-        )
+        f.write_str(match self {
+            Self::ItemNotFound => "ItemNotFound",
+            Self::ResponseTooLarge => "ResponseTooLarge",
+            Self::AuthenticationNotSuccessful => "AuthenticationNotSuccessful",
+            Self::InvalidMessage => "InvalidMessage",
+            Self::OperationNotSupported => "OperationNotSupported",
+            Self::MissingData => "MissingData",
+            Self::InvalidField => "InvalidField",
+            Self::FeatureNotSupported => "FeatureNotSupported",
+            Self::OperationCanceledByRequester => "OperationCanceledByRequester",
+            Self::CryptographicFailure => "CryptographicFailure",
+            Self::IllegalOperation => "IllegalOperation",
+            Self::PermissionDenied => "PermissionDenied",
+            Self::ObjectArchived => "ObjectArchived",
+            Self::IndexOutOfBounds => "IndexOutOfBounds",
+            Self::ApplicationNamespaceNotSupported => "ApplicationNamespaceNotSupported",
+            Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
+            Self::KeyCompressionTypeNotSupported => "KeyCompressionTypeNotSupported",
+            Self::GeneralFailure => "GeneralFailure",
+        })
     }
 }
 
