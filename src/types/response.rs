@@ -593,7 +593,7 @@ pub struct ResponseMessage {
 }
 
 ///  See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "0x42007A")]
 pub struct ResponseHeader {
     #[serde(rename = "0x420069")]
@@ -602,8 +602,52 @@ pub struct ResponseHeader {
     #[serde(rename = "0x420092")]
     pub timestamp: i64,
 
+    #[serde(rename = "0x4200C8")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub nonce: Option<Nonce>,
+
+    #[serde(rename = "0x4200C7")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub attestation_type: Option<Vec<AttestationType>>,
+
+    #[serde(rename = "0x420105")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub client_correlation_value: Option<String>,
+
+    #[serde(rename = "0x420106")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub server_correlation_value: Option<String>,
+
     #[serde(rename = "0x42000D")]
     pub batch_count: i32,
+}
+
+///  See KMIP 1.2 sefction 2.1.14 [Nonce](
+/// https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613470).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x4200C8")]
+pub struct Nonce {
+    #[serde(rename = "0x4200C9")]
+    pub nonce_id: Vec<u8>,
+
+    #[serde(rename = "0x4200CA")]
+    pub nonce_value: Vec<u8>,
+}
+
+///  See KMIP 1.2 section 9.1.3.2.36 [Attestation Type](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776649).
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
+#[serde(rename = "0x4200C7")]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum AttestationType {
+    #[serde(rename = "0x00000000")]
+    TpmQuote,
+
+    #[serde(rename = "0x00000001")]
+    TcgIntegrityReport,
+
+    #[serde(rename = "0x00000002")]
+    SamlAssertion,
 }
 
 ///  See KMIP 1.0 section 6.15 [Batch Item](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581253).
