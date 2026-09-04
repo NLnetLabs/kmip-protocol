@@ -1,0 +1,28 @@
+services:
+  pykmip:
+    image: nlnetlabs/pykmip:0.5.16
+    networks:
+      - mynet
+    ports:
+      - "5696:5696"
+    volumes:
+      - ./server.key:/etc/pykmip/server.key
+      - ./server.crt:/etc/pykmip/server.crt
+      - ./ca.crt:/etc/pykmip/ca.crt
+
+  tester:
+    image: nlnetlabs/pykmip-tester:0.5.16
+    depends_on:
+      pykmip:
+        condition: service_started
+    networks:
+      - mynet
+    entrypoint:
+      - sleep
+      - infinity
+    volumes:
+      - ./:/app
+
+networks:
+  mynet:
+    driver: bridge

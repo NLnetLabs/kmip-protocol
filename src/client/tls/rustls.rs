@@ -5,13 +5,13 @@ use std::{
 };
 
 use crate::client::{
-    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
     Error,
+    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
 };
 
 use crate::client::{ConnectionSettings, Result};
 
-use rustls::{pki_types::ServerName, ClientConfig, ClientConnection, StreamOwned};
+use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
 
 pub type Client = crate::client::Client<StreamOwned<ClientConnection, TcpStream>>;
 
@@ -38,9 +38,14 @@ where
         ))?;
 
     let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
-    let name = ServerName::try_from(conn_settings.host.clone())
-        .map_err(|err| Error::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
-    let conn = rustls::ClientConnection::new(Arc::new(rustls_config), name)
+    let sni_name = ServerName::try_from(
+        conn_settings
+            .server_name
+            .as_ref()
+            .map_or_else(|| conn_settings.host.clone(), |name| name.clone()),
+    )
+    .map_err(|err| Error::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
+    let conn = rustls::ClientConnection::new(Arc::new(rustls_config), sni_name)
         .map_err(|err| Error::ConfigurationError(format!("Unreachable host '{}': {err}", conn_settings.host)))?;
     let sock = (tcpstream_factory)(&addr, conn_settings)?;
     let tls_stream = rustls::StreamOwned::new(conn, sock);
