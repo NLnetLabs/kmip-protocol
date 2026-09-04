@@ -5,8 +5,8 @@ use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{ClientCertificate, ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
-use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
+use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
@@ -49,8 +49,13 @@ where
 
     let tls_client = tokio_native_tls::TlsConnector::from(tls_connector);
 
+    let sni_name = conn_settings
+        .server_name
+        .as_ref()
+        .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
+
     let tls_stream = tls_client
-        .connect(&conn_settings.host, tcp_stream)
+        .connect(&sni_name, tcp_stream)
         .await
         .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
