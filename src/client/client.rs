@@ -9,7 +9,7 @@ use std::{
 };
 
 use kmip_ttlv::{Config, PrettyPrinter, de::CaptureMode, error::ErrorKind};
-use tracing::trace;
+use tracing::{debug, trace};
 
 use crate::{
     auth::{self, CredentialType},
@@ -356,12 +356,12 @@ impl<T: ReadWrite> Client<T> {
             CaptureMode::Disabled => { /* Nothing to do */ }
             CaptureMode::Diagnostic => {
                 let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
-                trace!("KMIP TTLV request: {}", &diag_str);
+                debug!("KMIP TTLV request: {}", &diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
             CaptureMode::Sensitive => {
                 let diag_str = self.pretty_printer.to_string(&req_bytes);
-                trace!("KMIP TTLV request: {}", &diag_str);
+                debug!("KMIP TTLV request: {}", &diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
         }
@@ -392,12 +392,12 @@ impl<T: ReadWrite> Client<T> {
                 CaptureMode::Disabled => { /* Nothing to do */ }
                 CaptureMode::Diagnostic => {
                     let diag_str = self.pretty_printer.to_diag_string(&buf);
-                    trace!("KMIP TTLV response: {}", &diag_str);
+                    debug!("KMIP TTLV response: {}", &diag_str);
                     self.last_res_diag_str.borrow_mut().replace(diag_str);
                 }
                 CaptureMode::Sensitive => {
                     let diag_str = self.pretty_printer.to_string(&buf);
-                    trace!("KMIP TTLV response: {}", &diag_str);
+                    debug!("KMIP TTLV response: {}", &diag_str);
                     self.last_res_diag_str.borrow_mut().replace(diag_str);
                 }
             }
