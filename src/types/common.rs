@@ -986,6 +986,15 @@ pub enum CryptographicAlgorithm {
 
     #[serde(rename = "0x0000001A")]
     EC,
+
+    // ...
+
+    // KMIP v2.0
+    #[serde(rename = "0x00000037")]
+    Ed25519,
+
+    #[serde(rename = "0x00000038")]
+    Ed448,
 }
 
 impl_ttlv_serde!(enum CryptographicAlgorithm as 0x420028);
@@ -1020,6 +1029,8 @@ impl fmt::Display for CryptographicAlgorithm {
                 Self::SKIPJACK => "SKIPJACK",
                 Self::Twofish => "Twofish",
                 Self::EC => "EC",
+                Self::Ed25519 => "Ed25519",
+                Self::Ed448 => "Ed448",
             }
         )
     }
@@ -1324,7 +1335,8 @@ impl From<CryptographicDomainParameters> for AttributeValue {
 
 bitflags::bitflags! {
     /// See KMIP 1.0 section 3.14 [Cryptographic Usage Mask](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581188).
-    #[derive(Clone, Copy, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+    #[serde(rename = "Transparent:0x42002C")]
     pub struct CryptographicUsageMask: i32 {
         const Sign                            = 0x00000001;
         const Verify                          = 0x00000002;
