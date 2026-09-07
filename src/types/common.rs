@@ -363,7 +363,7 @@ impl AttributeValue {
 // serialized without a tag.
 #[serde(rename = "Transparent")]
 pub enum KeyMaterial {
-    #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000005, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8, X.509 or ECPrivateKey
+    #[serde(rename(deserialize = "if 0x420042 in [0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000006]"))] // Raw, Opaque, PKCS1, PKCS8 or ECPrivateKey
     #[serde(rename(serialize = "TagOnly:0x420043"))]
     Bytes(#[serde(with = "serde_bytes")] Vec<u8>),
 
