@@ -672,6 +672,14 @@ impl<T> Client<T> {
     pub fn connection_error_count(&self) -> u8 {
         self.connection_error_count.load(Ordering::SeqCst)
     }
+
+    pub fn reader_config(&self) -> &Config {
+        &self.reader_config
+    }
+
+    pub fn set_reader_config(&mut self, reader_config: Config) {
+        self.reader_config = reader_config;
+    }
 }
 
 #[cfg(all(test, feature = "sync"))]

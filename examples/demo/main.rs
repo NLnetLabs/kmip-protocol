@@ -73,7 +73,9 @@ async fn main() {
         }
     }
 
-    let client = client.expect("Failed to establish TLS connection");
+    let mut client = client.expect("Failed to establish TLS connection");
+    let mut reader_config = client.reader_config().clone().with_sensitive_capture();
+    client.set_reader_config(reader_config);
 
     exec_test_requests(client, "test").await.unwrap();
 }
