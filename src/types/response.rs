@@ -393,7 +393,7 @@ pub struct RNGRetrieveResponsePayload {
 ///  See KMIP 1.0 section 4.24 [Server Information](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
 #[serde(rename = "0x420088")]
-pub struct ServerInformation;
+pub struct ServerInformation {}
 
 ///  See KMIP 1.1 section 4.26 [Discover Versions](https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
