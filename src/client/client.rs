@@ -684,7 +684,7 @@ mod test {
     use kmip_ttlv::Config;
 
     #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-    use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
+    use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 
     use crate::{
         client::ClientBuilder,
