@@ -7,7 +7,7 @@
 //!    existing connection is considered to be "broken" at the network
 //!    level.
 use core::fmt::Display;
-use core::ops::Deref;
+use core::ops::{Deref, DerefMut};
 use std::string::String;
 use std::{sync::Arc, time::Duration};
 
@@ -60,6 +60,12 @@ impl Deref for KmipConn {
 
     fn deref(&self) -> &Self::Target {
         self.conn.deref()
+    }
+}
+
+impl DerefMut for KmipConn {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.conn.deref_mut()
     }
 }
 
