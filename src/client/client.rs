@@ -131,7 +131,8 @@ impl<T> ClientBuilder<T> {
     pub fn build(self) -> Client<T> {
         let pretty_printer = PrettyPrinter::new()
             .with_tag_prefix("4200".into())
-            .with_tag_map(tag_map::make_kmip_tag_map());
+            .with_tag_map(tag_map::make_kmip_tag_map())
+            .with_enum_map(tag_map::make_kmip_enum_map());
 
         Client {
             username: self.username,
