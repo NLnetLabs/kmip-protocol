@@ -209,6 +209,24 @@ impl_ttlv_serde!(struct Attribute as 0x420008 {
     };
 });
 
+/// See KMIP 1.0 section 2.1.1 [Attribute](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581155).
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "Transparent")]
+pub enum Attribute2 {
+    #[serde(rename = "0x420028")]
+    CryptographicAlgorithm(CryptographicAlgorithm),
+
+    #[serde(rename = "0x42000A")]
+    CryptographicLength(CryptographicLength),
+
+    // #[serde(rename = "0x42000C")]
+    #[serde(rename(serialize = "Transparent"))]
+    CryptographicUsageMask(CryptographicUsageMask),
+
+    #[serde(rename = "0x420053")]
+    Name(Name),
+}
+
 // TODO: Create TemplateAttribute, CommonTemplateAttributes,
 // PrivateKeyTemplateAttributes and PublicKeyTemplateAttributes using a macro.
 
@@ -334,6 +352,21 @@ impl_ttlv_serde!(struct CommonTemplateAttribute as 0x42001F {
         }
     };
 });
+
+/// See KMIP 2.0 section 5.2 [Common Attributes](https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497519)
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420126")]
+pub struct CommonAttributes(pub Vec<Attribute2>);
+
+/// See KMIP 2.0 section 5.2 [Common Attributes](https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497519)
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420127")]
+pub struct PrivateKeyAttributes(pub Vec<Attribute2>);
+
+/// See KMIP 2.0 section 5.2 [Common Attributes](https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497519)
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename = "0x420128")]
+pub struct PublicKeyAttributes(pub Vec<Attribute2>);
 
 /// See KMIP 1.0 section 2.1.8 [Template-Attribute Structures](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581162).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -1083,6 +1116,14 @@ pub enum RequestPayload {
         #[serde(skip_serializing_if = "Option::is_none", default)] Option<PublicKeyTemplateAttribute>,
     ),
 
+    /// See KMIP 2.0 section 6.1.9 Create Key Pair
+    /// See: https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497535
+    CreateKeyPair2(
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<CommonAttributes>,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<PrivateKeyAttributes>,
+        #[serde(skip_serializing_if = "Option::is_none", default)] Option<PublicKeyAttributes>,
+    ),
+
     /// See KMIP 1.0 section 4.3 Register.
     /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
     #[serde(rename = "if 0x42005C==0x00000003")]
@@ -1219,6 +1260,7 @@ impl RequestPayload {
         match self {
             RequestPayload::Create(..) => Operation::Create,
             RequestPayload::CreateKeyPair(..) => Operation::CreateKeyPair,
+            RequestPayload::CreateKeyPair2(..) => Operation::CreateKeyPair,
             RequestPayload::Register(..) => Operation::Register,
             // Not implemented: Re-key (KMIP 1.0)
             // Not implemented: Re-key Key Pair (KMIP 1.1)
@@ -1276,6 +1318,10 @@ impl RequestPayload {
             | RequestPayload::Destroy(..) => {
                 // These KMIP operations are defined in the KMIP 1.0 specification
                 ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0))
+            }
+            RequestPayload::CreateKeyPair2(..) => {
+                // This KMIP operation is defined in the KMIP 2.0 specification
+                ProtocolVersion(ProtocolVersionMajor(2), ProtocolVersionMinor(0))
             }
             RequestPayload::DiscoverVersions(..) => {
                 // These KMIP operations are defined in the KMIP 1.1 specification
@@ -1401,6 +1447,17 @@ impl RequestPayload {
                 if let Some(x) = public_key_template_attribute {
                     x.format(&mut formatter)?;
                 }
+            }
+            RequestPayload::CreateKeyPair2(_common_attributes, _private_key_attributes, _public_key_attributes) => {
+                // if let Some(x) = common_attributes {
+                //     x.format(&mut formatter)?;
+                // }
+                // if let Some(x) = private_key_attributes {
+                //     x.format(&mut formatter)?;
+                // }
+                // if let Some(x) = public_key_attributes {
+                //     x.format(&mut formatter)?;
+                // }
             }
             RequestPayload::Register(object_type, template_attribute, managed_object) => {
                 object_type.format(&mut formatter)?;
