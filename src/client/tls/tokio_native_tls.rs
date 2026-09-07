@@ -5,8 +5,8 @@ use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{ClientCertificate, ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
-use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
+use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 

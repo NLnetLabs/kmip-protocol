@@ -884,19 +884,17 @@ pub enum ObjectType {
 
 impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Certificate => "Certificate",
-                Self::SymmetricKey => "SymmetricKey",
-                Self::PublicKey => "PublicKey",
-                Self::PrivateKey => "PrivateKey",
-                Self::SplitKey => "SplitKey",
-                Self::Template => "Template",
-                Self::SecretData => "SecretData",
-                Self::OpaqueObject => "OpaqueObject",
-                Self::PGPKey => "PGPKey",
-            }
-        )
+        f.write_str(match self {
+            Self::Certificate => "Certificate",
+            Self::SymmetricKey => "SymmetricKey",
+            Self::PublicKey => "PublicKey",
+            Self::PrivateKey => "PrivateKey",
+            Self::SplitKey => "SplitKey",
+            Self::Template => "Template",
+            Self::SecretData => "SecretData",
+            Self::OpaqueObject => "OpaqueObject",
+            Self::PGPKey => "PGPKey",
+        })
     }
 }
 
@@ -992,36 +990,34 @@ impl_ttlv_serde!(enum CryptographicAlgorithm as 0x420028);
 
 impl fmt::Display for CryptographicAlgorithm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::DES => "DES",
-                Self::TRIPLE_DES => "TRIPLE_DES",
-                Self::AES => "AES",
-                Self::RSA => "RSA",
-                Self::DSA => "DSA",
-                Self::ECDSA => "ECDSA",
-                Self::HMAC_SHA1 => "HMAC_SHA1",
-                Self::HMAC_SHA224 => "HMAC_SHA224",
-                Self::HMAC_SHA256 => "HMAC_SHA256",
-                Self::HMAC_SHA384 => "HMAC_SHA384",
-                Self::HMAC_SHA512 => "HMAC_SHA512",
-                Self::HMAC_MD5 => "HMAC_MD5",
-                Self::DH => "DH",
-                Self::ECDH => "ECDH",
-                Self::ECMQV => "ECMQV",
-                Self::Blowfish => "Blowfish",
-                Self::Camellia => "Camellia",
-                Self::CAST5 => "CAST5",
-                Self::IDEA => "IDEA",
-                Self::MARS => "MARS",
-                Self::RC2 => "RC2",
-                Self::RC4 => "RC4",
-                Self::RC5 => "RC5",
-                Self::SKIPJACK => "SKIPJACK",
-                Self::Twofish => "Twofish",
-                Self::EC => "EC",
-            }
-        )
+        f.write_str(match self {
+            Self::DES => "DES",
+            Self::TRIPLE_DES => "TRIPLE_DES",
+            Self::AES => "AES",
+            Self::RSA => "RSA",
+            Self::DSA => "DSA",
+            Self::ECDSA => "ECDSA",
+            Self::HMAC_SHA1 => "HMAC_SHA1",
+            Self::HMAC_SHA224 => "HMAC_SHA224",
+            Self::HMAC_SHA256 => "HMAC_SHA256",
+            Self::HMAC_SHA384 => "HMAC_SHA384",
+            Self::HMAC_SHA512 => "HMAC_SHA512",
+            Self::HMAC_MD5 => "HMAC_MD5",
+            Self::DH => "DH",
+            Self::ECDH => "ECDH",
+            Self::ECMQV => "ECMQV",
+            Self::Blowfish => "Blowfish",
+            Self::Camellia => "Camellia",
+            Self::CAST5 => "CAST5",
+            Self::IDEA => "IDEA",
+            Self::MARS => "MARS",
+            Self::RC2 => "RC2",
+            Self::RC4 => "RC4",
+            Self::RC5 => "RC5",
+            Self::SKIPJACK => "SKIPJACK",
+            Self::Twofish => "Twofish",
+            Self::EC => "EC",
+        })
     }
 }
 
@@ -1172,10 +1168,10 @@ impl CryptographicParameters {
 }
 
 impl_ttlv_serde!(struct CryptographicParameters {
-    #[option] block_cipher_mode: BlockCipherMode,    
-    #[option] padding_method: PaddingMethod,    
-    #[option] hashing_algorithm: HashingAlgorithm,    
-    #[option] key_role_type: KeyRoleType,    
+    #[option] block_cipher_mode: BlockCipherMode,
+    #[option] padding_method: PaddingMethod,
+    #[option] hashing_algorithm: HashingAlgorithm,
+    #[option] key_role_type: KeyRoleType,
     #[option] digital_signature_algorithm: DigitalSignatureAlgorithm,
     #[option] cryptographic_algorithm: CryptographicAlgorithm,
     #[option] random_iv: RandomIV,
@@ -1450,22 +1446,12 @@ impl_ttlv_serde!(enum KeyCompressionType as 0x420041);
 
 impl fmt::Display for KeyCompressionType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::ECPUblicKeyTypeUncompressed => {
-                    "ECPUblicKeyTypeUncompressed"
-                }
-                Self::ECPUblicKeyTypeX962CompressedPrime => {
-                    "ECPUblicKeyTypeX962CompressedPrime"
-                }
-                Self::ECPUblicKeyTypeX962CompressedChar2 => {
-                    "ECPUblicKeyTypeX962CompressedChar2"
-                }
-                Self::ECPUblicKeyTypeX962Hybrid => {
-                    "ECPUblicKeyTypeX962Hybrid"
-                }
-            }
-        )
+        f.write_str(match self {
+            Self::ECPUblicKeyTypeUncompressed => "ECPUblicKeyTypeUncompressed",
+            Self::ECPUblicKeyTypeX962CompressedPrime => "ECPUblicKeyTypeX962CompressedPrime",
+            Self::ECPUblicKeyTypeX962CompressedChar2 => "ECPUblicKeyTypeX962CompressedChar2",
+            Self::ECPUblicKeyTypeX962Hybrid => "ECPUblicKeyTypeX962Hybrid",
+        })
     }
 }
 
@@ -1537,41 +1523,27 @@ impl_ttlv_serde!(enum KeyFormatType as 0x420042);
 
 impl fmt::Display for KeyFormatType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Raw => "Raw",
-                Self::Opaque => "Opaque",
-                Self::PKCS1 => "PKCS1",
-                Self::PKCS8 => "PKCS8",
-                Self::X509 => "X509",
-                Self::ECPrivateKey => "ECPrivateKey",
-                Self::TransparentSymmetricKey => "TransparentSymmetricKey",
-                Self::TransparentDSAPrivateKey => "TransparentDSAPrivateKey",
-                Self::TransparentDSAPublicKey => "TransparentDSAPublicKey",
-                Self::TransparentRSAPublicKey => "TransparentRSAPublicKey",
-                Self::TransparentRSAPrivateKey => "TransparentRSAPrivateKey",
-                Self::TransparentDHPrivateKey => "TransparentDHPrivateKey",
-                Self::TransparentDHPublicKey => "TransparentDHPublicKey",
-                Self::TransparentECDSAPrivateKey => {
-                    "TransparentECDSAPrivateKey"
-                }
-                Self::TransparentECDSAPublicKey => {
-                    "TransparentECDSAPublicKey"
-                }
-                Self::TransparentECHDPrivateKey => {
-                    "TransparentECHDPrivateKey"
-                }
-                Self::TransparentECDHPublicKey => {
-                    "TransparentECDHPublicKey"
-                }
-                Self::TransparentECMQVPrivateKey => {
-                    "TransparentECMQVPrivateKey"
-                }
-                Self::TransparentECMQVPublicKey => {
-                    "TransparentECMQVPublicKey"
-                }
-            }
-        )
+        f.write_str(match self {
+            Self::Raw => "Raw",
+            Self::Opaque => "Opaque",
+            Self::PKCS1 => "PKCS1",
+            Self::PKCS8 => "PKCS8",
+            Self::X509 => "X509",
+            Self::ECPrivateKey => "ECPrivateKey",
+            Self::TransparentSymmetricKey => "TransparentSymmetricKey",
+            Self::TransparentDSAPrivateKey => "TransparentDSAPrivateKey",
+            Self::TransparentDSAPublicKey => "TransparentDSAPublicKey",
+            Self::TransparentRSAPublicKey => "TransparentRSAPublicKey",
+            Self::TransparentRSAPrivateKey => "TransparentRSAPrivateKey",
+            Self::TransparentDHPrivateKey => "TransparentDHPrivateKey",
+            Self::TransparentDHPublicKey => "TransparentDHPublicKey",
+            Self::TransparentECDSAPrivateKey => "TransparentECDSAPrivateKey",
+            Self::TransparentECDSAPublicKey => "TransparentECDSAPublicKey",
+            Self::TransparentECHDPrivateKey => "TransparentECHDPrivateKey",
+            Self::TransparentECDHPublicKey => "TransparentECDHPublicKey",
+            Self::TransparentECMQVPrivateKey => "TransparentECMQVPrivateKey",
+            Self::TransparentECMQVPublicKey => "TransparentECMQVPublicKey",
+        })
     }
 }
 
@@ -1632,25 +1604,23 @@ impl_ttlv_serde!(enum RecommendedCurve as 0x420075);
 
 impl fmt::Display for RecommendedCurve {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::P_192 => "P_192",
-                Self::K_163 => "K_163",
-                Self::B_163 => "B_163",
-                Self::P_224 => "P_224",
-                Self::K_233 => "K_233",
-                Self::B_233 => "B_233",
-                Self::P_256 => "P_256",
-                Self::K_283 => "K_283",
-                Self::B_283 => "B_283",
-                Self::P_384 => "P_384",
-                Self::K_409 => "K_409",
-                Self::B_409 => "B_409",
-                Self::P_521 => "P_521",
-                Self::K_571 => "K_571",
-                Self::B_571 => "B_571",
-            }
-        )
+        f.write_str(match self {
+            Self::P_192 => "P_192",
+            Self::K_163 => "K_163",
+            Self::B_163 => "B_163",
+            Self::P_224 => "P_224",
+            Self::K_233 => "K_233",
+            Self::B_233 => "B_233",
+            Self::P_256 => "P_256",
+            Self::K_283 => "K_283",
+            Self::B_283 => "B_283",
+            Self::P_384 => "P_384",
+            Self::K_409 => "K_409",
+            Self::B_409 => "B_409",
+            Self::P_521 => "P_521",
+            Self::K_571 => "K_571",
+            Self::B_571 => "B_571",
+        })
     }
 }
 
@@ -1671,12 +1641,10 @@ impl_ttlv_serde!(enum CertificateType as 0x42001D);
 
 impl fmt::Display for CertificateType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::X509 => "X509",
-                Self::PGP => "PGP",
-            }
-        )
+        f.write_str(match self {
+            Self::X509 => "X509",
+            Self::PGP => "PGP",
+        })
     }
 }
 
@@ -1740,40 +1708,24 @@ impl_ttlv_serde!(enum DigitalSignatureAlgorithm as 0x4200AE);
 
 impl fmt::Display for DigitalSignatureAlgorithm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::MD2WithRSAEncryption_PKCS1_v1_5 => {
-                    "MD2WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::MD5WithRSAEncryption_PKCS1_v1_5 => {
-                    "MD5WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::SHA1WithRSAEncryption_PKCS1_v1_5 => {
-                    "SHA1WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::SHA224WithRSAEncryption_PKCS1_v1_5 => {
-                    "SHA224WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::SHA256WithRSAEncryption_PKCS1_v1_5 => {
-                    "SHA256WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::SHA384WithRSAEncryption_PKCS1_v1_5 => {
-                    "SHA384WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::SHA512WithRSAEncryption_PKCS1_v1_5 => {
-                    "SHA512WithRSAEncryption_PKCS1_v1_5"
-                }
-                Self::RSASSA_PSS_PKCS1_v1_5 => "RSASSA_PSS_PKCS1_v1_5",
-                Self::DSAWithSHA1 => "DSAWithSHA1",
-                Self::DSAWithSHA224 => "DSAWithSHA224",
-                Self::DSAWithSHA256 => "DSAWithSHA256",
-                Self::ECDSAWithSHA1 => "ECDSAWithSHA1",
-                Self::ECDSAWithSHA224 => "ECDSAWithSHA224",
-                Self::ECDSAWithSHA256 => "ECDSAWithSHA256",
-                Self::ECDSAWithSHA384 => "ECDSAWithSHA384",
-                Self::ECDSAWithSHA512 => "ECDSAWithSHA512",
-            }
-        )
+        f.write_str(match self {
+            Self::MD2WithRSAEncryption_PKCS1_v1_5 => "MD2WithRSAEncryption_PKCS1_v1_5",
+            Self::MD5WithRSAEncryption_PKCS1_v1_5 => "MD5WithRSAEncryption_PKCS1_v1_5",
+            Self::SHA1WithRSAEncryption_PKCS1_v1_5 => "SHA1WithRSAEncryption_PKCS1_v1_5",
+            Self::SHA224WithRSAEncryption_PKCS1_v1_5 => "SHA224WithRSAEncryption_PKCS1_v1_5",
+            Self::SHA256WithRSAEncryption_PKCS1_v1_5 => "SHA256WithRSAEncryption_PKCS1_v1_5",
+            Self::SHA384WithRSAEncryption_PKCS1_v1_5 => "SHA384WithRSAEncryption_PKCS1_v1_5",
+            Self::SHA512WithRSAEncryption_PKCS1_v1_5 => "SHA512WithRSAEncryption_PKCS1_v1_5",
+            Self::RSASSA_PSS_PKCS1_v1_5 => "RSASSA_PSS_PKCS1_v1_5",
+            Self::DSAWithSHA1 => "DSAWithSHA1",
+            Self::DSAWithSHA224 => "DSAWithSHA224",
+            Self::DSAWithSHA256 => "DSAWithSHA256",
+            Self::ECDSAWithSHA1 => "ECDSAWithSHA1",
+            Self::ECDSAWithSHA224 => "ECDSAWithSHA224",
+            Self::ECDSAWithSHA256 => "ECDSAWithSHA256",
+            Self::ECDSAWithSHA384 => "ECDSAWithSHA384",
+            Self::ECDSAWithSHA512 => "ECDSAWithSHA512",
+        })
     }
 }
 
@@ -1794,12 +1746,10 @@ impl_ttlv_serde!(enum NameType as 0x420054);
 
 impl fmt::Display for NameType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::UninterpretedTextString => "UninterpretedTextString",
-                Self::URI => "URI",
-            }
-        )
+        f.write_str(match self {
+            Self::UninterpretedTextString => "UninterpretedTextString",
+            Self::URI => "URI",
+        })
     }
 }
 
@@ -1866,27 +1816,25 @@ impl_ttlv_serde!(enum BlockCipherMode as 0x420011);
 
 impl fmt::Display for BlockCipherMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::CBC =>  "CBC",
-                Self::ECB =>  "ECB",
-                Self::PCBC =>  "PCBC",
-                Self::CFB =>  "CFB",
-                Self::OFB =>  "OFB",
-                Self::CTR =>  "CTR",
-                Self::CMAC =>  "CMAC",
-                Self::CCM =>  "CCM",
-                Self::GCM =>  "GCM",
-                Self::CBC_MAC =>  "CBC_MAC",
-                Self::XTS =>  "XTS",
-                Self::AESKeyWrapPadding =>  "AESKeyWrapPadding",
-                Self::NISTKeyWrap =>  "NISTKeyWrap",
-                Self::X9_102_AESKW =>  "X9_102_AESKW",
-                Self::X9_102_TDKW =>  "X9_102_TDKW",
-                Self::X9_102_AKW1 =>  "X9_102_AKW1",
-                Self::X9_102_AKW2 =>  "X9_102_AKW2",
-            }
-        )
+        f.write_str(match self {
+            Self::CBC => "CBC",
+            Self::ECB => "ECB",
+            Self::PCBC => "PCBC",
+            Self::CFB => "CFB",
+            Self::OFB => "OFB",
+            Self::CTR => "CTR",
+            Self::CMAC => "CMAC",
+            Self::CCM => "CCM",
+            Self::GCM => "GCM",
+            Self::CBC_MAC => "CBC_MAC",
+            Self::XTS => "XTS",
+            Self::AESKeyWrapPadding => "AESKeyWrapPadding",
+            Self::NISTKeyWrap => "NISTKeyWrap",
+            Self::X9_102_AESKW => "X9_102_AESKW",
+            Self::X9_102_TDKW => "X9_102_TDKW",
+            Self::X9_102_AKW1 => "X9_102_AKW1",
+            Self::X9_102_AKW2 => "X9_102_AKW2",
+        })
     }
 }
 
@@ -1932,20 +1880,18 @@ impl_ttlv_serde!(enum PaddingMethod as 0x42005F);
 
 impl fmt::Display for PaddingMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::None => "None",
-                Self::OAEP => "OAEP",
-                Self::PKCS5 => "PKCS5",
-                Self::SSL3 => "SSL3",
-                Self::Zeros => "Zeros",
-                Self::ANSI_X9_23 => "ANSI_X9_23",
-                Self::ISO_10126 => "ISO_10126",
-                Self::PKCS1_v1_5 => "PKCS1_v1_5",
-                Self::X9_31 => "X9_31",
-                Self::PSS => "PSS",
-            }
-        )
+        f.write_str(match self {
+            Self::None => "None",
+            Self::OAEP => "OAEP",
+            Self::PKCS5 => "PKCS5",
+            Self::SSL3 => "SSL3",
+            Self::Zeros => "Zeros",
+            Self::ANSI_X9_23 => "ANSI_X9_23",
+            Self::ISO_10126 => "ISO_10126",
+            Self::PKCS1_v1_5 => "PKCS1_v1_5",
+            Self::X9_31 => "X9_31",
+            Self::PSS => "PSS",
+        })
     }
 }
 
@@ -1994,21 +1940,19 @@ impl_ttlv_serde!(enum HashingAlgorithm as 0x420038);
 
 impl fmt::Display for HashingAlgorithm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::MD2 => "MD2",
-                Self::MD4 => "MD4",
-                Self::MD5 => "MD5",
-                Self::SHA1 => "SHA1",
-                Self::SHA224 => "SHA224",
-                Self::SHA256 => "SHA256",
-                Self::SHA384 => "SHA384",
-                Self::SHA512 => "SHA512",
-                Self::RIPEMD160 => "RIPEMD160",
-                Self::Tiger => "Tiger",
-                Self::Whirlpool => "Whirlpool",
-            }
-        )
+        f.write_str(match self {
+            Self::MD2 => "MD2",
+            Self::MD4 => "MD4",
+            Self::MD5 => "MD5",
+            Self::SHA1 => "SHA1",
+            Self::SHA224 => "SHA224",
+            Self::SHA256 => "SHA256",
+            Self::SHA384 => "SHA384",
+            Self::SHA512 => "SHA512",
+            Self::RIPEMD160 => "RIPEMD160",
+            Self::Tiger => "Tiger",
+            Self::Whirlpool => "Whirlpool",
+        })
     }
 }
 
@@ -2087,31 +2031,29 @@ impl_ttlv_serde!(enum KeyRoleType as 0x420083);
 
 impl fmt::Display for KeyRoleType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::BDK => "BDK",
-                Self::CVK => "CVK",
-                Self::DEK => "DEK",
-                Self::MKAC => "MKAC",
-                Self::MKSMC => "MKSMC",
-                Self::MKSMI => "MKSMI",
-                Self::MKDAC => "MKDAC",
-                Self::MKDN => "MKDN",
-                Self::MKCP => "MKCP",
-                Self::MKOTH => "MKOTH",
-                Self::KEK => "KEK",
-                Self::MAC16609 => "MAC16609",
-                Self::MAC97971 => "MAC97971",
-                Self::MAC97972 => "MAC97972",
-                Self::MAC97973 => "MAC97973",
-                Self::MAC97974 => "MAC97974",
-                Self::MAC97975 => "MAC97975",
-                Self::ZPK => "ZPK",
-                Self::PVKIBM => "PVKIBM",
-                Self::PVKPVV => "PVKPVV",
-                Self::PVKOTH => "PVKOTH",
-            }
-        )
+        f.write_str(match self {
+            Self::BDK => "BDK",
+            Self::CVK => "CVK",
+            Self::DEK => "DEK",
+            Self::MKAC => "MKAC",
+            Self::MKSMC => "MKSMC",
+            Self::MKSMI => "MKSMI",
+            Self::MKDAC => "MKDAC",
+            Self::MKDN => "MKDN",
+            Self::MKCP => "MKCP",
+            Self::MKOTH => "MKOTH",
+            Self::KEK => "KEK",
+            Self::MAC16609 => "MAC16609",
+            Self::MAC97971 => "MAC97971",
+            Self::MAC97972 => "MAC97972",
+            Self::MAC97973 => "MAC97973",
+            Self::MAC97974 => "MAC97974",
+            Self::MAC97975 => "MAC97975",
+            Self::ZPK => "ZPK",
+            Self::PVKIBM => "PVKIBM",
+            Self::PVKPVV => "PVKPVV",
+            Self::PVKOTH => "PVKOTH",
+        })
     }
 }
 
@@ -2144,16 +2086,14 @@ impl_ttlv_serde!(enum State as 0x42008D);
 
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::PreActive => "PreActive",
-                Self::Active => "Active",
-                Self::Deactivated => "Deactivated",
-                Self::Compromised => "Compromised",
-                Self::Destroyed => "Destroyed",
-                Self::DestroyedCompromised => "DestroyedCompromised",
-            }
-        )
+        f.write_str(match self {
+            Self::PreActive => "PreActive",
+            Self::Active => "Active",
+            Self::Deactivated => "Deactivated",
+            Self::Compromised => "Compromised",
+            Self::Destroyed => "Destroyed",
+            Self::DestroyedCompromised => "DestroyedCompromised",
+        })
     }
 }
 
@@ -2189,17 +2129,15 @@ impl_ttlv_serde!(enum RevocationReasonCode as 0x420082);
 
 impl fmt::Display for RevocationReasonCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Unspecified => "Unspecified",
-                Self::KeyCompromise => "KeyCompromise",
-                Self::CACompromise => "CACompromise",
-                Self::AffiliationChanged => "AffiliationChanged",
-                Self::Superseded => "Superseded",
-                Self::CessationOfOperation => "CessationOfOperation",
-                Self::PrivilegeWithdrawn => "PrivilegeWithdrawn",
-            }
-        )
+        f.write_str(match self {
+            Self::Unspecified => "Unspecified",
+            Self::KeyCompromise => "KeyCompromise",
+            Self::CACompromise => "CACompromise",
+            Self::AffiliationChanged => "AffiliationChanged",
+            Self::Superseded => "Superseded",
+            Self::CessationOfOperation => "CessationOfOperation",
+            Self::PrivilegeWithdrawn => "PrivilegeWithdrawn",
+        })
     }
 }
 
@@ -2235,17 +2173,15 @@ impl_ttlv_serde!(enum LinkType as 0x42004B);
 
 impl fmt::Display for LinkType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::CertificateLink => "CertificateLink",
-                Self::PublicKeyLink => "PublicKeyLink",
-                Self::PrivateKeyLink => "PrivateKeyLink",
-                Self::DerivationBaseObjectLink => "DerivationBaseObjectLink",
-                Self::DerivedKeyLink => "DerivedKeyLink",
-                Self::ReplacementObjectLink => "ReplacementObjectLink",
-                Self::ReplacedObjectLink => "ReplacedObjectLink",
-            }
-        )
+        f.write_str(match self {
+            Self::CertificateLink => "CertificateLink",
+            Self::PublicKeyLink => "PublicKeyLink",
+            Self::PrivateKeyLink => "PrivateKeyLink",
+            Self::DerivationBaseObjectLink => "DerivationBaseObjectLink",
+            Self::DerivedKeyLink => "DerivedKeyLink",
+            Self::ReplacementObjectLink => "ReplacementObjectLink",
+            Self::ReplacedObjectLink => "ReplacedObjectLink",
+        })
     }
 }
 
@@ -2386,51 +2322,49 @@ impl_ttlv_serde!(enum Operation as 0x42005C);
 
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Create => "Create",
-                Self::CreateKeyPair => "CreateKeyPair",
-                Self::Register => "Register",
-                Self::Rekey => "Rekey",
-                Self::DeriveKey => "DeriveKey",
-                Self::Certify => "Certify",
-                Self::Recertify => "Recertify",
-                Self::Locate => "Locate",
-                Self::Check => "Check",
-                Self::Get => "Get",
-                Self::GetAttributes => "GetAttributes",
-                Self::GetAttributeList => "GetAttributeList",
-                Self::AddAttribute => "AddAttribute",
-                Self::ModifyAttribute => "ModifyAttribute",
-                Self::DeleteAttribute => "DeleteAttribute",
-                Self::ObtainLease => "ObtainLease",
-                Self::GetUsageAllocation => "GetUsageAllocation",
-                Self::Activate => "Activate",
-                Self::Revoke => "Revoke",
-                Self::Destroy => "Destroy",
-                Self::Archive => "Archive",
-                Self::Recover => "Recover",
-                Self::Validate => "Validate",
-                Self::Query => "Query",
-                Self::Cancel => "Cancel",
-                Self::Poll => "Poll",
-                Self::Notify => "Notify",
-                Self::Put => "Put",
-                Self::RekeyKeyPair => "RekeyKeyPair",
-                Self::DiscoverVersions => "DiscoverVersions",
-                Self::Encrypt => "Encrypt",
-                Self::Decrypt => "Decrypt",
-                Self::Sign => "Sign",
-                Self::SignatureVerify => "SignatureVerify",
-                Self::MAC => "MAC",
-                Self::MACVerify => "MACVerify",
-                Self::RNGRetrieve => "RNGRetrieve",
-                Self::RNGSeed => "RNGSeed",
-                Self::Hash => "Hash",
-                Self::CreateSplitKey => "CreateSplitKey",
-                Self::JoinSplitKey => "JoinSplitKey",
-            }
-        )
+        f.write_str(match self {
+            Self::Create => "Create",
+            Self::CreateKeyPair => "CreateKeyPair",
+            Self::Register => "Register",
+            Self::Rekey => "Rekey",
+            Self::DeriveKey => "DeriveKey",
+            Self::Certify => "Certify",
+            Self::Recertify => "Recertify",
+            Self::Locate => "Locate",
+            Self::Check => "Check",
+            Self::Get => "Get",
+            Self::GetAttributes => "GetAttributes",
+            Self::GetAttributeList => "GetAttributeList",
+            Self::AddAttribute => "AddAttribute",
+            Self::ModifyAttribute => "ModifyAttribute",
+            Self::DeleteAttribute => "DeleteAttribute",
+            Self::ObtainLease => "ObtainLease",
+            Self::GetUsageAllocation => "GetUsageAllocation",
+            Self::Activate => "Activate",
+            Self::Revoke => "Revoke",
+            Self::Destroy => "Destroy",
+            Self::Archive => "Archive",
+            Self::Recover => "Recover",
+            Self::Validate => "Validate",
+            Self::Query => "Query",
+            Self::Cancel => "Cancel",
+            Self::Poll => "Poll",
+            Self::Notify => "Notify",
+            Self::Put => "Put",
+            Self::RekeyKeyPair => "RekeyKeyPair",
+            Self::DiscoverVersions => "DiscoverVersions",
+            Self::Encrypt => "Encrypt",
+            Self::Decrypt => "Decrypt",
+            Self::Sign => "Sign",
+            Self::SignatureVerify => "SignatureVerify",
+            Self::MAC => "MAC",
+            Self::MACVerify => "MACVerify",
+            Self::RNGRetrieve => "RNGRetrieve",
+            Self::RNGSeed => "RNGSeed",
+            Self::Hash => "Hash",
+            Self::CreateSplitKey => "CreateSplitKey",
+            Self::JoinSplitKey => "JoinSplitKey",
+        })
     }
 }
 

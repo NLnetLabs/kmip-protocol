@@ -513,11 +513,9 @@ impl_ttlv_serde!(enum CredentialType as 0x420024);
 
 impl fmt::Display for CredentialType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::UsernameAndPassword => "UsernameAndPassword"
-            }
-        )
+        f.write_str(match self {
+            Self::UsernameAndPassword => "UsernameAndPassword",
+        })
     }
 }
 
@@ -1539,15 +1537,13 @@ impl_ttlv_serde!(enum WrappingMethod as 0x42009E);
 
 impl fmt::Display for WrappingMethod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Encrypt => "Encrypt",
-                Self::MACSign => "MACSign",
-                Self::EncryptThenMACSign => "EncryptThenMACSign",
-                Self::MACSignThenEncrypt => "MACSignThenEncrypt",
-                Self::TR31 => "TR31"
-            }
-        )
+        f.write_str(match self {
+            Self::Encrypt => "Encrypt",
+            Self::MACSign => "MACSign",
+            Self::EncryptThenMACSign => "EncryptThenMACSign",
+            Self::MACSignThenEncrypt => "MACSignThenEncrypt",
+            Self::TR31 => "TR31",
+        })
     }
 }
 
@@ -1572,13 +1568,10 @@ impl_ttlv_serde!(enum QueryFunction as 0x420074);
 
 impl fmt::Display for QueryFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::QueryOperations => "QueryOperations",
-                Self::QueryObjects => "QueryObjects",
-                Self::QueryServerInformation => "QueryServerInformation",
-            }
-        )
+        f.write_str(match self {
+            Self::QueryOperations => "QueryOperations",
+            Self::QueryObjects => "QueryObjects",
+            Self::QueryServerInformation => "QueryServerInformation",
+        })
     }
 }
-

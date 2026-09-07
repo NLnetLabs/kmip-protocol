@@ -5,7 +5,10 @@
 use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::{
-    response::from_slice, tests::util::assert_req_ser_de, ttlv::format::Formatter, types::{
+    response::from_slice,
+    tests::util::assert_req_ser_de,
+    ttlv::format::Formatter,
+    types::{
         common::{
             AttributeIndex, AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicLength,
             CryptographicParameters, CryptographicUsageMask, Data, HashingAlgorithm, KeyCompressionType, KeyFormatType,
@@ -17,7 +20,7 @@ use crate::{
             RequestPayload, TemplateAttribute,
         },
         response::{ResponseMessage, ResponsePayload, ResultStatus},
-    }
+    },
 };
 
 const TIMESTAMP: u64 = 0x000000004B7918AA;

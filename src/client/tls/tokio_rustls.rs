@@ -8,8 +8,8 @@ use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
-use tokio_rustls::client::TlsStream;
 use tokio_rustls::TlsConnector;
+use tokio_rustls::client::TlsStream;
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 

@@ -177,7 +177,9 @@ impl From<Opt> for ConnectionSettings {
                     panic!("Client private key path requires a client certificate path")
                 }
                 (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
-                    panic!("Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path")
+                    panic!(
+                        "Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path"
+                    )
                 }
                 (Some(cert_path), Some(key_path), None) => Some(ClientCertificate::SeparatePem {
                     cert_bytes: load_binary_file(cert_path),

@@ -5,7 +5,7 @@ use std::{
 
 use crate::client::tls::common::util::create_kmip_client;
 
-use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientCertificate, ConnectionSettings, Error, Result};
+use crate::client::{ClientCertificate, ConnectionSettings, Error, Result, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 

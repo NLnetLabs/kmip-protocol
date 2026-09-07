@@ -450,14 +450,12 @@ impl_ttlv_serde!(enum ResultStatus as 0x42007F);
 
 impl fmt::Display for ResultStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::Success => "Success",
-                Self::OperationFailed => "OperationFailed",
-                Self::OperationPending => "OperationPending",
-                Self::OperationUndone => "OperationUndone",
-            }
-        )
+        f.write_str(match self {
+            Self::Success => "Success",
+            Self::OperationFailed => "OperationFailed",
+            Self::OperationPending => "OperationPending",
+            Self::OperationUndone => "OperationUndone",
+        })
     }
 }
 
@@ -526,36 +524,26 @@ impl_ttlv_serde!(enum ResultReason as 0x42007E);
 
 impl fmt::Display for ResultReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(
-            match self {
-                Self::ItemNotFound => "ItemNotFound",
-                Self::ResponseTooLarge => "ResponseTooLarge",
-                Self::AuthenticationNotSuccessful => {
-                    "AuthenticationNotSuccessful"
-                }
-                Self::InvalidMessage => "InvalidMessage",
-                Self::OperationNotSupported => "OperationNotSupported",
-                Self::MissingData => "MissingData",
-                Self::InvalidField => "InvalidField",
-                Self::FeatureNotSupported => "FeatureNotSupported",
-                Self::OperationCanceledByRequester => {
-                    "OperationCanceledByRequester"
-                }
-                Self::CryptographicFailure => "CryptographicFailure",
-                Self::IllegalOperation => "IllegalOperation",
-                Self::PermissionDenied => "PermissionDenied",
-                Self::ObjectArchived => "ObjectArchived",
-                Self::IndexOutOfBounds => "IndexOutOfBounds",
-                Self::ApplicationNamespaceNotSupported => {
-                    "ApplicationNamespaceNotSupported"
-                }
-                Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
-                Self::KeyCompressionTypeNotSupported => {
-                    "KeyCompressionTypeNotSupported"
-                }
-                Self::GeneralFailure => "GeneralFailure",
-            }
-        )
+        f.write_str(match self {
+            Self::ItemNotFound => "ItemNotFound",
+            Self::ResponseTooLarge => "ResponseTooLarge",
+            Self::AuthenticationNotSuccessful => "AuthenticationNotSuccessful",
+            Self::InvalidMessage => "InvalidMessage",
+            Self::OperationNotSupported => "OperationNotSupported",
+            Self::MissingData => "MissingData",
+            Self::InvalidField => "InvalidField",
+            Self::FeatureNotSupported => "FeatureNotSupported",
+            Self::OperationCanceledByRequester => "OperationCanceledByRequester",
+            Self::CryptographicFailure => "CryptographicFailure",
+            Self::IllegalOperation => "IllegalOperation",
+            Self::PermissionDenied => "PermissionDenied",
+            Self::ObjectArchived => "ObjectArchived",
+            Self::IndexOutOfBounds => "IndexOutOfBounds",
+            Self::ApplicationNamespaceNotSupported => "ApplicationNamespaceNotSupported",
+            Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
+            Self::KeyCompressionTypeNotSupported => "KeyCompressionTypeNotSupported",
+            Self::GeneralFailure => "GeneralFailure",
+        })
     }
 }
 
