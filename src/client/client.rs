@@ -270,10 +270,9 @@ impl<T: ReadWrite> Client<T> {
                 })
                 .collect::<Vec<_>>())
         } else {
-            Err(Error::ServerError(format!(
-                "Expected at least one batch item in response but received {}",
-                res.batch_items.len()
-            )))
+            Err(Error::ServerError(
+                "Expected at least one batch item in the response".into(),
+            ))
         };
 
         trace!("Send and receive complete");
@@ -303,11 +302,13 @@ impl<T: ReadWrite> Client<T> {
         let operation = payload.operation();
         let batch_item = request::BatchItem(operation, Option::<UniqueBatchItemID>::None, payload);
         self.do_requests(vec![batch_item]).await.and_then(|mut r| {
-            r.pop()
-                .ok_or(Error::InternalError("Missing response payload".to_string()))?
-                .map(|item| item.payload)
-                .map_err(|err| Error::InternalError(format!("Missing response payload: {err}")))?
-                .ok_or(Error::InternalError("Missing response payload".to_string()))
+            let Some(response_item) = r.pop() else {
+                return Err(Error::InternalError("Missing response batch item".to_string()));
+            };
+            let Some(payload) = response_item?.payload else {
+                return Err(Error::InternalError("Missing response payload".to_string()));
+            };
+            Ok(payload)
         })
     }
 
