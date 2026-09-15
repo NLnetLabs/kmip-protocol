@@ -50,7 +50,9 @@ pub struct KmipConn {
 }
 
 impl KmipConn {
-    fn new(conn: PooledConnection<ConnectionManager>) -> Self {
+    fn new(mut conn: PooledConnection<ConnectionManager>) -> Self {
+        let new_rc = conn.reader_config().clone().with_sensitive_capture();
+        conn.set_reader_config(new_rc);
         Self { conn }
     }
 }
@@ -69,11 +71,10 @@ impl DerefMut for KmipConn {
     }
 }
 
-/// A pool of already connected KMIP clients.
+/// A pool of KMIP clients.
 ///
-/// This pool can be used to acquire a KMIP client without first having to
-/// wait for it to connect at the TCP/TLS level, and without unnecessarily
-/// closing the connection when finished.
+/// Connections are re-used until timed out or the connection is lost, and are
+/// re-created as necessary.
 // TODO: Move this to the kmip-protocol crate and add an AsyncConnPool variant
 // implemented using the bb8 crate instead of the r2d2 crate.
 #[derive(Clone, Debug)]
@@ -81,6 +82,7 @@ pub struct SyncConnPool {
     server_id: String,
     conn_settings: Arc<ConnectionSettings>,
     pool: r2d2::Pool<ConnectionManager>,
+    expanded_logging: bool,
 }
 
 impl SyncConnPool {
@@ -128,6 +130,7 @@ impl SyncConnPool {
             server_id,
             conn_settings,
             pool,
+            expanded_logging: false,
         })
     }
 
@@ -140,7 +143,16 @@ impl SyncConnPool {
     }
 
     pub fn get(&self) -> Result<KmipConn, KmipConnError> {
-        Ok(KmipConn::new(self.pool.get()?))
+        let mut conn = KmipConn::new(self.pool.get()?);
+        if self.expanded_logging {
+            let new_rc = conn.reader_config().clone().with_sensitive_capture();
+            conn.set_reader_config(new_rc);
+        }
+        Ok(conn)
+    }
+
+    pub fn set_expanded_logging(&mut self, expanded_logging: bool) {
+        self.expanded_logging = expanded_logging;
     }
 }
 
@@ -234,13 +246,5 @@ where
 {
     fn handle_error(&self, err: E) {
         error!("Pool error: {}", err)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn create_pool() {
-        todo!()
     }
 }
