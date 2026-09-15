@@ -8,8 +8,8 @@ use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
-use tokio_rustls::client::TlsStream;
 use tokio_rustls::TlsConnector;
+use tokio_rustls::client::TlsStream;
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
@@ -36,9 +36,15 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    let host_str = conn_settings.host.clone();
-    let hostname = host_str.try_into().map_err(|err| {
-        Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
+    let sni_name = conn_settings
+        .server_name
+        .as_ref()
+        .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
+    let sni_name = sni_name.try_into().map_err(|err| {
+        Error::ConfigurationError(format!(
+            "Failed to parse hostname '{}' or SNI name '{:?}': {}",
+            conn_settings.host, conn_settings.server_name, err
+        ))
     })?;
     let connect_timeout = conn_settings.connect_timeout.clone();
 
@@ -54,7 +60,7 @@ where
 
     let rustls_config = create_rustls_config(conn_settings)?;
     let tls_connector = TlsConnector::from(Arc::new(rustls_config));
-    let tls_stream = tls_connector.connect(hostname, tcp_stream).await?;
+    let tls_stream = tls_connector.connect(sni_name, tcp_stream).await?;
 
     Ok(create_kmip_client(tls_stream, conn_settings))
 }

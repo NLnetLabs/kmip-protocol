@@ -234,7 +234,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Read};
+    use std::{
+        fs::File,
+        io::{Read, Write},
+        net::TcpListener,
+    };
 
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
@@ -243,6 +247,13 @@ mod tests {
             use crate::client::tls::rustls::connect_with_tcpstream_factory;
         }
     }
+
+    use rcgen::{CertifiedKey, generate_simple_self_signed};
+    use rustls::{
+        ServerConnection,
+        pki_types::{PrivateKeyDer, pem::PemObject},
+        server::ServerConfig,
+    };
 
     use super::*;
 
@@ -293,16 +304,11 @@ mod tests {
         let conn_settings = ConnectionSettings {
             host: "localhost".to_string(),
             port: 12345,
-            username: None,
-            password: None,
             insecure: false,
             client_cert: Some(client_cert),
             server_cert: Some(server_cert),
             ca_cert: Some(ca_cert),
-            connect_timeout: None,
-            read_timeout: None,
-            write_timeout: None,
-            max_response_bytes: None,
+            ..Default::default()
         };
 
         static ERR_MSG: &str = "configured but will not connect due to being a test";
@@ -314,5 +320,96 @@ mod tests {
         // were parsed successfully we should have proceeded to the connection
         // attempt which should result in our custom error message.
         assert_eq!(res.unwrap_err(), Error::InternalError(ERR_MSG.to_string()));
+    }
+
+    #[test]
+    #[cfg(any(
+        feature = "tls-with-openssl",
+        feature = "tls-with-openssl-vendored",
+        feature = "tls-with-rustls"
+    ))]
+    fn set_sni_server_name() {
+        #[allow(non_snake_case)]
+        let EXPECTED_SNI_NAME: String = "my.server.name".to_string();
+
+        // Spin up the TLS server.
+        let (listen_addr, server_handle) = mock_tls_server();
+
+        // Connect to the TLS server.
+        let conn_settings = ConnectionSettings {
+            host: listen_addr.ip().to_string(),
+            port: listen_addr.port(),
+            insecure: true,
+            server_name: Some(EXPECTED_SNI_NAME.clone()),
+            ..Default::default()
+        };
+
+        cfg_if::cfg_if! {
+            if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
+                let client = crate::client::tls::openssl::connect(&conn_settings).unwrap();
+            } else if #[cfg(feature = "tls-with-rustls")] {
+                let client = crate::client::tls::rustls::connect(&conn_settings).unwrap();
+            }
+        }
+
+        // Make a request to the server, any request, we don't care if it
+        // succeeds or not,
+        let _ = client.create_rsa_key_pair(2048, "pri".into(), "pub".into());
+
+        // Wait for the server to exit.
+        let seen_sni_name = server_handle.join().unwrap();
+
+        // Verify the seen SNI name.
+        assert_eq!(seen_sni_name, Some(EXPECTED_SNI_NAME));
+    }
+
+    fn mock_tls_server() -> (std::net::SocketAddr, std::thread::JoinHandle<Option<String>>) {
+        // Generate a self-signed TLS certificate.
+        let subject_alt_names = vec!["hello.world.example".to_string(), "localhost".to_string()];
+        let CertifiedKey { cert, signing_key } = generate_simple_self_signed(subject_alt_names).unwrap();
+
+        // Convert the cert and key to the format required by RustLS.
+        let certs = vec![cert.der().clone()];
+        let key = PrivateKeyDer::from_pem_slice(signing_key.serialize_pem().as_bytes()).unwrap();
+
+        // Build TLS server configuration
+        let config = ServerConfig::builder()
+            .with_no_client_auth() // Standard TLS (no client cert required)
+            .with_single_cert(certs, key)
+            .unwrap();
+
+        // Listen for incoming TCP connections on some port.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let local_addr = listener.local_addr().unwrap();
+
+        // Accept a single incoming connection and process it as TLS.
+        let handle = std::thread::spawn(move || {
+            let (mut tcp_stream, _) = listener.accept().unwrap();
+            eprintln!("Connection received");
+            let mut conn = ServerConnection::new(Arc::new(config)).unwrap();
+            eprintln!("TLS connection accepted");
+
+            // Receive a KMIP ReqeustMessage from the client.
+            let mut tls_stream = rustls::Stream::new(&mut conn, &mut tcp_stream);
+            let mut buf = [0; 64];
+            let len = tls_stream.read(&mut buf).unwrap();
+
+            // Verify receipt of the RequestMessage TTLV tag.
+            assert!(len >= 3);
+            assert_eq!(&buf[0..3], &[0x42, 0x00, 0x78]);
+
+            // Verify that the expected SNI name was sent.
+            let sni_name = tls_stream.conn.server_name().map(ToString::to_string);
+
+            // Politely close the connection to prevent warnings from the
+            // client about close notify not being sent by the serer.
+            tls_stream.conn.send_close_notify();
+            tls_stream.flush().unwrap();
+
+            sni_name
+        });
+
+        // Return the listen address and thread handle to the caller
+        (local_addr, handle)
     }
 }

@@ -10,7 +10,7 @@ pub enum ClientCertificate {
 /// TCP and TLS settings for connecting to a KMIP server.
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct ConnectionSettings {
-    /// HSM host/domain name
+    /// HSM host/domain name/IP address
     pub host: String,
 
     /// HSM port number
@@ -30,6 +30,9 @@ pub struct ConnectionSettings {
 
     /// Server certificate bytes in PEM format
     pub server_cert: Option<Vec<u8>>,
+
+    /// Server name for TLS SNI certificate matching
+    pub server_name: Option<String>,
 
     /// Server CA certificate bytes in PEM format
     pub ca_cert: Option<Vec<u8>>,
