@@ -42,9 +42,9 @@ where
         .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
     let sni_name = conn_settings
-            .server_name
-            .as_ref()
-            .map_or_else(|| conn_settings.host.clone(), |name| name.clone()),
+        .server_name
+        .as_ref()
+        .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
     let tls_stream = tls_connector
         .connect(&sni_name, tcp_stream)
         .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
