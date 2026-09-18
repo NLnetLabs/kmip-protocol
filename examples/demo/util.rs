@@ -23,7 +23,7 @@ where
     T: ToString,
 {
     fn to_csv_string(self) -> String {
-        self.unwrap_or(Vec::new())
+        self.unwrap_or_default()
             .iter()
             .map(|op| op.to_string())
             .collect::<Vec<String>>()

@@ -13,6 +13,8 @@ use tokio_rustls::client::TlsStream;
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
+pub type Client = crate::client::Client<TlsStream<TcpStream>>;
+
 async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
@@ -40,7 +42,7 @@ where
     let hostname = host_str.try_into().map_err(|err| {
         Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
     })?;
-    let connect_timeout = conn_settings.connect_timeout.clone();
+    let connect_timeout = conn_settings.connect_timeout;
 
     let connect = async { (tcpstream_factory)(addr, conn_settings).await };
 

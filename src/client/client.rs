@@ -3,13 +3,19 @@ use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
     sync::{
-        Arc, Mutex, PoisonError,
+        Arc, PoisonError,
         atomic::{AtomicU8, Ordering},
     },
 };
 
 use kmip_ttlv::{Config, PrettyPrinter, de::CaptureMode, error::ErrorKind};
 use tracing::trace;
+
+#[cfg(feature = "tokio")]
+use tokio::sync::Mutex;
+
+#[cfg(not(feature = "tokio"))]
+use std::sync::Mutex;
 
 use crate::{
     auth::{self, CredentialType},
@@ -182,17 +188,25 @@ impl<T: ReadWrite> Client<T> {
         self.stream.clone()
     }
 
+    #[cfg(feature = "tokio")]
+    async fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
+        Ok(self.stream.lock().await)
+    }
+
+    #[cfg(not(feature = "tokio"))]
+    fn stream(&self) -> Result<impl DerefMut<Target = T> + '_> {
+        Ok(self.stream.lock()?)
+    }
+
     /// Write request bytes to the given stream and read, deserialize and sanity check the response.
     #[maybe_async::maybe_async]
     async fn send_and_receive(
         &self,
         operation: Operation,
-        reader_config: &Config,
         req_bytes: &[u8],
-        stream: Arc<Mutex<T>>,
     ) -> std::result::Result<(Vec<Result<types::response::BatchItem>>, Vec<u8>), (Error, Option<Vec<u8>>)> {
         trace!("Acquiring stream lock");
-        let mut lock = match stream.lock() {
+        let mut lock = match self.stream().await {
             Ok(lock) => lock,
             Err(err) => return Err((err.into(), None)),
         };
@@ -205,9 +219,9 @@ impl<T: ReadWrite> Client<T> {
 
         // Read and deserialize the response
         trace!("Awaiting KMIP server response");
-        let (mut res, cap): (ResponseMessage, Vec<u8>) = match kmip_ttlv::from_reader(stream, reader_config).await {
-            Ok((res, cap)) => (res, cap),
-            Err((err, cap)) => {
+        let (mut res, cap): (ResponseMessage, Vec<u8>) = kmip_ttlv::from_reader(stream, &self.reader_config)
+            .await
+            .map_err(|(err, cap)| {
                 trace!("KMIP server responded with an error.");
                 let err = match err.kind() {
                     ErrorKind::IoError(err) => Error::ResponseReadError(err.to_string()),
@@ -226,9 +240,8 @@ impl<T: ReadWrite> Client<T> {
                     )),
                     err => Error::InternalError(format!("An internal error occured: {err}")),
                 };
-                return Err((err, Some(cap)));
-            }
-        };
+                (err, Some(cap))
+            })?;
 
         trace!("KMIP server responded with success.");
         let res = if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
@@ -356,29 +369,25 @@ impl<T: ReadWrite> Client<T> {
             CaptureMode::Disabled => { /* Nothing to do */ }
             CaptureMode::Diagnostic => {
                 let diag_str = self.pretty_printer.to_diag_string(&req_bytes);
-                trace!("KMIP TTLV request: {}", &diag_str);
+                trace!("KMIP TTLV request: {}", diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
             CaptureMode::Sensitive => {
                 let diag_str = self.pretty_printer.to_string(&req_bytes);
-                trace!("KMIP TTLV request: {}", &diag_str);
+                trace!("KMIP TTLV request: {}", diag_str);
                 self.last_req_diag_str.borrow_mut().replace(diag_str);
             }
         }
 
         // Send the serialized request and receive (and deserialize) the response.
-        let res = match self
-            .send_and_receive(operation, &self.reader_config, &req_bytes, self.stream.clone())
+        let res = self
+            .send_and_receive(operation, &req_bytes)
             .await
-        {
-            Ok(res) => Ok(res),
-            Err((err, cap)) => {
+            .inspect_err(|(err, _)| {
                 if err.is_connection_error() {
                     let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
                 }
-                Err((err, cap))
-            }
-        };
+            });
 
         // If the caller requested that diagnostic string representations of the TTLV request and response bytes be
         // captured, then generate, record and log the diagnostic representation of the response.
@@ -392,12 +401,12 @@ impl<T: ReadWrite> Client<T> {
                 CaptureMode::Disabled => { /* Nothing to do */ }
                 CaptureMode::Diagnostic => {
                     let diag_str = self.pretty_printer.to_diag_string(&buf);
-                    trace!("KMIP TTLV response: {}", &diag_str);
+                    trace!("KMIP TTLV response: {}", diag_str);
                     self.last_res_diag_str.borrow_mut().replace(diag_str);
                 }
                 CaptureMode::Sensitive => {
                     let diag_str = self.pretty_printer.to_string(&buf);
-                    trace!("KMIP TTLV response: {}", &diag_str);
+                    trace!("KMIP TTLV response: {}", diag_str);
                     self.last_res_diag_str.borrow_mut().replace(diag_str);
                 }
             }
@@ -796,6 +805,13 @@ mod test {
     #[test]
     #[ignore = "Requires a running PyKMIP instance"]
     fn test_pykmip_query_against_server_with_rustls() {
+        use rustls::pki_types::pem;
+        use rustls::pki_types::pem::PemObject;
+        use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
+        use std::convert::TryFrom;
+        use std::fs;
+        use std::sync::Arc;
+
         // To setup input files for PyKMIP and RustLS to work together we must use a cipher they have in common, either
         // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA384.
         //
@@ -873,13 +889,6 @@ mod test {
         //         .timestamp(stderrlog::Timestamp::Second)
         //         .init()
         //         .unwrap();
-
-        use rustls::pki_types::pem;
-        use rustls::pki_types::pem::PemObject;
-        use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
-        use std::convert::TryFrom;
-        use std::fs;
-        use std::sync::Arc;
 
         fn bytes_to_cert_chain(bytes: &[u8]) -> Result<Vec<CertificateDer<'static>>, pem::Error> {
             let mut res = Vec::new();

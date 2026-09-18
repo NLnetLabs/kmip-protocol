@@ -74,17 +74,29 @@ where
     };
 
     if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
-        root_store
-            .add(CertificateDer::from_slice(cert_bytes.as_slice()))
+        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
+            .next()
+            .ok_or(Error::ConfigurationError(format!(
+                "Failed to parse PEM bytes for server certificate"
+            )))?
             .map_err(|err| {
                 Error::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
             })?;
+        root_store.add(cert_bytes).map_err(|err| {
+            Error::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
+        })?;
     }
 
     if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
-        root_store
-            .add(CertificateDer::from_slice(cert_bytes.as_slice()))
+        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
+            .next()
+            .ok_or(Error::ConfigurationError(format!(
+                "Failed to parse PEM bytes for CA certificate"
+            )))?
             .map_err(|err| Error::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}")))?;
+        root_store.add(cert_bytes).map_err(|err| {
+            Error::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
+        })?;
     }
 
     let rustls_config_builder = rustls::ClientConfig::builder().with_root_certificates(root_store);
@@ -93,14 +105,14 @@ where
         Some(ClientCertificate::SeparatePem { cert_bytes, key_bytes }) => {
             let mut cert_chain = vec![];
 
-            for res in CertificateDer::pem_slice_iter(&cert_bytes) {
+            for res in CertificateDer::pem_slice_iter(cert_bytes) {
                 let cert = res.map_err(|err| {
                     Error::ConfigurationError(format!("Failed to parse PEM section from client certificate: {err}"))
                 })?;
                 cert_chain.push(cert);
             }
 
-            let key_der = PrivateKeyDer::from_pem_slice(&key_bytes).map_err(|err| {
+            let key_der = PrivateKeyDer::from_pem_slice(key_bytes).map_err(|err| {
                 Error::ConfigurationError(format!(
                     "Cannot parse PEM client certificate private key bytes: {}",
                     err

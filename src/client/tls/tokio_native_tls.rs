@@ -10,11 +10,11 @@ use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector
 
 pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
-async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
+async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
@@ -33,7 +33,7 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    let connect_timeout = conn_settings.connect_timeout.clone();
+    let connect_timeout = conn_settings.connect_timeout;
 
     let connect = async { (tcpstream_factory)(addr, conn_settings).await };
 
@@ -67,13 +67,13 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnect
         connector.min_protocol_version(Some(Protocol::Tlsv12));
 
         if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
-            let cert = Certificate::from_pem(&cert_bytes)
+            let cert = Certificate::from_pem(cert_bytes)
                 .map_err(|err| Error::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
             connector.add_root_certificate(cert);
         }
 
         if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
-            let cert = Certificate::from_pem(&cert_bytes)
+            let cert = Certificate::from_pem(cert_bytes)
                 .map_err(|err| Error::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
             connector.add_root_certificate(cert);
         }
@@ -89,8 +89,8 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnect
                 ));
             }
             ClientCertificate::CombinedPkcs12 { cert_bytes } => {
-                const EMPTY_PASSWORD: &'static str = "";
-                let identity = Identity::from_pkcs12(&cert_bytes, EMPTY_PASSWORD)
+                const EMPTY_PASSWORD: &str = "";
+                let identity = Identity::from_pkcs12(cert_bytes, EMPTY_PASSWORD)
                     .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
                 connector.identity(identity);
             }
