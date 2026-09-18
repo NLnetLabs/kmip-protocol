@@ -230,11 +230,3 @@ where
         error!("Pool error: {}", err)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn create_pool() {
-        todo!()
-    }
-}
