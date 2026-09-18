@@ -22,5 +22,5 @@ cfg_if::cfg_if! {
         trait_set::trait_set! {
             pub trait ReadWrite = tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin;
         }
-    } 
+    }
 }
