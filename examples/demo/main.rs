@@ -174,7 +174,7 @@ impl From<Opt> for ConnectionSettings {
                     panic!("Client certificate key path requires a client private key path")
                 }
                 (None, Some(_), None) => {
-                    panic!("Client certificate key path requires a client certificate path")
+                    panic!("Client private key path requires a client certificate path")
                 }
                 (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
                     panic!("Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path")
