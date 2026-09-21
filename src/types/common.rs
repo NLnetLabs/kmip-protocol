@@ -1547,7 +1547,7 @@ impl fmt::Display for KeyFormatType {
     }
 }
 
-/// See KMIP 1.0 section 9.1.3.2.5 [Padding Method Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc236497874).
+/// See KMIP 1.0 section 9.1.3.2.5 [Recommended Curve Enumeration](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581179).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, Ordinalize)]
 #[serde(rename = "0x420075")]
 #[non_exhaustive]
