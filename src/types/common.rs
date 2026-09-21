@@ -63,7 +63,8 @@ pub enum AttributeValue {
     CryptographicAlgorithm(CryptographicAlgorithm),
 
     /// See KMIP 1.0 section 3.5 Cryptographic Length.
-    // Not implemented because the caller should use AttributeValue::Integer.
+    #[serde(rename(deserialize = "if 0x42000A==Cryptographic Length"))]
+    CryptographicLength(CryptographicLength),
 
     /// See KMIP 1.0 section 3.6 Cryptographic Parameters.
     #[serde(rename(deserialize = "if 0x42000A==Cryptographic Parameters"))]
@@ -165,7 +166,8 @@ pub enum AttributeValue {
     ApplicationSpecificInformation(ApplicationNamespace, ApplicationData),
 
     /// See KMIP 1.0 section 3.31 Contact Information.
-    // Should be encoded as a Text String.
+    #[serde(rename(deserialize = "if 0x42000A==Contact Information"))]
+    ContactInformation(String),
 
     /// See KMIP 1.0 section 3.32 Last Change Date.
     // Not implemented
