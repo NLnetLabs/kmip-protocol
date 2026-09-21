@@ -351,6 +351,8 @@ impl AttributeValue {
             AttributeValue::TextString(v) => formatter.format_text(Self::TAG, v),
             AttributeValue::ByteString(v) => formatter.format_bytes(Self::TAG, v),
             &AttributeValue::DateTime(v) => formatter.format_date_time(Self::TAG, v as i64),
+            AttributeValue::CryptographicLength(v) => formatter.format_int(Self::TAG, v.0),
+            AttributeValue::ContactInformation(v) => formatter.format_text(Self::TAG, v),
         }
     }
 }
