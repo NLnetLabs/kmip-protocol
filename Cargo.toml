@@ -50,8 +50,6 @@ tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki", "webpki-
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
 proptest = ["dep:proptest"]
-aws-lc-rs = ["rustls/aws_lc_rs"]
-ring = ["rustls/ring"]
 
 [[example]]
 name = "demo"
