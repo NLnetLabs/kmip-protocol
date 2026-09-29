@@ -6,6 +6,25 @@ mod client_server;
 #[cfg(feature = "tls")]
 pub mod tls;
 
+#[cfg(feature = "sync-pool")]
+pub mod sync_pool;
+
+#[cfg(feature = "async-pool")]
+pub mod async_pool;
+
+#[doc(hidden)]
+pub mod config;
+
+pub mod pool {
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "sync-pool")] {
+            pub use super::sync_pool::*;
+        } else if #[cfg(feature = "async-pool")] {
+            pub use super::async_pool::*;
+        }
+    }
+}
+
 pub use client_server::{
     ClientServer,
     builder::ClientServerBuilder,
@@ -13,6 +32,5 @@ pub use client_server::{
     util::{batch_items_to_request, batch_items_to_response, payload_to_request, payload_to_response},
 };
 
-mod config;
-
+#[doc(inline)]
 pub use config::{ClientCertificate, ConnectionSettings};
