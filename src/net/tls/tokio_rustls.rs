@@ -3,28 +3,28 @@ use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
-use crate::client::tls::common::rustls::create_rustls_config;
-use crate::client::tls::common::util::create_kmip_client;
-use crate::client::{ConnectionSettings, Error, Result};
+use crate::net::tls::common::rustls::create_rustls_config;
+use crate::net::tls::common::util::create_kmip_client;
+use crate::net::{ClientServer, ConnectionSettings, NetError, NetResult};
 
 use tokio::net::TcpStream;
-use tokio_rustls::client::TlsStream;
 use tokio_rustls::TlsConnector;
+use tokio_rustls::client::TlsStream;
 
-pub type Client = crate::client::Client<TlsStream<TcpStream>>;
+pub type Client = ClientServer<TlsStream<TcpStream>>;
 
 async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> NetResult<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> Result<Client>
+) -> NetResult<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,
@@ -32,13 +32,13 @@ where
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()?
         .next()
-        .ok_or(Error::ConfigurationError(
+        .ok_or(NetError::ConfigurationError(
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
     let host_str = conn_settings.host.clone();
     let hostname = host_str.try_into().map_err(|err| {
-        Error::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
+        NetError::ConfigurationError(format!("Failed to parse hostname '{}': {}", conn_settings.host, err))
     })?;
     let connect_timeout = conn_settings.connect_timeout;
 
@@ -47,7 +47,7 @@ where
     let tcp_stream = if let Some(timeout) = connect_timeout {
         tokio::time::timeout(timeout, connect)
             .await
-            .map_err(|err| Error::ConfigurationError(format!("Failed to connect to host or timed out: {}", err)))??
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to connect to host or timed out: {}", err)))??
     } else {
         connect.await?
     };

@@ -12,7 +12,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{Client, ClientCertificate, ConnectionSettings};
+use kmip_protocol::net::{ClientCertificate, ClientServer, ConnectionSettings, NetResult};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
@@ -30,14 +30,17 @@ use crate::{
 ))]
 fn main() {
     let opt = Opt::from_args();
+    let num_threads = opt.num_threads;
 
     init_logging(&opt);
 
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
-            let client = kmip_protocol::client::tls::openssl::connect(&opt.into());
+            let client = kmip_protocol::net::tls::openssl::connect(&opt.into());
         } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::client::tls::rustls::connect(&opt.into());
+            let client = kmip_protocol::net::tls::rustls::connect(&opt.into());
         }
     }
 
@@ -45,7 +48,7 @@ fn main() {
 
     let mut thread_handles = vec![];
 
-    for i in 0..=1 {
+    for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
             exec_test_requests(thread_client, &format!("test_{}", i)).unwrap();
@@ -65,11 +68,13 @@ async fn main() {
 
     init_logging(&opt);
 
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::client::tls::tokio_native_tls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::client::tls::tokio_rustls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_rustls::connect(&opt.into()).await;
         }
     }
 
@@ -79,11 +84,8 @@ async fn main() {
 }
 
 #[maybe_async::maybe_async]
-async fn exec_test_requests<T: ReadWrite>(
-    client: Client<T>,
-    key_name_prefix: &str,
-) -> Result<(), kmip_protocol::client::Error> {
-    query_server_properties(&client).await?;
+async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_prefix: &str) -> NetResult<()> {
+    query_server_properties(&mut client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
     // sign, etc, instead of following the KMIP functional model?
@@ -130,7 +132,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
     info!("Requesting 32 random bytes..");
     if let Ok(payload) = client.rng_retrieve(32).await.log_error(&client) {
-        info!("{}", hex::encode_upper(payload.data));
+        info!("{}", hex::encode_upper(payload.0.0));
     }
 
     Ok(())
@@ -138,7 +140,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &Client<T>) -> Result<(), kmip_protocol::client::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> NetResult<()> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
@@ -177,7 +179,9 @@ impl From<Opt> for ConnectionSettings {
                     panic!("Client private key path requires a client certificate path")
                 }
                 (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
-                    panic!("Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path")
+                    panic!(
+                        "Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path"
+                    )
                 }
                 (Some(cert_path), Some(key_path), None) => Some(ClientCertificate::SeparatePem {
                     cert_bytes: load_binary_file(cert_path),

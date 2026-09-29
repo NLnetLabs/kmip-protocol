@@ -3,7 +3,7 @@
 //! This library provides:
 //!
 //!   - Strongly-typed interfaces for a subset of the [Oasis Key Management Interoperability Protocol] aka KMIP.
-//!   - A pluggable [Client] interface for sending KMIP TTLV requests to and receiving responses from a KMIP server.
+//!   - A pluggable [Client] interface for sending KMIP TccxxxxLV requests to and receiving responses from a KMIP server.
 //!   - Sample "plugins" for the [Client] interface for connecting to the KMIP server (a)synchronously via TCP+TLS.
 //!
 //! **WARNING:**
@@ -192,15 +192,11 @@
 //!
 //! - [Advanced Cryptographic Mandatory Test Cases KMIP v1.3 5.9.8.1 CS-AC-M-1-13](https://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-AC-M-1-13.xml) _(steps 1 & 2 only for sign operation test)_
 //! - [RNG Cryptographic Mandatory Test Cases KMIP v1.3 5.9.9.1 CS-RNG-M-1-13](ttps://docs.oasis-open.org/kmip/profiles/v1.3/os/test-cases/kmip-v1.3/mandatory/CS-RNG-M-1-13.xml)
-#![forbid(unsafe_code)]
 
 #[cfg(all(feature = "sync", feature = "async-with-tokio"))]
-compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-with-tokio\" features");
+compile_error!("feature \"sync\" cannot be enabled at the same time as feature \"async-with-tokio\"");
 
-pub mod auth;
-pub mod request;
-pub mod response;
-pub mod tag_map;
+// pub mod auth;
 
 #[cfg(any(
     feature = "tls-with-openssl",
@@ -210,11 +206,18 @@ pub mod tag_map;
     feature = "tls-with-tokio-rustls",
     doc
 ))]
-pub mod client;
+pub mod net;
 
+#[cfg(feature = "tls-with-rustls")]
+/// Re-export
+pub use rustls;
+
+#[cfg(feature = "tls-with-tokio-rustls")]
+/// Re-export
+pub use tokio_rustls;
+
+pub mod ttlv;
 pub mod types;
 
 #[cfg(test)]
 mod tests;
-
-pub use kmip_ttlv::Config;

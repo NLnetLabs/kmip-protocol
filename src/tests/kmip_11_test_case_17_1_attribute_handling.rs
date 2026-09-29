@@ -3,21 +3,18 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
-    response::from_slice,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             AttributeIndex, AttributeName, AttributeValue, CryptographicAlgorithm, CryptographicUsageMask, NameType,
             NameValue, ObjectType, Operation, UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
-            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, Name, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
         },
-        request::{Attribute, TemplateAttribute},
-        response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
+        response::{ResponsePayload, ResultReason, ResultStatus},
     },
 };
 
@@ -41,7 +38,7 @@ fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Create(
                 ObjectType::SymmetricKey,
-                TemplateAttribute::unnamed(vec![
+                TemplateAttribute::new(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::AES),
                     Attribute::CryptographicLength(256),
                     Attribute::CryptographicUsageMask(
@@ -68,12 +65,8 @@ fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
         "0000000420008010000003842000A0700000013436F6E7461637420496E666F726D6174696F6E000000000042000B0700",
         "00000F61646D696E406C6F63616C686F737400"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -86,7 +79,7 @@ fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_response() {
         "383200000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -134,16 +127,24 @@ fn kmip_1_1_testcase_17_1_time_1_get_attributes_invalid_request() {
         "938320000000042000A070000000B4F626A6563742054797065000000000042000A070000000B4F626A65637420547970",
         "650000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
 fn kmip_1_1_testcase_17_1_time_1_get_attributes_response() {
+    // Tag: Response Message (0x42007B), Type: Structure, Data:
+    //   Tag: Response Header (0x42007A), Type: Structure, Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure, Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer, Data: 0x000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer, Data: 0x000001 (1)
+    //     Tag: Time Stamp (0x420092), Type: DateTime, Data: 0x4F9A5574
+    //     Tag: Batch Count (0x42000D), Type: Integer, Data: 0x000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure, Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration, Data: 0x00000B (11 = Get Attributes)
+    //     Tag: Result Status (0x42007F), Type: Enumeration, Data: 0x000001 (1 = Operation Failed)
+    //     Tag: Result Reason (0x42007E), Type: Enumeration, Data: 0x000007 (7 = Invalid Field)
+    //     Tag: Result Message (0x42007D), Type: TextString, Data: "Attribute Name specified more than once: Object Type"
     let use_case_response_hex = concat!(
         "42007B01000000C842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A557442000D0200000004000000010000000042000F010000007042",
@@ -152,7 +153,7 @@ fn kmip_1_1_testcase_17_1_time_1_get_attributes_response() {
         "626A656374205479706500000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -195,12 +196,8 @@ fn kmip_1_1_testcase_17_1_time_2_get_attributes_request() {
         "00790100000048420094070000002432386337626164312D626339622D343164662D623433392D3162613034613666643",
         "938320000000042000A070000000B4F626A65637420547970650000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -213,7 +210,7 @@ fn kmip_1_1_testcase_17_1_time_2_get_attributes_response() {
         "0A070000000B4F626A6563742054797065000000000042000B05000000040000000200000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -257,7 +254,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_request() {
                 Attribute(
                     AttributeName("Contact Information".into()),
                     Some(AttributeIndex(0)),
-                    AttributeValue::TextString("donald@localhost".into()),
+                    AttributeValue::ContactInformation("donald@localhost".into()),
                 ),
             ),
         )],
@@ -270,12 +267,8 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_request() {
         "9383200000000420008010000004842000A0700000013436F6E7461637420496E666F726D6174696F6E00000000004200",
         "090200000004000000000000000042000B0700000010646F6E616C64406C6F63616C686F7374",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -289,7 +282,7 @@ fn kmip_1_1_testcase_17_1_time_3_modify_attribute_response() {
         "16C686F7374",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -338,12 +331,8 @@ fn kmip_1_1_testcase_17_1_time_4_delete_attribute_request() {
         "00790100000040420094070000002432386337626164312D626339622D343164662D623433392D3162613034613666643",
         "938320000000042000A07000000044E616D6500000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -357,7 +346,7 @@ fn kmip_1_1_testcase_17_1_time_4_delete_attribute_response() {
         "405000000040000000100000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -375,7 +364,10 @@ fn kmip_1_1_testcase_17_1_time_4_delete_attribute_response() {
         assert_eq!(&payload.attribute.name, "Name");
         assert_eq!(
             payload.attribute.value,
-            AttributeValue::Name(NameValue("FirstTestName".into()), NameType::UninterpretedTextString)
+            AttributeValue::Name(Name(
+                NameValue("FirstTestName".into()),
+                NameType::UninterpretedTextString
+            ))
         );
     }
 }
@@ -402,12 +394,8 @@ fn kmip_1_1_testcase_17_1_time_5_destroy_request() {
         "00790100000030420094070000002432386337626164312D626339622D343164662D623433392D3162613034613666643",
         "9383200000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -419,7 +407,7 @@ fn kmip_1_1_testcase_17_1_time_5_destroy_response() {
         "86337626164312D626339622D343164662D623433392D31626130346136666439383200000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
