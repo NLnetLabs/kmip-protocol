@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-/// A StructOpt example
+/// kmip-protocol demo settings.
 #[derive(StructOpt, Debug)]
 #[structopt()]
 #[rustfmt::skip]
@@ -54,4 +54,7 @@ pub(crate) struct Opt {
 
     #[structopt(long = "write-timeout", default_value = "5")]
     pub(crate) write_timeout: u64,
+
+    #[structopt(long = "num-threads", default_value = "1")]
+    pub(crate) num_threads: u8,
 }

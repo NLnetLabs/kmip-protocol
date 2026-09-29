@@ -30,8 +30,11 @@ use crate::{
 ))]
 fn main() {
     let opt = Opt::from_args();
+    let num_threads = opt.num_threads;
 
     init_logging(&opt);
+
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
 
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
@@ -45,7 +48,7 @@ fn main() {
 
     let mut thread_handles = vec![];
 
-    for i in 0..=1 {
+    for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
             exec_test_requests(thread_client, &format!("test_{}", i)).unwrap();
@@ -65,6 +68,8 @@ async fn main() {
 
     init_logging(&opt);
 
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
             let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
@@ -75,7 +80,7 @@ async fn main() {
 
     let client = client.expect("Failed to establish TLS connection");
 
-    exec_test_requests(client).await.unwrap();
+    exec_test_requests(client, "test").await.unwrap();
 }
 
 #[maybe_async::maybe_async]
@@ -92,7 +97,7 @@ async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_
             format!("{}_public_key", key_name_prefix),
         )
         .await
-        .log_error()
+        .log_error(&client)
     {
         info!("Created key pair:");
         info!("  Private key ID: {}", private_key_id);
@@ -100,33 +105,33 @@ async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_
         let mut key_needs_revoking = false;
 
         info!("Activating private key {}..", private_key_id);
-        if client.activate_key(&private_key_id).await.log_error().is_ok() {
+        if client.activate_key(&private_key_id).await.log_error(&client).is_ok() {
             key_needs_revoking = true;
 
             info!("Signing with private key {}..", private_key_id);
             if let Ok(payload) = client
                 .sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8])
                 .await
-                .log_error()
+                .log_error(&client)
             {
                 info!("{}", hex::encode_upper(payload.signature_data));
             }
         }
 
         info!("Deleting public key {}..", public_key_id);
-        client.destroy_key(&public_key_id).await.log_error().ok();
+        client.destroy_key(&public_key_id).await.log_error(&client).ok();
 
         if key_needs_revoking {
             info!("Revoking private key {}..", private_key_id);
-            client.revoke_key(&private_key_id).await.log_error().ok();
+            client.revoke_key(&private_key_id).await.log_error(&client).ok();
         }
 
         info!("Deleting private key {}..", private_key_id);
-        client.destroy_key(&private_key_id).await.log_error().ok();
+        client.destroy_key(&private_key_id).await.log_error(&client).ok();
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(payload) = client.rng_retrieve(32).await.log_error() {
+    if let Ok(payload) = client.rng_retrieve(32).await.log_error(&client) {
         info!("{}", hex::encode_upper(payload.0.0));
     }
 
