@@ -12,16 +12,14 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{Client, ClientCertificate, ConnectionSettings};
+use kmip_protocol::client::{ClientCertificate, ClientServer, ConnectionSettings};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
 use util::init_logging;
 
-use crate::{
-    config::Opt,
-    util::{SelfLoggingError, ToCsvString},
-};
+use crate::util::SelfLoggingError;
+use crate::{config::Opt, util::ToCsvString};
 
 #[cfg(any(
     feature = "tls-with-openssl",
@@ -80,10 +78,10 @@ async fn main() {
 
 #[maybe_async::maybe_async]
 async fn exec_test_requests<T: ReadWrite>(
-    client: Client<T>,
+    mut client: ClientServer<T>,
     key_name_prefix: &str,
 ) -> Result<(), kmip_protocol::client::Error> {
-    query_server_properties(&client).await?;
+    query_server_properties(&mut client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
     // sign, etc, instead of following the KMIP functional model?
@@ -95,7 +93,7 @@ async fn exec_test_requests<T: ReadWrite>(
             format!("{}_public_key", key_name_prefix),
         )
         .await
-        .log_error(&client)
+        .log_error()
     {
         info!("Created key pair:");
         info!("  Private key ID: {}", private_key_id);
@@ -103,34 +101,34 @@ async fn exec_test_requests<T: ReadWrite>(
         let mut key_needs_revoking = false;
 
         info!("Activating private key {}..", private_key_id);
-        if client.activate_key(&private_key_id).await.log_error(&client).is_ok() {
+        if client.activate_key(&private_key_id).await.log_error().is_ok() {
             key_needs_revoking = true;
 
             info!("Signing with private key {}..", private_key_id);
             if let Ok(payload) = client
                 .sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8])
                 .await
-                .log_error(&client)
+                .log_error()
             {
                 info!("{}", hex::encode_upper(payload.signature_data));
             }
         }
 
         info!("Deleting public key {}..", public_key_id);
-        client.destroy_key(&public_key_id).await.log_error(&client).ok();
+        client.destroy_key(&public_key_id).await.log_error().ok();
 
         if key_needs_revoking {
             info!("Revoking private key {}..", private_key_id);
-            client.revoke_key(&private_key_id).await.log_error(&client).ok();
+            client.revoke_key(&private_key_id).await.log_error().ok();
         }
 
         info!("Deleting private key {}..", private_key_id);
-        client.destroy_key(&private_key_id).await.log_error(&client).ok();
+        client.destroy_key(&private_key_id).await.log_error().ok();
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(payload) = client.rng_retrieve(32).await.log_error(&client) {
-        info!("{}", hex::encode_upper(payload.data));
+    if let Ok(payload) = client.rng_retrieve(32).await.log_error() {
+        info!("{}", hex::encode_upper(payload.0.0));
     }
 
     Ok(())
@@ -138,7 +136,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &Client<T>) -> Result<(), kmip_protocol::client::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> Result<(), kmip_protocol::client::Error> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
@@ -177,7 +175,9 @@ impl From<Opt> for ConnectionSettings {
                     panic!("Client private key path requires a client certificate path")
                 }
                 (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
-                    panic!("Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path")
+                    panic!(
+                        "Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path"
+                    )
                 }
                 (Some(cert_path), Some(key_path), None) => Some(ClientCertificate::SeparatePem {
                     cert_bytes: load_binary_file(cert_path),

@@ -6,12 +6,12 @@ use std::{
 use crate::client::tls::common::util::create_kmip_client;
 
 use crate::client::{
-    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings, Error, Result,
+    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientServer, ClientCertificate, ConnectionSettings, Error, Result,
 };
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<SslStream<TcpStream>>> {
+pub fn connect(conn_settings: &ConnectionSettings) -> Result<ClientServer<SslStream<TcpStream>>> {
     connect_with_tcp_stream_factory(conn_settings, |addr, settings| {
         let tcp_stream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
@@ -25,7 +25,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client<SslStream<Tc
 pub fn connect_with_tcp_stream_factory<F>(
     conn_settings: &ConnectionSettings,
     tcp_stream_factory: F,
-) -> Result<Client<SslStream<TcpStream>>>
+) -> Result<ClientServer<SslStream<TcpStream>>>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>,
 {

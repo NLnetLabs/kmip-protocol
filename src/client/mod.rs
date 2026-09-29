@@ -8,7 +8,7 @@ pub mod config;
 
 pub mod tls;
 
-pub use client::{Client, ClientBuilder, Error, Result};
+pub use client::{ClientServer, ClientServerBuilder, Error, Result};
 
 #[doc(inline)]
 pub use config::{ClientCertificate, ConnectionSettings};

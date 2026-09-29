@@ -5,17 +5,17 @@ use std::{
 };
 
 use crate::client::{
-    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
     Error,
+    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
 };
 
 use crate::client::{ConnectionSettings, Result};
 
-use rustls::{pki_types::ServerName, ClientConfig, ClientConnection, StreamOwned};
+use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
 
-pub type Client = crate::client::Client<StreamOwned<ClientConnection, TcpStream>>;
+pub type ClientServer = crate::client::ClientServer<StreamOwned<ClientConnection, TcpStream>>;
 
-pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client> {
+pub fn connect(conn_settings: &ConnectionSettings) -> Result<ClientServer> {
     connect_with_tcpstream_factory(conn_settings, |addr, settings| {
         let tcpstream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
@@ -26,7 +26,7 @@ pub fn connect(conn_settings: &ConnectionSettings) -> Result<Client> {
     })
 }
 
-pub fn connect_with_tcpstream_factory<F>(conn_settings: &ConnectionSettings, tcpstream_factory: F) -> Result<Client>
+pub fn connect_with_tcpstream_factory<F>(conn_settings: &ConnectionSettings, tcpstream_factory: F) -> Result<ClientServer>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> Result<TcpStream>,
 {
