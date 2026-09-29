@@ -56,6 +56,6 @@ pub(crate) struct Opt {
     pub(crate) write_timeout: u64,
 
     #[structopt(long = "num-threads", default_value = "1")]
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub(crate) num_threads: u8,
 }
