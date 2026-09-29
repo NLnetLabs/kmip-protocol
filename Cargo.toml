@@ -56,10 +56,6 @@ name = "demo"
 required-features = ["tls"]
 test = false
 
-[[example]]
-name = "hex_to_txt"
-test = false
-
 [[test]]
 name = "roundtrip_ttlv"
 required-features = ["proptest"]
