@@ -49,7 +49,6 @@ proptest = ["dep:proptest"]
 
 [[example]]
 name = "demo"
-required-features = ["tls-with-rustls"]
 test = false
 
 [[test]]
