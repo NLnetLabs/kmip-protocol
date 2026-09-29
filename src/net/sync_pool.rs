@@ -70,13 +70,10 @@ impl DerefMut for KmipConn {
     }
 }
 
-/// A pool of already connected KMIP clients.
+/// A pool of KMIP clients.
 ///
-/// This pool can be used to acquire a KMIP client without first having to
-/// wait for it to connect at the TCP/TLS level, and without unnecessarily
-/// closing the connection when finished.
-// TODO: Move this to the kmip-protocol crate and add an AsyncConnPool variant
-// implemented using the bb8 crate instead of the r2d2 crate.
+/// Connections are re-used until timed out or the connection is lost, and are
+/// re-created as necessary.
 #[derive(Clone, Debug)]
 pub struct SyncConnPool {
     server_id: String,
