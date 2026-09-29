@@ -178,7 +178,7 @@
 //!   - [ ] 14.2 Test Case: Key Wrapping using AES Key Wrap with Attributes
 //! - 15     Groups _(Added in KMIP v1.1)_
 //!   - [ ] 15.1 Test Case: Locate a Fresh Object from the Default Group
-//!   - [ ] 15.2 Test Case: ClientServer-side Group Management
+//!   - [ ] 15.2 Test Case: Client-side Group Management
 //!   - [ ] 15.3 Test Case: Default Object Group Member
 //! - 16     Discover Versions _(Added in KMIP v1.1)_
 //!   - [x] 16.1 Test Case: Discover Versions
@@ -205,7 +205,7 @@ compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-w
     feature = "tls-with-tokio-rustls",
     doc
 ))]
-pub mod client;
+pub mod net;
 
 pub mod ttlv;
 pub mod types;
