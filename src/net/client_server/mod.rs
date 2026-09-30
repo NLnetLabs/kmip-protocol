@@ -323,7 +323,7 @@ impl<T: ReadWrite> ClientServer<T> {
             formatter = crate::ttlv::Formatter::new(&mut self.write_buf);
             if request.format(&mut formatter).is_ok() {
                 let request_bytes = formatter.filled().as_flattened();
-                Self::write_to_stream(&mut stream, &request_bytes).await?;
+                Self::write_to_stream(&mut stream, request_bytes).await?;
                 break request_bytes;
             } else if len >= self.max_message_size {
                 // Buffer is already at the maximum possible size.
@@ -488,7 +488,7 @@ impl<T: ReadWrite> ClientServer<T> {
 
 impl<T: ReadWrite> ClientServer<T> {
     #[cfg(feature = "tokio")]
-    async fn get_mut_stream(stream: &Mutex<T>) -> Result<impl DerefMut<Target = T> + '_> {
+    async fn get_mut_stream(stream: &Mutex<T>) -> NetResult<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock().await)
     }
 
@@ -499,7 +499,7 @@ impl<T: ReadWrite> ClientServer<T> {
 
     #[maybe_async::maybe_async]
     async fn post_process_response(mut res: ResponseMessage) -> NetResult<Vec<NetResult<response::BatchItem>>> {
-        if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
+        if res.header.batch_count >= 1 && !res.batch_items.is_empty() {
             let res = res
                 .batch_items
                 .drain(..)
@@ -604,7 +604,7 @@ impl<T: ReadWrite> ClientServer<T> {
             bytes.len(),
             hex::encode_upper(bytes)
         );
-        if let Err(err) = stream.write_all(&bytes).await {
+        if let Err(err) = stream.write_all(bytes).await {
             return Err(NetError::NetworkWriteError(err.to_string()));
         }
 
@@ -614,12 +614,10 @@ impl<T: ReadWrite> ClientServer<T> {
     fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> NetResult<()> {
         // If the buffer is too small, try to expand it.
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
-        if wanted_buf_size > read_buf.capacity() {
-            if wanted_buf_size > limit as usize {
-                return Err(NetError::NetworkReadError(format!(
-                    "Response too large: {wanted_buf_size} bytes > {limit} bytes"
-                )));
-            }
+        if wanted_buf_size > read_buf.capacity() && wanted_buf_size > limit as usize {
+            return Err(NetError::NetworkReadError(format!(
+                "Response too large: {wanted_buf_size} bytes > {limit} bytes"
+            )));
         }
         read_buf.resize(wanted_buf_size, 0);
         Ok(())
@@ -665,7 +663,7 @@ impl<T: ReadWrite> Clone for ClientServer<T> {
     fn clone(&self) -> Self {
         Self {
             auth: self.auth.clone(),
-            max_message_size: self.max_message_size.clone(),
+            max_message_size: self.max_message_size,
             stream: self.stream.clone(),
             connection_error_count: self.connection_error_count.clone(),
             read_buf: vec![0u8; 8192],
