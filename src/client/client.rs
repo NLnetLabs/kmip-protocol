@@ -156,19 +156,20 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::AuthenticationError => f.write_str("Authentication error"),
-            Error::ConfigurationError(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
-            Error::SerializeError(e) => f.write_fmt(format_args!("Serialize error: {}", e)),
-            Error::NetworkWriteError(e) => f.write_fmt(format_args!("Request send error: {}", e)),
-            Error::NetworkReadError(e) => f.write_fmt(format_args!("Response read error: {}", e)),
-            Error::DeserializeError { err: e, req, res } => f.write_fmt(format_args!(
+            Error::ConfigurationError(e) => write!(f, "Configuration error: {}", e),
+            Error::SerializeError(e) => write!(f, "Serialize error: {}", e),
+            Error::NetworkWriteError(e) => write!(f, "Request send error: {}", e),
+            Error::NetworkReadError(e) => write!(f, "Response read error: {}", e),
+            Error::DeserializeError { err: e, req, res } => write!(
+                f,
                 "Deserialize error: {e}\nRequest: {}\nResponse: {}",
                 hex::encode_upper(req),
                 hex::encode_upper(res)
-            )),
-            Error::ServerError(e) => f.write_fmt(format_args!("Server error: {e}")),
-            Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
-            Error::ItemNotFound(e) => f.write_fmt(format_args!("Item not found: {}", e)),
-            Error::Unknown(e) => f.write_fmt(format_args!("Unknown error: {}", e)),
+            ),
+            Error::ServerError(e) => write!(f, "Server error: {e}"),
+            Error::InternalError(e) => write!(f, "Internal error: {}", e),
+            Error::ItemNotFound(e) => write!(f, "Item not found: {}", e),
+            Error::Unknown(e) => write!(f, "Unknown error: {}", e),
         }
     }
 }
