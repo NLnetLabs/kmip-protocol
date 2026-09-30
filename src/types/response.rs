@@ -841,7 +841,9 @@ impl BatchItem {
         let result_message = scanner
             .scan_opt_text(Self::RESULT_MESSAGE_TAG)?
             .map(ToString::to_string);
-        let payload = if let Some(operation) = operation {
+        let payload = if result_status == ResultStatus::Success
+            && let Some(operation) = operation
+        {
             ResponsePayload::fast_scan_opt(&mut scanner, operation)?
         } else {
             None
