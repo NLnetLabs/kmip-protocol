@@ -840,13 +840,77 @@ mod test {
         },
     };
 
+    const TEST_OPERATIONS: [Operation; 22] = [
+        Operation::Create,
+        Operation::CreateKeyPair,
+        Operation::Register,
+        Operation::Rekey,
+        Operation::Locate,
+        Operation::Check,
+        Operation::Get,
+        Operation::GetAttributes,
+        Operation::GetAttributeList,
+        Operation::AddAttribute,
+        Operation::ModifyAttribute,
+        Operation::DeleteAttribute,
+        Operation::ObtainLease,
+        Operation::GetUsageAllocation,
+        Operation::Activate,
+        Operation::Revoke,
+        Operation::Destroy,
+        Operation::Archive,
+        Operation::Recover,
+        Operation::Query,
+        Operation::Cancel,
+        Operation::Poll,
+    ];
+    const TEST_OBJECT_TYPES: [ObjectType; 5] = [
+        ObjectType::Certificate,
+        ObjectType::SymmetricKey,
+        ObjectType::PublicKey,
+        ObjectType::PrivateKey,
+        ObjectType::Template,
+    ];
+
     struct MockStream {
-        pub response: Cursor<Vec<u8>>,
+        pub bytes: Cursor<Vec<u8>>,
+        pub is_client: bool,
+    }
+
+    impl MockStream {
+        pub fn new(bytes: Vec<u8>) -> Self {
+            Self {
+                bytes: Cursor::new(bytes),
+                is_client: true,
+            }
+        }
+
+        pub fn new_server() -> Self {
+            Self {
+                bytes: Cursor::new(vec![]),
+                is_client: false,
+            }
+        }
+
+        #[allow(unused)]
+        pub fn become_server(&mut self) {
+            self.bytes.set_position(0);
+            self.is_client = false;
+        }
+
+        pub fn become_client(&mut self) {
+            self.bytes.set_position(0);
+            self.is_client = true;
+        }
     }
 
     impl Write for MockStream {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            std::io::sink().write(buf)
+            if self.is_client {
+                std::io::sink().write(buf)
+            } else {
+                self.bytes.write(buf)
+            }
         }
 
         fn flush(&mut self) -> std::io::Result<()> {
@@ -856,12 +920,12 @@ mod test {
 
     impl Read for MockStream {
         fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-            self.response.read(buf)
+            if self.is_client { self.bytes.read(buf) } else { Ok(0) }
         }
     }
 
     #[test]
-    fn test_query() {
+    fn test_client_query() {
         // Decoded by copying the quoted hex lines below into /tmp/t then running:
         //   cargo run -q --example hex_to_txt
         //
@@ -919,58 +983,20 @@ mod test {
         );
         let response_bytes = hex::decode(response_hex).unwrap();
 
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
-
+        let mut stream = MockStream::new(response_bytes);
         let mut client = ClientServerBuilder::new(&mut stream).build();
 
         let response_payload = client.query().unwrap();
 
-        assert_eq!(
-            response_payload.operations,
-            Some(vec![
-                Operation::Create,
-                Operation::CreateKeyPair,
-                Operation::Register,
-                Operation::Rekey,
-                Operation::Locate,
-                Operation::Check,
-                Operation::Get,
-                Operation::GetAttributes,
-                Operation::GetAttributeList,
-                Operation::AddAttribute,
-                Operation::ModifyAttribute,
-                Operation::DeleteAttribute,
-                Operation::ObtainLease,
-                Operation::GetUsageAllocation,
-                Operation::Activate,
-                Operation::Revoke,
-                Operation::Destroy,
-                Operation::Archive,
-                Operation::Recover,
-                Operation::Query,
-                Operation::Cancel,
-                Operation::Poll,
-            ])
-        );
-        assert_eq!(
-            response_payload.object_types,
-            Some(vec![
-                ObjectType::Certificate,
-                ObjectType::SymmetricKey,
-                ObjectType::PublicKey,
-                ObjectType::PrivateKey,
-                ObjectType::Template
-            ])
-        );
+        assert_eq!(response_payload.operations, Some(TEST_OPERATIONS.to_vec()));
+        assert_eq!(response_payload.object_types, Some(TEST_OBJECT_TYPES.to_vec()));
         assert_eq!(response_payload.vendor_identification, None);
         assert_eq!(response_payload.server_information, None);
         assert_eq!(client.connection_error_count(), 0);
     }
 
     #[test]
-    fn test_create_rsa_key_pair() {
+    fn test_client_create_rsa_key_pair() {
         // Decoded by copying the quoted hex lines below into /tmp/t then running:
         //   cargo run -q --example hex_to_txt
         //
@@ -996,10 +1022,7 @@ mod test {
         );
         let response_bytes = hex::decode(response_hex).unwrap();
 
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
-
+        let mut stream = MockStream::new(response_bytes);
         let mut client = ClientServerBuilder::new(&mut stream).build();
 
         let response_payload = client
@@ -1012,7 +1035,7 @@ mod test {
     }
 
     #[test]
-    fn test_multiple_requests() {
+    fn test_client_multiple_requests() {
         // Define mock KMIP responses
         let payload = ResponsePayload::Query(response::QueryResponsePayload::default());
         let good_response_bytes =
@@ -1034,9 +1057,7 @@ mod test {
         test_entries
             .iter()
             .for_each(|(bytes, _)| mock_response_stream.extend_from_slice(bytes));
-        let mut stream = MockStream {
-            response: Cursor::new(mock_response_stream),
-        };
+        let mut stream = MockStream::new(mock_response_stream);
 
         // Create a real KMIP client that "connects" to a mock network stream.
         let mut client = ClientServerBuilder::new(&mut stream).build();
@@ -1051,11 +1072,9 @@ mod test {
     }
 
     #[test]
-    fn test_connection_dropped() {
+    fn test_client_connection_dropped() {
         // Configure the mock stream to be empty.
-        let mut stream = MockStream {
-            response: Cursor::new(vec![]),
-        };
+        let mut stream = MockStream::new(vec![]);
 
         // Create a real KMIP client that "connects" to a mock network stream.
         let mut client = ClientServerBuilder::new(&mut stream).build();
@@ -1069,14 +1088,12 @@ mod test {
     }
 
     #[test]
-    fn test_connection_dropped_after_one_response() {
+    fn test_client_connection_dropped_after_one_response() {
         let bad_response_bytes =
             response::to_vec(payload_to_response(ResultStatus::OperationFailed, None, None, None).unwrap()).unwrap();
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream {
-            response: Cursor::new(bad_response_bytes),
-        };
+        let mut stream = MockStream::new(bad_response_bytes);
 
         // Create a real KMIP client that "connects" to a mock network stream.
         let mut client = ClientServerBuilder::new(&mut stream).build();
@@ -1094,16 +1111,14 @@ mod test {
     }
 
     #[test]
-    fn test_partial_response() {
+    fn test_client_partial_response() {
         let mut response_bytes =
             response::to_vec(payload_to_response(ResultStatus::OperationFailed, None, None, None).unwrap()).unwrap();
 
         response_bytes.truncate(response_bytes.len() / 2);
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
+        let mut stream = MockStream::new(response_bytes);
 
         // Create a real KMIP client that "connects" to a mock network stream.
         let mut client = ClientServerBuilder::new(&mut stream).build();
@@ -1117,15 +1132,13 @@ mod test {
     }
 
     #[test]
-    fn test_unsupported_valid_ttlv() {
+    fn test_client_unsupported_valid_ttlv() {
         // Sere a protocol version TTLV instead of a ResponseMessage TTLV
         // as expected.
         let garbage_response = to_vec(|f| ProtocolVersion { major: 1, minor: 0 }.format(f)).unwrap();
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream {
-            response: Cursor::new(garbage_response.clone()),
-        };
+        let mut stream = MockStream::new(garbage_response.clone());
 
         // Create a real KMIP client that "connects" to a mock network stream.
         let mut client = ClientServerBuilder::new(&mut stream).build();
@@ -1141,6 +1154,57 @@ mod test {
         // in the error details.
         assert_eq!(*res, garbage_response);
         assert_eq!(client.connection_error_count(), 0);
+    }
+
+    #[test]
+    fn test_server() {
+        // Configure the mock stream.
+        let mut stream = MockStream::new_server();
+
+        // Create a real KMIP server that "connects" to a mock network stream.
+        let mut server = ClientServerBuilder::new(&mut stream).build();
+
+        // Copiedf from test_client_query().
+        let response_hex = concat!(
+            "42007B010000023042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
+            "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F01000001D842",
+            "005C0500000004000000180000000042007F0500000004000000000000000042007C01000001B042005C0500000004000",
+            "000010000000042005C0500000004000000020000000042005C0500000004000000030000000042005C05000000040000",
+            "00040000000042005C0500000004000000080000000042005C0500000004000000090000000042005C050000000400000",
+            "00A0000000042005C05000000040000000B0000000042005C05000000040000000C0000000042005C0500000004000000",
+            "0D0000000042005C05000000040000000E0000000042005C05000000040000000F0000000042005C05000000040000001",
+            "00000000042005C0500000004000000110000000042005C0500000004000000120000000042005C050000000400000013",
+            "0000000042005C0500000004000000140000000042005C0500000004000000150000000042005C0500000004000000160",
+            "000000042005C0500000004000000180000000042005C0500000004000000190000000042005C05000000040000001A00",
+            "0000004200570500000004000000010000000042005705000000040000000200000000420057050000000400000003000",
+            "000004200570500000004000000040000000042005705000000040000000600000000"
+        );
+        let response_bytes = hex::decode(response_hex).unwrap();
+        let response = response::from_slice(&response_bytes).unwrap();
+        server.send_response(response.clone()).unwrap();
+        server.send_response(response.clone()).unwrap();
+
+        // Create a real KMIP client that "connects" to a mock network stream.
+        stream.become_client();
+        let mut client = ClientServerBuilder::new(&mut stream).build();
+
+        // First query should succeed
+        let response_payload = client.query().unwrap();
+        assert_eq!(response_payload.operations, Some(TEST_OPERATIONS.to_vec()));
+        assert_eq!(response_payload.object_types, Some(TEST_OBJECT_TYPES.to_vec()));
+        assert_eq!(response_payload.vendor_identification, None);
+        assert_eq!(response_payload.server_information, None);
+
+        // Second query should succeed
+        let response_payload2 = client.query().unwrap();
+        assert_eq!(response_payload2.operations, Some(TEST_OPERATIONS.to_vec()));
+        assert_eq!(response_payload2.object_types, Some(TEST_OBJECT_TYPES.to_vec()));
+        assert_eq!(response_payload2.vendor_identification, None);
+        assert_eq!(response_payload2.server_information, None);
+        assert_eq!(client.connection_error_count(), 0);
+
+        // Third query should fail as we only served two responses.
+        assert!(client.query().is_err());
     }
 
     #[cfg(feature = "tls-with-openssl")]
@@ -1339,7 +1403,8 @@ mod test {
         let response_bytes = hex::decode(response_hex).unwrap();
 
         let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
+            bytes: Cursor::new(response_bytes),
+            is_client: true,
         };
 
         let mut client = ClientServerBuilder::new(&mut stream).build();
