@@ -487,10 +487,10 @@ impl<T: ReadWrite> ClientServer<T> {
             &mut self.read_buf,
             self.max_message_size,
             ResponseMessage::fast_scan,
+            self.connection_error_count.clone(),
         )
         .await?;
         trace!("KMIP server response received");
-        drop(stream);
 
         Self::post_process_response(res).await.map_err(|mut err| {
             if let Error::DeserializeError { req, .. } = &mut err {
@@ -531,11 +531,6 @@ impl<T: ReadWrite> ClientServer<T> {
             batch_items,
         )?)
         .await
-        .inspect_err(|err| {
-            if err.is_connection_error() {
-                let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
-            }
-        })
     }
 }
 
@@ -561,6 +556,7 @@ impl<T: ReadWrite> ClientServer<T> {
             &mut self.read_buf,
             self.max_message_size,
             RequestMessage::fast_scan,
+            self.connection_error_count.clone(),
         )
         .await?;
         drop(lock);
@@ -678,7 +674,13 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn read_message_from_stream<F, R>(stream: &mut T, read_buf: &mut Vec<u8>, limit: i32, op: F) -> Result<R>
+    async fn read_message_from_stream<F, R>(
+        stream: &mut T,
+        read_buf: &mut Vec<u8>,
+        limit: i32,
+        op: F,
+        connection_error_count: Arc<AtomicUsize>,
+    ) -> Result<R>
     where
         F: Fn(&mut FastScanner) -> std::result::Result<R, FastScanError>,
     {
@@ -723,7 +725,8 @@ impl<T: ReadWrite> ClientServer<T> {
             let write_start_idx = available;
             let updated_buffer_len = read_buf.len();
             let bytes_to_write_into = &mut read_buf[write_start_idx..updated_buffer_len];
-            let read_byte_count = Self::read_from_stream(stream, bytes_to_write_into).await?;
+            let read_byte_count =
+                Self::read_from_stream(stream, bytes_to_write_into, connection_error_count.clone()).await?;
 
             // Don't pass any extra zeroes in the buffer to the TTLV parser,
             // only give it bytes that we actually read.
@@ -760,7 +763,11 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn read_from_stream(stream: &mut T, buffer: &mut [u8]) -> Result<usize> {
+    async fn read_from_stream(
+        stream: &mut T,
+        buffer: &mut [u8],
+        connection_error_count: Arc<AtomicUsize>,
+    ) -> Result<usize> {
         trace!("Reading upto {} bytes from the KMIP server", buffer.len());
         match stream.read(buffer).await {
             // The client has closed the connection.
@@ -776,6 +783,7 @@ impl<T: ReadWrite> ClientServer<T> {
 
             // An unexpected error has occurred.
             Err(err) => {
+                let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
                 // TODO: Categorize the various std::io::ErrorKinds into fatal and
                 // non-fatal variants and only abort on fatal errors.
                 Err(Error::NetworkReadError(format!("I/O error: {err}")))
