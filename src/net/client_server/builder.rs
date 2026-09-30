@@ -41,9 +41,9 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         }
     }
 
-    /// Configure the [ClientServer] to include username/password
-    /// authentication credentials in KMIP requests, or the server to require
-    /// requests to be authenticated with the given credentials.
+    /// Configure the [ClientServer] to include username/password authentication
+    /// credentials in KMIP requests, or the server to require requests to
+    /// be authenticated with the given credentials.
     pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
         self.auth = Some(Authentication::build(CredentialValue::UsernameAndPassword(
             Username(username),
@@ -52,8 +52,7 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         self
     }
 
-    /// Configure the [ClientBuilder] or server to reject messages above a
-    /// certain size.
+    /// Configure the [ClientServer] or server to reject messages above a certain size.
     pub fn with_max_message_size(mut self, max: i32) -> Self {
         self.max_messagesize = max;
         self

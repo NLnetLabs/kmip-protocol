@@ -427,7 +427,7 @@ pub type ModifyAttributeResponsePayload = AttributeEditResponsePayload;
 pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 
 ///  See KMIP 1.0 section 4.24 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct QueryResponsePayload {
     pub operations: Option<Vec<Operation>>,
     pub object_types: Option<Vec<ObjectType>>,
@@ -774,7 +774,7 @@ impl ResponseHeader {
     pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
         let mut formatter = formatter.format_struct(Self::TAG)?;
         self.protocol_version.format(&mut formatter)?;
-        formatter.format_long_int(Self::TIMESTAMP_TAG, self.timestamp)?;
+        formatter.format_date_time(Self::TIMESTAMP_TAG, self.timestamp)?;
         formatter.format_int(Self::BATCH_COUNT_TAG, self.batch_count)?;
         Ok(formatter.finish())
     }
@@ -841,7 +841,9 @@ impl BatchItem {
         let result_message = scanner
             .scan_opt_text(Self::RESULT_MESSAGE_TAG)?
             .map(ToString::to_string);
-        let payload = if let Some(operation) = operation {
+        let payload = if result_status == ResultStatus::Success
+            && let Some(operation) = operation
+        {
             ResponsePayload::fast_scan_opt(&mut scanner, operation)?
         } else {
             None
