@@ -774,7 +774,7 @@ impl ResponseHeader {
     pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
         let mut formatter = formatter.format_struct(Self::TAG)?;
         self.protocol_version.format(&mut formatter)?;
-        formatter.format_long_int(Self::TIMESTAMP_TAG, self.timestamp)?;
+        formatter.format_date_time(Self::TIMESTAMP_TAG, self.timestamp)?;
         formatter.format_int(Self::BATCH_COUNT_TAG, self.batch_count)?;
         Ok(formatter.finish())
     }
