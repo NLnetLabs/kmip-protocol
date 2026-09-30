@@ -104,9 +104,7 @@ fn test_pykmip_query_against_server_with_openssl() {
     let stream = TcpStream::connect("localhost:5696").unwrap();
     let mut tls = connector.connect("localhost", stream).unwrap();
 
-    let mut client = ClientServerBuilder::new(&mut tls)
-        .with_reader_config(Config::default().with_max_bytes(64 * 1024))
-        .build();
+    let mut client = ClientServerBuilder::new(&mut tls).build();
 
     let response_payload = client.query().unwrap();
 
@@ -265,7 +263,6 @@ fn test_kryptus_query_against_server() {
             std::env::var("KRYPTUS_USER").unwrap(),
             Some(std::env::var("KRYPTUS_PASS").unwrap()),
         )
-        .with_reader_config(Config::default().with_max_bytes(64 * 1024))
         .build();
 
     let response_payload = client.query().unwrap();
