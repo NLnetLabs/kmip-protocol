@@ -121,6 +121,7 @@ pub enum Error {
     ServerError(String),
     InternalError(String),
     ItemNotFound(String),
+    UnexpectedData(String),
     Unknown(String),
 }
 
@@ -170,6 +171,7 @@ impl std::fmt::Display for Error {
             Error::InternalError(e) => write!(f, "Internal error: {}", e),
             Error::ItemNotFound(e) => write!(f, "Item not found: {}", e),
             Error::Unknown(e) => write!(f, "Unknown error: {}", e),
+            Error::UnexpectedData(data) => write!(f, "Unexpected data: {data}"),
         }
     }
 }
@@ -185,18 +187,34 @@ impl<T> From<PoisonError<T>> for Error {
 
 /// Helper macro to avoid repetetive blocks of almost identical code
 macro_rules! get_response_payload_for_type {
-    ($response:expr, $response_type:path) => {{
-        // Process the successful response
-        if let $response_type(payload) = $response {
-            Ok(payload)
+    // $batch_items: Vec<Result<response::BatchItem>> {
+    ($batch_items:expr, $payload_type:path) => {
+        // Process the successful response. It should have a single batch item.
+        if $batch_items.is_empty() {
+            return Err(Error::UnexpectedData(format!(
+                "Expected response with a single successful {} batch item but response is empty",
+                stringify!($payload_type),
+            )));
+        } else if $batch_items.len() != 1 {
+            return Err(Error::UnexpectedData(format!(
+                "Expected response with a single successful {} batch item but response has {} batch items",
+                stringify!($payload_type),
+                $batch_items.len(),
+            )));
         } else {
-            Err(Error::InternalError(format!(
-                "Expected {} response payload but got: {:?}",
-                stringify!($response_type),
-                $response
-            )))
+            $batch_items.pop().unwrap().and_then(|batch_item| {
+                if let Some($payload_type(payload)) = batch_item.payload {
+                    Ok(payload)
+                } else {
+                    Err(Error::UnexpectedData(format!(
+                        "Expected {} response payload but response has: {:?}",
+                        stringify!($payload_type),
+                        batch_item.payload
+                    )))
+                }
+            })
         }
-    }};
+    };
 }
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
@@ -229,7 +247,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Query(wanted_info);
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Query)
@@ -267,7 +285,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
@@ -288,7 +306,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
@@ -313,7 +331,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         get_response_payload_for_type!(response, ResponsePayload::Sign)
     }
@@ -330,7 +348,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
@@ -355,7 +373,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
@@ -373,7 +391,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
@@ -395,7 +413,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
@@ -416,7 +434,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Get)
@@ -496,19 +514,13 @@ impl<T: ReadWrite> ClientServer<T> {
     /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
     /// the response or if the response does not indicate operation success or contains more than one batch item.
     #[maybe_async::maybe_async]
-    pub async fn do_request_payload(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
+    pub async fn do_request_payload(&mut self, payload: RequestPayload) -> Result<Vec<Result<response::BatchItem>>> {
         self.do_request(payload_to_request(
             self.auth.clone(),
             Some(MaximumResponseSize(self.max_message_size)),
             payload,
         )?)
         .await
-        .and_then(|mut r| {
-            r.pop()
-                .ok_or(Error::ServerError("Empty response".to_string()))?
-                .map(|item| item.payload)?
-                .ok_or(Error::ServerError("Missing response payload".to_string()))
-        })
     }
 
     #[maybe_async::maybe_async]
