@@ -427,7 +427,7 @@ pub type ModifyAttributeResponsePayload = AttributeEditResponsePayload;
 pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 
 ///  See KMIP 1.0 section 4.24 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct QueryResponsePayload {
     pub operations: Option<Vec<Operation>>,
     pub object_types: Option<Vec<ObjectType>>,
