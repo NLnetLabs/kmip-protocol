@@ -642,11 +642,11 @@ impl<T: ReadWrite> ClientServer<T> {
                 .drain(..)
                 .map(|item| match item.result_status {
                     ResultStatus::OperationFailed => {
-                        let reason = item.result_message.unwrap_or_default();
+                        let reason = item.result_message.unwrap_or_else(|| "Reason unknown".to_string());
                         let operation = item
                             .operation
                             .map(|op| op.to_string())
-                            .unwrap_or_else(|| "Unknown".to_string());
+                            .unwrap_or_else(|| "unknown".to_string());
                         let err = format!("Operation {operation} failed: {reason}");
                         if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
                             Err(Error::ItemNotFound(err))
