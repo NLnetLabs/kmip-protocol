@@ -781,6 +781,12 @@ impl<T: ReadWrite> ClientServer<T> {
                 Ok(amt)
             }
 
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {
+                // This is a recoverable error.
+                trace!("KMIP server connection interrupted, continuing.");
+                Ok(0)
+            }
+
             // An unexpected error has occurred.
             Err(err) => {
                 let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
