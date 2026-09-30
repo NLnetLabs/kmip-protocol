@@ -1,5 +1,9 @@
-use std::sync::PoisonError;
-use std::time::SystemTime;
+//! A high level KMIP "operation" oriented client interface for request/response construction & (de)serialization.
+pub mod builder;
+pub mod error;
+pub mod tests;
+pub mod util;
+
 use std::{
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
@@ -9,6 +13,8 @@ use std::{
     },
 };
 
+use tracing::trace;
+
 #[cfg(feature = "tokio")]
 use tokio::sync::Mutex;
 
@@ -16,171 +22,25 @@ use tokio::sync::Mutex;
 use std::sync::Mutex;
 
 use crate::{
+    net::client_server::{
+        error::{NetError, NetResult},
+        util::{batch_items_to_request, batch_items_to_response, payload_to_request, payload_to_response},
+    },
     ttlv::{FastScanError, FastScanner},
     types::{
         common::*,
         request::{
-            self, Authentication, BatchItem, CommonTemplateAttribute, CredentialValue, KeyWrappingSpecification,
-            MaximumResponseSize, Password, PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute, QueryFunction,
-            RequestHeader, RequestMessage, RequestPayload, RevocationReason, Username,
+            self, Authentication, BatchItem, CommonTemplateAttribute, KeyWrappingSpecification, MaximumResponseSize,
+            PrivateKeyTemplateAttribute, PublicKeyTemplateAttribute, QueryFunction, RequestMessage, RequestPayload,
+            RevocationReason,
         },
         response::{
             self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
-            ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
         },
-        traits::ReadWrite,
+        traits::*,
     },
 };
-
-use tracing::trace;
-
-/// Use this builder to construct a [ClientServer] struct.
-#[derive(Debug)]
-pub struct ClientServerBuilder<T: ReadWrite> {
-    stream: T,
-    auth: Option<Authentication>,
-    max_messagesize: i32,
-}
-
-impl<T: ReadWrite> ClientServerBuilder<T> {
-    /// Build a [ClientServer] struct that will read/write from/to the given stream.
-    ///
-    /// Creates a [ClientServerBuilder] which can be used to create a [ClientServer] which
-    /// will read/write from/to the given stream. The stream is expected to be
-    /// a type which can read from and write to an established TCP connection
-    /// to the KMIP server. In production the stream should also perform TLS
-    /// de/encryption on the data read from/written to the stream.
-    ///
-    /// The `stream` argument must implement the read and write traits which
-    /// the [ClientServer] will use to read/write from/to the stream.
-    pub fn new(stream: T) -> Self {
-        Self {
-            stream,
-            auth: None,
-            max_messagesize: i32::MAX,
-        }
-    }
-
-    /// Configure the [ClientServer] to include username/password authentication
-    /// credentials in KMIP requests, or the server to require requests to
-    /// be authenticated with the given credentials.
-    pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
-        self.auth = Some(Authentication::build(CredentialValue::UsernameAndPassword(
-            Username(username),
-            password.map(Password),
-        )));
-        self
-    }
-
-    /// Configure the [ClientServer] or server to reject messages above a certain size.
-    pub fn with_max_message_size(mut self, max: i32) -> Self {
-        self.max_messagesize = max;
-        self
-    }
-
-    /// Build the configured [ClientServer] struct instance.
-    pub fn build(self) -> ClientServer<T> {
-        let auth = self.auth;
-        let stream = Arc::new(Mutex::new(self.stream));
-        let max_message_size = self.max_messagesize;
-        let read_buf = vec![0u8; 8192];
-        let write_buf = vec![MaybeUninit::uninit(); 8192];
-        let connection_error_count = Default::default();
-
-        ClientServer {
-            auth,
-            max_message_size,
-            stream,
-            read_buf,
-            write_buf,
-            connection_error_count,
-        }
-    }
-}
-
-/// There was a problem sending/receiving a KMIP request/response.
-#[non_exhaustive]
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Error {
-    AuthenticationError,
-    ConfigurationError(String),
-    SerializeError(String),
-    NetworkWriteError(String),
-    NetworkReadError(String),
-    DeserializeError {
-        err: String,
-
-        /// The KMIP TTLV wire bytes of the request related to the response
-        /// that could not be deserialized.
-        req: Box<[u8]>,
-
-        /// The KMIP TTLV wire bytes of the response that could not be
-        /// deserialized.
-        res: Box<[u8]>,
-    },
-    ServerError(String),
-    InternalError(String),
-    ItemNotFound(String),
-    Unknown(String),
-}
-
-impl Error {
-    pub fn deserialize_error(err: String) -> Self {
-        Self::DeserializeError {
-            err,
-            req: Default::default(),
-            res: Default::default(),
-        }
-    }
-
-    /// Is this a possibly transient problem with the connection to the server?
-    pub fn is_connection_error(&self) -> bool {
-        use Error::*;
-        matches!(self, NetworkWriteError(_) | NetworkReadError(_))
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::ServerError(format!("I/O error: {err}"))
-    }
-}
-
-/// Format the error for user-facing output.
-///
-/// Tip: examples/hex_to_txt.rs can be used to render KMIP TTLV protocol wire
-/// request/response bytes into a form that can be more easily understood.
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::AuthenticationError => f.write_str("Authentication error"),
-            Error::ConfigurationError(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
-            Error::SerializeError(e) => f.write_fmt(format_args!("Serialize error: {}", e)),
-            Error::NetworkWriteError(e) => f.write_fmt(format_args!("Request send error: {}", e)),
-            Error::NetworkReadError(e) => f.write_fmt(format_args!("Response read error: {}", e)),
-            Error::DeserializeError { err: e, req, res } => f.write_fmt(format_args!(
-                "Deserialize error: {e}\nRequest: {}\nResponse: {}",
-                hex::encode_upper(req),
-                hex::encode_upper(res)
-            )),
-            Error::ServerError(e) => f.write_fmt(format_args!("Server error: {e}")),
-            Error::InternalError(e) => f.write_fmt(format_args!("Internal error: {}", e)),
-            Error::ItemNotFound(e) => f.write_fmt(format_args!("Item not found: {}", e)),
-            Error::Unknown(e) => f.write_fmt(format_args!("Unknown error: {}", e)),
-        }
-    }
-}
-
-/// The successful or failed outcome resulting from sending a request to a KMIP server.
-pub type Result<T> = std::result::Result<T, Error>;
-
-impl<T> From<PoisonError<T>> for Error {
-    fn from(err: PoisonError<T>) -> Self {
-        Error::InternalError(err.to_string())
-    }
-}
 
 /// Helper macro to avoid repetetive blocks of almost identical code
 macro_rules! get_response_payload_for_type {
@@ -189,7 +49,7 @@ macro_rules! get_response_payload_for_type {
         if let $response_type(payload) = $response {
             Ok(payload)
         } else {
-            Err(Error::InternalError(format!(
+            Err(NetError::InternalError(format!(
                 "Expected {} response payload but got: {:?}",
                 stringify!($response_type),
                 $response
@@ -200,7 +60,7 @@ macro_rules! get_response_payload_for_type {
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
-/// Use the [ClientServerBuilder] to build a [ClientServer] instance to work with.
+/// Use the [ClientServerBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
 pub struct ClientServer<T: ReadWrite> {
     auth: Option<Authentication>,
@@ -218,7 +78,7 @@ impl<T: ReadWrite> ClientServer<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
-    pub async fn query(&mut self) -> Result<QueryResponsePayload> {
+    pub async fn query(&mut self) -> NetResult<QueryResponsePayload> {
         // Setup the request
         let wanted_info = vec![
             QueryFunction::QueryOperations,
@@ -248,7 +108,7 @@ impl<T: ReadWrite> ClientServer<T> {
         key_length: i32,
         private_key_name: String,
         public_key_name: String,
-    ) -> Result<(String, String)> {
+    ) -> NetResult<(String, String)> {
         // Setup the request
         let request = RequestPayload::CreateKeyPair(
             Some(CommonTemplateAttribute::new(vec![
@@ -283,7 +143,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// See also: [do_request()](Self::do_request())
     ///
     #[maybe_async::maybe_async]
-    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
+    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> NetResult<RNGRetrieveResponsePayload> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
@@ -299,7 +159,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// See also: [do_request()](Self::do_request())
     ///
     #[maybe_async::maybe_async]
-    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
+    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> NetResult<SignResponsePayload> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             Some(
@@ -325,7 +185,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// To activate other kinds of managed object you must compose the Activate request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn activate_key(&mut self, private_key_id: &str) -> Result<()> {
+    pub async fn activate_key(&mut self, private_key_id: &str) -> NetResult<()> {
         let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
@@ -343,7 +203,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// To deactivate other kinds of managed object you must compose the Revoke request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn revoke_key(&mut self, private_key_id: &str) -> Result<()> {
+    pub async fn revoke_key(&mut self, private_key_id: &str) -> NetResult<()> {
         let request = RequestPayload::Revoke(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             RevocationReason(
@@ -368,7 +228,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// To destroy other kinds of managed object you must compose the Destroy request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn destroy_key(&mut self, key_id: &str) -> Result<()> {
+    pub async fn destroy_key(&mut self, key_id: &str) -> NetResult<()> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
@@ -386,7 +246,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// To modify other attributes of managed objects you must compose the Modify Attribute request manually and pass
     /// it to [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> Result<ModifyAttributeResponsePayload> {
+    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> NetResult<ModifyAttributeResponsePayload> {
         // Setup the request
         let request = RequestPayload::ModifyAttribute(
             Some(UniqueIdentifier(key_id.to_string())),
@@ -405,7 +265,7 @@ impl<T: ReadWrite> ClientServer<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
-    pub async fn get_key(&mut self, key_id: &str) -> Result<GetResponsePayload> {
+    pub async fn get_key(&mut self, key_id: &str) -> NetResult<GetResponsePayload> {
         // Setup the request
         let request = RequestPayload::Get(
             Some(UniqueIdentifier(key_id.to_string())),
@@ -433,7 +293,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// Note: Enforcing a timeout on this operation is the responsibility of
     /// the caller.
     #[maybe_async::maybe_async]
-    pub async fn do_request(&mut self, request: RequestMessage) -> Result<Vec<Result<response::BatchItem>>> {
+    pub async fn do_request(&mut self, request: RequestMessage) -> NetResult<Vec<NetResult<response::BatchItem>>> {
         trace!("Serializing request to KMIP wire bytes");
         let len = self.write_buf.len();
         assert!(len <= i32::MAX as usize);
@@ -451,7 +311,7 @@ impl<T: ReadWrite> ClientServer<T> {
                 break request_bytes;
             } else if len >= self.max_message_size {
                 // Buffer is already at the maximum possible size.
-                return Err(Error::SerializeError(format!(
+                return Err(NetError::SerializeError(format!(
                     "Message too large: {len} > {}",
                     self.max_message_size
                 )));
@@ -474,7 +334,7 @@ impl<T: ReadWrite> ClientServer<T> {
         drop(stream);
 
         Self::post_process_response(res).await.map_err(|mut err| {
-            if let Error::DeserializeError { req, .. } = &mut err {
+            if let NetError::DeserializeError { req, .. } = &mut err {
                 *req = request_bytes.into();
             }
             err
@@ -495,7 +355,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
     /// the response or if the response does not indicate operation success or contains more than one batch item.
     #[maybe_async::maybe_async]
-    pub async fn do_request_payload(&mut self, payload: RequestPayload) -> Result<ResponsePayload> {
+    pub async fn do_request_payload(&mut self, payload: RequestPayload) -> NetResult<ResponsePayload> {
         self.do_request(payload_to_request(
             self.auth.clone(),
             Some(MaximumResponseSize(self.max_message_size)),
@@ -504,14 +364,17 @@ impl<T: ReadWrite> ClientServer<T> {
         .await
         .and_then(|mut r| {
             r.pop()
-                .ok_or(Error::ServerError("Empty response".to_string()))?
+                .ok_or(NetError::ServerError("Empty response".to_string()))?
                 .map(|item| item.payload)?
-                .ok_or(Error::ServerError("Missing response payload".to_string()))
+                .ok_or(NetError::ServerError("Missing response payload".to_string()))
         })
     }
 
     #[maybe_async::maybe_async]
-    pub async fn do_request_batch(&mut self, batch_items: Vec<BatchItem>) -> Result<Vec<Result<response::BatchItem>>> {
+    pub async fn do_request_batch(
+        &mut self,
+        batch_items: Vec<BatchItem>,
+    ) -> NetResult<Vec<NetResult<response::BatchItem>>> {
         self.do_request(batch_items_to_request(
             self.auth.clone(),
             Some(MaximumResponseSize(self.max_message_size)),
@@ -537,7 +400,7 @@ impl<T: ReadWrite> ClientServer<T> {
     /// receiving half of the message exchange as the caller has to inspect the
     /// received message and determinate an appropriate response.
     #[maybe_async::maybe_async]
-    pub async fn receive_request(&mut self) -> Result<RequestMessage> {
+    pub async fn receive_request(&mut self) -> NetResult<RequestMessage> {
         trace!("Acquiring stream lock");
         let mut lock = Self::get_mut_stream(&self.stream).await?;
         let stream = lock.deref_mut();
@@ -554,14 +417,14 @@ impl<T: ReadWrite> ClientServer<T> {
 
         // Check that the request is correctly authenticated.
         if req.header().authentication() != self.auth.as_ref() {
-            return Err(Error::AuthenticationError);
+            return Err(NetError::AuthenticationError);
         }
 
         Ok(req)
     }
 
     #[maybe_async::maybe_async]
-    pub async fn send_response(&mut self, response: ResponseMessage) -> Result<()> {
+    pub async fn send_response(&mut self, response: ResponseMessage) -> NetResult<()> {
         trace!("Serializing response to KMIP wire bytes");
         let len = self.write_buf.len();
         assert!(len <= i32::MAX as usize);
@@ -575,11 +438,11 @@ impl<T: ReadWrite> ClientServer<T> {
                 let mut stream = Self::get_mut_stream(&self.stream).await?;
                 trace!("Writing {} response bytes to the server", response_bytes.len());
                 return stream.write_all(response_bytes).await.map_err(|err| {
-                    Error::NetworkWriteError(format!("Failed to write KMIP response bytes to the stream: {err}"))
+                    NetError::NetworkWriteError(format!("Failed to write KMIP response bytes to the stream: {err}"))
                 });
             } else if len >= self.max_message_size {
                 // Buffer is already at the maximum possible size.
-                return Err(Error::SerializeError(format!(
+                return Err(NetError::SerializeError(format!(
                     "Message too large: {len} > {}",
                     self.max_message_size
                 )));
@@ -598,7 +461,7 @@ impl<T: ReadWrite> ClientServer<T> {
         result_reason: Option<ResultReason>,
         result_message: Option<String>,
         payload: Option<ResponsePayload>,
-    ) -> Result<()> {
+    ) -> NetResult<()> {
         self.send_response(payload_to_response(
             result_status,
             result_reason,
@@ -609,24 +472,24 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    pub async fn send_response_batch(&mut self, batch_items: Vec<response::BatchItem>) -> Result<()> {
+    pub async fn send_response_batch(&mut self, batch_items: Vec<response::BatchItem>) -> NetResult<()> {
         self.send_response(batch_items_to_response(batch_items)?).await
     }
 }
 
 impl<T: ReadWrite> ClientServer<T> {
     #[cfg(feature = "tokio")]
-    async fn get_mut_stream(stream: &Mutex<T>) -> Result<impl DerefMut<Target = T> + '_> {
+    async fn get_mut_stream(stream: &Mutex<T>) -> NetResult<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock().await)
     }
 
     #[cfg(not(feature = "tokio"))]
-    fn get_mut_stream(stream: &Mutex<T>) -> Result<impl DerefMut<Target = T> + '_> {
+    fn get_mut_stream(stream: &Mutex<T>) -> NetResult<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock()?)
     }
 
     #[maybe_async::maybe_async]
-    async fn post_process_response(mut res: ResponseMessage) -> Result<Vec<Result<response::BatchItem>>> {
+    async fn post_process_response(mut res: ResponseMessage) -> NetResult<Vec<NetResult<response::BatchItem>>> {
         if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
             let res = res
                 .batch_items
@@ -640,15 +503,15 @@ impl<T: ReadWrite> ClientServer<T> {
                             .unwrap_or_else(|| "Unknown".to_string());
                         let err = format!("Operation {operation} failed: {reason}");
                         if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
-                            Err(Error::ItemNotFound(err))
+                            Err(NetError::ItemNotFound(err))
                         } else {
-                            Err(Error::ServerError(err))
+                            Err(NetError::ServerError(err))
                         }
                     }
-                    ResultStatus::OperationPending => Err(Error::InternalError(
+                    ResultStatus::OperationPending => Err(NetError::InternalError(
                         "Result status 'operation pending' is not supported".into(),
                     )),
-                    ResultStatus::OperationUndone => Err(Error::InternalError(
+                    ResultStatus::OperationUndone => Err(NetError::InternalError(
                         "Result status 'operation undone' is not supported".into(),
                     )),
                     ResultStatus::Success => Ok(item),
@@ -660,12 +523,12 @@ impl<T: ReadWrite> ClientServer<T> {
                 "Expected at least one batch item in response but received {}",
                 res.batch_items.len()
             );
-            Err(Error::ServerError(err))
+            Err(NetError::ServerError(err))
         }
     }
 
     #[maybe_async::maybe_async]
-    async fn read_message_from_stream<F, R>(stream: &mut T, read_buf: &mut Vec<u8>, limit: i32, op: F) -> Result<R>
+    async fn read_message_from_stream<F, R>(stream: &mut T, read_buf: &mut Vec<u8>, limit: i32, op: F) -> NetResult<R>
     where
         F: Fn(&mut FastScanner) -> std::result::Result<R, FastScanError>,
     {
@@ -684,7 +547,7 @@ impl<T: ReadWrite> ClientServer<T> {
                         hex::encode_upper(ttlv_bytes)
                     );
                     // A complete TTLV element is available. Try to parse it.
-                    return op(&mut scanner).map_err(|err| Error::DeserializeError {
+                    return op(&mut scanner).map_err(|err| NetError::DeserializeError {
                         err: err.to_string(),
                         req: Default::default(), // do_requests() will populate this
                         res: read_buf.clone().into(),
@@ -719,25 +582,25 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn write_to_stream(stream: &mut T, bytes: &[u8]) -> Result<()> {
+    async fn write_to_stream(stream: &mut T, bytes: &[u8]) -> NetResult<()> {
         trace!(
             "Writing {} bytes to the server: {}",
             bytes.len(),
             hex::encode_upper(bytes)
         );
         if let Err(err) = stream.write_all(&bytes).await {
-            return Err(Error::NetworkWriteError(err.to_string()));
+            return Err(NetError::NetworkWriteError(err.to_string()));
         }
 
         Ok(())
     }
 
-    fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> Result<()> {
+    fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> NetResult<()> {
         // If the buffer is too small, try to expand it.
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
         if wanted_buf_size > read_buf.capacity() {
             if wanted_buf_size > limit as usize {
-                return Err(Error::NetworkReadError(format!(
+                return Err(NetError::NetworkReadError(format!(
                     "Response too large: {wanted_buf_size} bytes > {limit} bytes"
                 )));
             }
@@ -747,11 +610,11 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn read_from_stream(stream: &mut T, buffer: &mut [u8]) -> Result<usize> {
+    async fn read_from_stream(stream: &mut T, buffer: &mut [u8]) -> NetResult<usize> {
         trace!("Reading upto {} bytes from the KMIP server", buffer.len());
         match stream.read(buffer).await {
             // The client has closed the connection.
-            Ok(0) => Err(Error::NetworkReadError(
+            Ok(0) => Err(NetError::NetworkReadError(
                 "Client closed connection with a partial request received".into(),
             )),
 
@@ -765,7 +628,7 @@ impl<T: ReadWrite> ClientServer<T> {
             Err(err) => {
                 // TODO: Categorize the various std::io::ErrorKinds into fatal and
                 // non-fatal variants and only abort on fatal errors.
-                Err(Error::NetworkReadError(format!("I/O error: {err}")))
+                Err(NetError::NetworkReadError(format!("I/O error: {err}")))
             }
         }
     }
@@ -785,7 +648,7 @@ impl<T: ReadWrite> Clone for ClientServer<T> {
 }
 
 impl<T: ReadWrite> ClientServer<T> {
-    /// Get the count of connection errors experienced by this ClientServer.
+    /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)
     }
@@ -804,7 +667,7 @@ mod test {
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{
-        client::client::ClientServerBuilder,
+        net::client_server::builder::ClientServerBuilder,
         types::{
             request::{QueryFunction, RequestPayload},
             response::ResponsePayload,
@@ -1095,99 +958,4 @@ mod test {
             panic!("Expected query response!");
         }
     }
-}
-
-pub fn batch_items_to_request(
-    auth: Option<Authentication>,
-    max_response_size: Option<MaximumResponseSize>,
-    batch_items: Vec<request::BatchItem>,
-) -> Result<RequestMessage> {
-    if batch_items.is_empty() {
-        return Err(Error::SerializeError("Cannot serialize an empty batch".to_string()));
-    }
-
-    if batch_items.len() >= i32::MAX as usize {
-        return Err(Error::SerializeError(format!(
-            "Too many batch items: {} > {}",
-            batch_items.len(),
-            i32::MAX
-        )));
-    }
-
-    // Construct the request.
-    let max_protocol_version = batch_items
-        .iter()
-        .map(|r| r.request_payload().protocol_version())
-        .max()
-        .unwrap();
-
-    Ok(RequestMessage(
-        RequestHeader(
-            max_protocol_version,
-            max_response_size,
-            auth,
-            request::BatchCount(batch_items.len().try_into().unwrap()),
-        ),
-        batch_items,
-    ))
-}
-
-pub fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> Result<ResponseMessage> {
-    if batch_items.len() >= i32::MAX as usize {
-        return Err(Error::SerializeError(format!(
-            "Too many batch items: {} > {}",
-            batch_items.len(),
-            i32::MAX
-        )));
-    }
-
-    let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        .try_into()
-        .unwrap();
-
-    let protocol_version = batch_items
-        .iter()
-        .filter_map(|item| item.payload.as_ref())
-        .map(|payload| payload.protocol_version())
-        .max()
-        .unwrap_or_default();
-
-    Ok(ResponseMessage {
-        header: ResponseHeader {
-            protocol_version,
-            timestamp,
-            batch_count: batch_items.len().try_into().unwrap(),
-        },
-        batch_items,
-    })
-}
-
-pub fn payload_to_request(
-    auth: Option<Authentication>,
-    max_response_size: Option<MaximumResponseSize>,
-    payload: RequestPayload,
-) -> Result<RequestMessage> {
-    let batch_items = vec![request::BatchItem(payload.operation(), None, payload)];
-    batch_items_to_request(auth, max_response_size, batch_items)
-}
-
-pub fn payload_to_response(
-    result_status: ResultStatus,
-    result_reason: Option<ResultReason>,
-    result_message: Option<String>,
-    payload: Option<ResponsePayload>,
-) -> Result<ResponseMessage> {
-    let batch_items = vec![response::BatchItem {
-        operation: payload.as_ref().map(|p| p.operation()),
-        unique_batch_item_id: None,
-        result_status,
-        result_reason,
-        result_message,
-        payload,
-        message_extension: None,
-    }];
-    batch_items_to_response(batch_items)
 }

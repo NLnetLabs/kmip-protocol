@@ -12,14 +12,16 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{ClientCertificate, ClientServer, ConnectionSettings};
+use kmip_protocol::net::{ClientCertificate, ClientServer, ConnectionSettings, NetResult};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
 use util::init_logging;
 
-use crate::util::SelfLoggingError;
-use crate::{config::Opt, util::ToCsvString};
+use crate::{
+    config::Opt,
+    util::{SelfLoggingError, ToCsvString},
+};
 
 #[cfg(any(
     feature = "tls-with-openssl",
@@ -28,14 +30,17 @@ use crate::{config::Opt, util::ToCsvString};
 ))]
 fn main() {
     let opt = Opt::from_args();
+    let num_threads = opt.num_threads;
 
     init_logging(&opt);
 
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
-            let client = kmip_protocol::client::tls::openssl::connect(&opt.into());
+            let client = kmip_protocol::net::tls::openssl::connect(&opt.into());
         } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::client::tls::rustls::connect(&opt.into());
+            let client = kmip_protocol::net::tls::rustls::connect(&opt.into());
         }
     }
 
@@ -43,7 +48,7 @@ fn main() {
 
     let mut thread_handles = vec![];
 
-    for i in 0..=1 {
+    for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
             exec_test_requests(thread_client, &format!("test_{}", i)).unwrap();
@@ -63,11 +68,13 @@ async fn main() {
 
     init_logging(&opt);
 
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::client::tls::tokio_native_tls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::client::tls::tokio_rustls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_rustls::connect(&opt.into()).await;
         }
     }
 
@@ -77,10 +84,7 @@ async fn main() {
 }
 
 #[maybe_async::maybe_async]
-async fn exec_test_requests<T: ReadWrite>(
-    mut client: ClientServer<T>,
-    key_name_prefix: &str,
-) -> Result<(), kmip_protocol::client::Error> {
+async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_prefix: &str) -> NetResult<()> {
     query_server_properties(&mut client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
@@ -93,7 +97,7 @@ async fn exec_test_requests<T: ReadWrite>(
             format!("{}_public_key", key_name_prefix),
         )
         .await
-        .log_error()
+        .log_error(&client)
     {
         info!("Created key pair:");
         info!("  Private key ID: {}", private_key_id);
@@ -101,33 +105,33 @@ async fn exec_test_requests<T: ReadWrite>(
         let mut key_needs_revoking = false;
 
         info!("Activating private key {}..", private_key_id);
-        if client.activate_key(&private_key_id).await.log_error().is_ok() {
+        if client.activate_key(&private_key_id).await.log_error(&client).is_ok() {
             key_needs_revoking = true;
 
             info!("Signing with private key {}..", private_key_id);
             if let Ok(payload) = client
                 .sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8])
                 .await
-                .log_error()
+                .log_error(&client)
             {
                 info!("{}", hex::encode_upper(payload.signature_data));
             }
         }
 
         info!("Deleting public key {}..", public_key_id);
-        client.destroy_key(&public_key_id).await.log_error().ok();
+        client.destroy_key(&public_key_id).await.log_error(&client).ok();
 
         if key_needs_revoking {
             info!("Revoking private key {}..", private_key_id);
-            client.revoke_key(&private_key_id).await.log_error().ok();
+            client.revoke_key(&private_key_id).await.log_error(&client).ok();
         }
 
         info!("Deleting private key {}..", private_key_id);
-        client.destroy_key(&private_key_id).await.log_error().ok();
+        client.destroy_key(&private_key_id).await.log_error(&client).ok();
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(payload) = client.rng_retrieve(32).await.log_error() {
+    if let Ok(payload) = client.rng_retrieve(32).await.log_error(&client) {
         info!("{}", hex::encode_upper(payload.0.0));
     }
 
@@ -136,7 +140,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> Result<(), kmip_protocol::client::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> NetResult<()> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
