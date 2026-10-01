@@ -1308,14 +1308,12 @@ mod test {
         })
     }
 
-    type Type = ResponseMessage;
-
     fn payload_to_response(
         result_status: ResultStatus,
         result_reason: Option<ResultReason>,
         result_message: Option<String>,
         payload: Option<ResponsePayload>,
-    ) -> crate::client::Result<Type> {
+    ) -> crate::client::Result<ResponseMessage> {
         let batch_items = vec![response::BatchItem {
             operation: payload.as_ref().map(|p| p.operation()),
             unique_batch_item_id: None,
