@@ -24,7 +24,7 @@ use std::sync::Mutex;
 use crate::{
     net::client_server::{
         error::{NetError, NetResult},
-        util::{batch_items_to_request, batch_items_to_response, payload_to_request, payload_to_response},
+        util::{batch_items_to_request, payload_to_request},
     },
     ttlv::{FastScanError, FastScanner},
     types::{
@@ -44,25 +44,41 @@ use crate::{
 
 /// Helper macro to avoid repetetive blocks of almost identical code
 macro_rules! get_response_payload_for_type {
-    ($response:expr, $response_type:path) => {{
-        // Process the successful response
-        if let $response_type(payload) = $response {
-            Ok(payload)
+    // $batch_items: Vec<Result<response::BatchItem>> {
+    ($batch_items:expr, $payload_type:path) => {
+        // Process the successful response. It should have a single batch item.
+        if $batch_items.is_empty() {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected response with a single successful {} batch item but response is empty",
+                stringify!($payload_type),
+            )));
+        } else if $batch_items.len() != 1 {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected response with a single successful {} batch item but response has {} batch items",
+                stringify!($payload_type),
+                $batch_items.len(),
+            )));
         } else {
-            Err(NetError::InternalError(format!(
-                "Expected {} response payload but got: {:?}",
-                stringify!($response_type),
-                $response
-            )))
+            $batch_items.pop().unwrap().and_then(|batch_item| {
+                if let Some($payload_type(payload)) = batch_item.payload {
+                    Ok(payload)
+                } else {
+                    Err(NetError::UnexpectedData(format!(
+                        "Expected {} response payload but response has: {:?}",
+                        stringify!($payload_type),
+                        batch_item.payload
+                    )))
+                }
+            })
         }
-    }};
+    };
 }
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
-/// Use the [ClientServerBuilder] to build a [Client] instance to work with.
+/// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
-pub struct ClientServer<T: ReadWrite> {
+pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
     max_message_size: i32,
     stream: Arc<Mutex<T>>,
@@ -73,7 +89,7 @@ pub struct ClientServer<T: ReadWrite> {
 
 //--- High level client interface
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
     ///
     /// See also: [do_request()](Self::do_request())
@@ -88,7 +104,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Query(wanted_info);
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Query)
@@ -126,7 +142,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
@@ -147,7 +163,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
@@ -172,7 +188,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         get_response_payload_for_type!(response, ResponsePayload::Sign)
     }
@@ -189,7 +205,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
@@ -214,7 +230,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
@@ -232,7 +248,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
@@ -254,7 +270,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
@@ -275,7 +291,7 @@ impl<T: ReadWrite> ClientServer<T> {
         );
 
         // Execute the request and capture the response
-        let response = self.do_request_payload(request).await?;
+        let mut response = self.do_request_payload(request).await?;
 
         // Process the successful response
         get_response_payload_for_type!(response, ResponsePayload::Get)
@@ -286,7 +302,7 @@ impl<T: ReadWrite> ClientServer<T> {
 //
 // For sending requests and receiving responses.
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
     ///
@@ -307,7 +323,7 @@ impl<T: ReadWrite> ClientServer<T> {
             formatter = crate::ttlv::Formatter::new(&mut self.write_buf);
             if request.format(&mut formatter).is_ok() {
                 let request_bytes = formatter.filled().as_flattened();
-                Self::write_to_stream(&mut stream, &request_bytes).await?;
+                Self::write_to_stream(&mut stream, request_bytes).await?;
                 break request_bytes;
             } else if len >= self.max_message_size {
                 // Buffer is already at the maximum possible size.
@@ -328,10 +344,10 @@ impl<T: ReadWrite> ClientServer<T> {
             &mut self.read_buf,
             self.max_message_size,
             ResponseMessage::fast_scan,
+            self.connection_error_count.clone(),
         )
         .await?;
         trace!("KMIP server response received");
-        drop(stream);
 
         Self::post_process_response(res).await.map_err(|mut err| {
             if let NetError::DeserializeError { req, .. } = &mut err {
@@ -355,19 +371,16 @@ impl<T: ReadWrite> ClientServer<T> {
     /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
     /// the response or if the response does not indicate operation success or contains more than one batch item.
     #[maybe_async::maybe_async]
-    pub async fn do_request_payload(&mut self, payload: RequestPayload) -> NetResult<ResponsePayload> {
+    pub async fn do_request_payload(
+        &mut self,
+        payload: RequestPayload,
+    ) -> NetResult<Vec<NetResult<response::BatchItem>>> {
         self.do_request(payload_to_request(
             self.auth.clone(),
             Some(MaximumResponseSize(self.max_message_size)),
             payload,
         )?)
         .await
-        .and_then(|mut r| {
-            r.pop()
-                .ok_or(NetError::ServerError("Empty response".to_string()))?
-                .map(|item| item.payload)?
-                .ok_or(NetError::ServerError("Missing response payload".to_string()))
-        })
     }
 
     #[maybe_async::maybe_async]
@@ -381,103 +394,12 @@ impl<T: ReadWrite> ClientServer<T> {
             batch_items,
         )?)
         .await
-        .inspect_err(|err| {
-            if err.is_connection_error() {
-                let _ = self.connection_error_count.fetch_add(1, Ordering::SeqCst);
-            }
-        })
     }
 }
 
-//--- Lower level server interface
-//
-// For receiving requests and sending responses.
+//------------ Internals -----------------------------------------------------
 
-impl<T: ReadWrite> ClientServer<T> {
-    /// Receive a KMIP request from the network.
-    ///
-    /// Unlike do_request() and do_requests() this function only performs the
-    /// receiving half of the message exchange as the caller has to inspect the
-    /// received message and determinate an appropriate response.
-    #[maybe_async::maybe_async]
-    pub async fn receive_request(&mut self) -> NetResult<RequestMessage> {
-        trace!("Acquiring stream lock");
-        let mut lock = Self::get_mut_stream(&self.stream).await?;
-        let stream = lock.deref_mut();
-
-        trace!("Waiting for a request from the client");
-        let req = Self::read_message_from_stream(
-            stream,
-            &mut self.read_buf,
-            self.max_message_size,
-            RequestMessage::fast_scan,
-        )
-        .await?;
-        drop(lock);
-
-        // Check that the request is correctly authenticated.
-        if req.header().authentication() != self.auth.as_ref() {
-            return Err(NetError::AuthenticationError);
-        }
-
-        Ok(req)
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response(&mut self, response: ResponseMessage) -> NetResult<()> {
-        trace!("Serializing response to KMIP wire bytes");
-        let len = self.write_buf.len();
-        assert!(len <= i32::MAX as usize);
-        let mut len = len as i32;
-
-        // TODO: Enforce a timeout on sending the response?
-        loop {
-            let mut formatter = crate::ttlv::Formatter::new(&mut self.write_buf);
-            if response.format(&mut formatter).is_ok() {
-                let response_bytes = formatter.filled().as_flattened();
-                let mut stream = Self::get_mut_stream(&self.stream).await?;
-                trace!("Writing {} response bytes to the server", response_bytes.len());
-                return stream.write_all(response_bytes).await.map_err(|err| {
-                    NetError::NetworkWriteError(format!("Failed to write KMIP response bytes to the stream: {err}"))
-                });
-            } else if len >= self.max_message_size {
-                // Buffer is already at the maximum possible size.
-                return Err(NetError::SerializeError(format!(
-                    "Message too large: {len} > {}",
-                    self.max_message_size
-                )));
-            } else {
-                // Retry with a larger buffer.
-                len = i32::max(self.max_message_size, len.saturating_mul(2));
-                self.write_buf.resize(len as usize, MaybeUninit::uninit());
-            }
-        }
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_payload(
-        &mut self,
-        result_status: ResultStatus,
-        result_reason: Option<ResultReason>,
-        result_message: Option<String>,
-        payload: Option<ResponsePayload>,
-    ) -> NetResult<()> {
-        self.send_response(payload_to_response(
-            result_status,
-            result_reason,
-            result_message,
-            payload,
-        )?)
-        .await
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_batch(&mut self, batch_items: Vec<response::BatchItem>) -> NetResult<()> {
-        self.send_response(batch_items_to_response(batch_items)?).await
-    }
-}
-
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     #[cfg(feature = "tokio")]
     async fn get_mut_stream(stream: &Mutex<T>) -> NetResult<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock().await)
@@ -490,17 +412,17 @@ impl<T: ReadWrite> ClientServer<T> {
 
     #[maybe_async::maybe_async]
     async fn post_process_response(mut res: ResponseMessage) -> NetResult<Vec<NetResult<response::BatchItem>>> {
-        if res.header.batch_count >= 1 && res.batch_items.len() >= 1 {
+        if res.header.batch_count >= 1 && !res.batch_items.is_empty() {
             let res = res
                 .batch_items
                 .drain(..)
                 .map(|item| match item.result_status {
                     ResultStatus::OperationFailed => {
-                        let reason = item.result_message.unwrap_or_default();
+                        let reason = item.result_message.unwrap_or_else(|| "Reason unknown".to_string());
                         let operation = item
                             .operation
                             .map(|op| op.to_string())
-                            .unwrap_or_else(|| "Unknown".to_string());
+                            .unwrap_or_else(|| "unknown".to_string());
                         let err = format!("Operation {operation} failed: {reason}");
                         if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
                             Err(NetError::ItemNotFound(err))
@@ -528,7 +450,13 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn read_message_from_stream<F, R>(stream: &mut T, read_buf: &mut Vec<u8>, limit: i32, op: F) -> NetResult<R>
+    async fn read_message_from_stream<F, R>(
+        stream: &mut T,
+        read_buf: &mut Vec<u8>,
+        limit: i32,
+        op: F,
+        connection_error_count: Arc<AtomicUsize>,
+    ) -> NetResult<R>
     where
         F: Fn(&mut FastScanner) -> std::result::Result<R, FastScanError>,
     {
@@ -573,7 +501,8 @@ impl<T: ReadWrite> ClientServer<T> {
             let write_start_idx = available;
             let updated_buffer_len = read_buf.len();
             let bytes_to_write_into = &mut read_buf[write_start_idx..updated_buffer_len];
-            let read_byte_count = Self::read_from_stream(stream, bytes_to_write_into).await?;
+            let read_byte_count =
+                Self::read_from_stream(stream, bytes_to_write_into, connection_error_count.clone()).await?;
 
             // Don't pass any extra zeroes in the buffer to the TTLV parser,
             // only give it bytes that we actually read.
@@ -588,8 +517,8 @@ impl<T: ReadWrite> ClientServer<T> {
             bytes.len(),
             hex::encode_upper(bytes)
         );
-        if let Err(err) = stream.write_all(&bytes).await {
-            return Err(NetError::NetworkWriteError(err.to_string()));
+        if let Err(err) = stream.write_all(bytes).await {
+            return Err(NetError::RequestWriteError(err.to_string()));
         }
 
         Ok(())
@@ -598,23 +527,25 @@ impl<T: ReadWrite> ClientServer<T> {
     fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> NetResult<()> {
         // If the buffer is too small, try to expand it.
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
-        if wanted_buf_size > read_buf.capacity() {
-            if wanted_buf_size > limit as usize {
-                return Err(NetError::NetworkReadError(format!(
-                    "Response too large: {wanted_buf_size} bytes > {limit} bytes"
-                )));
-            }
+        if wanted_buf_size > read_buf.capacity() && wanted_buf_size > limit as usize {
+            return Err(NetError::ResponseReadError(format!(
+                "Response too large: {wanted_buf_size} bytes > {limit} bytes"
+            )));
         }
         read_buf.resize(wanted_buf_size, 0);
         Ok(())
     }
 
     #[maybe_async::maybe_async]
-    async fn read_from_stream(stream: &mut T, buffer: &mut [u8]) -> NetResult<usize> {
+    async fn read_from_stream(
+        stream: &mut T,
+        buffer: &mut [u8],
+        connection_error_count: Arc<AtomicUsize>,
+    ) -> NetResult<usize> {
         trace!("Reading upto {} bytes from the KMIP server", buffer.len());
         match stream.read(buffer).await {
             // The client has closed the connection.
-            Ok(0) => Err(NetError::NetworkReadError(
+            Ok(0) => Err(NetError::ResponseReadError(
                 "Client closed connection with a partial request received".into(),
             )),
 
@@ -624,21 +555,28 @@ impl<T: ReadWrite> ClientServer<T> {
                 Ok(amt)
             }
 
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {
+                // This is a recoverable error.
+                trace!("KMIP server connection interrupted, continuing.");
+                Ok(0)
+            }
+
             // An unexpected error has occurred.
             Err(err) => {
+                let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
                 // TODO: Categorize the various std::io::ErrorKinds into fatal and
                 // non-fatal variants and only abort on fatal errors.
-                Err(NetError::NetworkReadError(format!("I/O error: {err}")))
+                Err(NetError::ResponseReadError(format!("I/O error: {err}")))
             }
         }
     }
 }
 
-impl<T: ReadWrite> Clone for ClientServer<T> {
+impl<T: ReadWrite> Clone for Client<T> {
     fn clone(&self) -> Self {
         Self {
             auth: self.auth.clone(),
-            max_message_size: self.max_message_size.clone(),
+            max_message_size: self.max_message_size,
             stream: self.stream.clone(),
             connection_error_count: self.connection_error_count.clone(),
             read_buf: vec![0u8; 8192],
@@ -647,315 +585,9 @@ impl<T: ReadWrite> Clone for ClientServer<T> {
     }
 }
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)
-    }
-}
-
-//------------ Tests ---------------------------------------------------------
-//
-#[cfg(all(test, feature = "sync"))]
-mod test {
-    use std::{
-        io::{Cursor, Read, Write},
-        net::TcpStream,
-    };
-
-    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-    use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
-
-    use crate::{
-        net::client_server::builder::ClientServerBuilder,
-        types::{
-            request::{QueryFunction, RequestPayload},
-            response::ResponsePayload,
-        },
-    };
-
-    struct MockStream {
-        pub response: Cursor<Vec<u8>>,
-    }
-
-    impl Write for MockStream {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            std::io::sink().write(buf)
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
-    impl Read for MockStream {
-        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-            self.response.read(buf)
-        }
-    }
-
-    #[test]
-    fn test_query() {
-        let response_hex = concat!(
-            "42007B010000023042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
-            "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F01000001D842",
-            "005C0500000004000000180000000042007F0500000004000000000000000042007C01000001B042005C0500000004000",
-            "000010000000042005C0500000004000000020000000042005C0500000004000000030000000042005C05000000040000",
-            "00040000000042005C0500000004000000080000000042005C0500000004000000090000000042005C050000000400000",
-            "00A0000000042005C05000000040000000B0000000042005C05000000040000000C0000000042005C0500000004000000",
-            "0D0000000042005C05000000040000000E0000000042005C05000000040000000F0000000042005C05000000040000001",
-            "00000000042005C0500000004000000110000000042005C0500000004000000120000000042005C050000000400000013",
-            "0000000042005C0500000004000000140000000042005C0500000004000000150000000042005C0500000004000000160",
-            "000000042005C0500000004000000180000000042005C0500000004000000190000000042005C05000000040000001A00",
-            "0000004200570500000004000000010000000042005705000000040000000200000000420057050000000400000003000",
-            "000004200570500000004000000040000000042005705000000040000000600000000"
-        );
-        let response_bytes = hex::decode(response_hex).unwrap();
-
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
-
-        let mut client = ClientServerBuilder::new(&mut stream).build();
-
-        let response_payload = client.query().unwrap();
-
-        dbg!(response_payload);
-    }
-
-    #[test]
-    fn test_create_rsa_key_pair() {
-        let response_hex = concat!(
-            "42007B01000000E042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
-            "0000000000000004200920900000008000000004B73C13A42000D0200000004000000010000000042000F010000008842",
-            "005C0500000004000000020000000042007F0500000004000000000000000042007C01000000604200940700000024383",
-            "93566373263322D623230612D343964382D393530342D3664633231313563633034320000000042009407000000246132",
-            "3432666361342D656266302D343339382D616336352D38373962616234393032353900000000"
-        );
-        let response_bytes = hex::decode(response_hex).unwrap();
-
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
-
-        let mut client = ClientServerBuilder::new(&mut stream).build();
-
-        let response_payload = client
-            .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
-            .unwrap();
-
-        dbg!(response_payload);
-    }
-
-    #[cfg(feature = "tls-with-openssl")]
-    #[test]
-    #[ignore = "Requires a running PyKMIP instance"]
-    fn test_pykmip_query_against_server_with_openssl() {
-        let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
-        connector.set_verify(SslVerifyMode::NONE);
-        connector
-            .set_certificate_file("/etc/pykmip/server.crt", SslFiletype::PEM)
-            .unwrap();
-        connector
-            .set_private_key_file("/etc/pykmip/server.key", SslFiletype::PEM)
-            .unwrap();
-        let connector = connector.build();
-        let stream = TcpStream::connect("localhost:5696").unwrap();
-        let mut tls = connector.connect("localhost", stream).unwrap();
-
-        let mut client = ClientServerBuilder::new(&mut tls).build();
-
-        let response_payload = client.query().unwrap();
-
-        dbg!(response_payload);
-    }
-
-    #[cfg(feature = "tls-with-rustls")]
-    #[test]
-    #[ignore = "Requires a running PyKMIP instance"]
-    fn test_pykmip_query_against_server_with_rustls() {
-        use rustls::pki_types::pem;
-        use rustls::pki_types::pem::PemObject;
-        use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
-        use std::convert::TryFrom;
-        use std::fs;
-        use std::sync::Arc;
-
-        // To setup input files for PyKMIP and RustLS to work together we must use a cipher they have in common, either
-        // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA384.
-        //
-        // To generate the required files use the following commands:
-        //
-        // ```
-        // # Prepare a directory to contain the PyKMIP config file and supporting certificate files
-        // sudo mkdir /etc/pykmip
-        // sudo chown $USER: /etc/pykmip
-        // cd /etc/pykmip
-        //
-        // # Prepare an OpenSSL configuration file for adding a Subject Alternative Name (SAN) to the generated CSR
-        // # and certificate. Without the SAN we would need to use the RustDL "dangerous" feature to ignore the server/
-        // # certificate mismatched name verification failure.
-        // cat <<EOF >san.cnf
-        // [ext]
-        // subjectAltName = DNS:localhost
-        // EOF
-        //
-        // # Prepare to do CA signing
-        // mkdir demoCA
-        // touch demoCA/index.txt
-        // echo 01 > demoCA/serial
-        //
-        // # Generate CA key
-        // # Warns: using curve name prime256v1 instead of secp256r1
-        // openssl ecparam -out ca.key -name secp256r1 -genkey
-        //
-        // # Generate CA certificate
-        // openssl req -x509 -new -key ca.key -out ca.crt -outform PEM -days 3650 -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=NLnet Labs/CN=localhost"
-        //
-        // # Generate PyKMIP server key
-        // # Warns: using curve name prime256v1 instead of secp256r1
-        // openssl ecparam -out server.key -name secp256r1 -genkey
-        //
-        // # Generate request for PyKMIP server certificate
-        // openssl req -new -nodes -key server.key -outform pem -out server.csr -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=NLnet Labs/CN=localhost"
-        //
-        // # Ask the CA to sign the request to create the PyKMIP server certificate
-        // openssl ca -keyfile ca.key -cert ca.crt -in server.csr -out server.crt -outdir . -batch -noemailDN -extfile san.cnf -extensions ext
-        //
-        // # Convert the server key from --BEGIN EC PRIVATE KEY-- format to --BEGIN PRIVATE KEY-- format
-        // # as RustLS cannot pass the former as a client certificate when connecting...
-        // openssl pkcs8 -topk8 -nocrypt -in server.key -out server.pkcs8.key
-        //
-        // # Replace the original server.key with the PKCS#8 format one because PyKMIP can use that as well
-        // mv server.pkcs8.key server.key
-        //
-        // # Now write a PyKMIP config file that uses the generated files
-        // cat <<EOF >server.conf
-        // [server]
-        // hostname=127.0.0.1
-        // port=5696
-        // certificate_path=/etc/pykmip/server.crt
-        // key_path=/etc/pykmip/server.key
-        // ca_path=/etc/pykmip/ca.crt
-        // auth_suite=TLS1.2
-        // enable_tls_client_auth=False
-        // tls_cipher_suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
-        // logging_level=DEBUG
-        // database_path=/tmp/pykmip.db
-        // EOF
-        //
-        // # Lastly, run PyKMIP:
-        // pykmip-server
-        // ```
-
-        // For more insight into what RustLS is doing enabling the "logging" feature of the RustLS crate and then use
-        // a logging implementation here, e.g.
-        //     stderrlog::new()
-        //         .module(module_path!())
-        //         .module("rustls")
-        //         .quiet(false)
-        //         .verbosity(5) // show INFO level logging by default, use -q to silence this
-        //         .timestamp(stderrlog::Timestamp::Second)
-        //         .init()
-        //         .unwrap();
-
-        fn bytes_to_cert_chain(bytes: &[u8]) -> Result<Vec<CertificateDer<'static>>, pem::Error> {
-            let mut res = Vec::new();
-            for item in CertificateDer::pem_slice_iter(bytes) {
-                res.push(item?.into_owned());
-            }
-            Ok(res)
-        }
-
-        fn bytes_to_private_key(bytes: &[u8]) -> Result<PrivateKeyDer<'static>, pem::Error> {
-            Ok(PrivateKeyDer::from_pem_slice(bytes)?.clone_key())
-        }
-
-        // Load files
-        let ca_cert_pem = fs::read("/etc/pykmip/ca.crt").unwrap();
-        let server_cert_pem = fs::read("/etc/pykmip/server.crt").unwrap();
-        let server_key_pem = fs::read("/etc/pykmip/server.key").unwrap();
-
-        let mut root_store = rustls::RootCertStore::empty();
-        for item in CertificateDer::pem_slice_iter(ca_cert_pem.as_slice()) {
-            root_store.add(item.unwrap()).unwrap();
-        }
-        for item in CertificateDer::pem_slice_iter(server_cert_pem.as_slice()) {
-            root_store.add(item.unwrap()).unwrap();
-        }
-
-        let cert_chain = bytes_to_cert_chain(&server_cert_pem).unwrap();
-        let key_der = bytes_to_private_key(&server_key_pem).unwrap();
-
-        let config = rustls::ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_client_auth_cert(cert_chain, key_der)
-            .unwrap();
-
-        let rc_config = Arc::new(config);
-        let localhost = ServerName::try_from("localhost").unwrap();
-        let mut sess = rustls::ClientConnection::new(rc_config, localhost).unwrap();
-        let mut stream = TcpStream::connect("localhost:5696").unwrap();
-        let mut tls = rustls::Stream::new(&mut sess, &mut stream);
-
-        let mut client = ClientServerBuilder::new(&mut tls).build();
-
-        let response_payload = client.query().unwrap();
-
-        dbg!(response_payload);
-    }
-
-    #[test]
-    #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-    #[ignore = "Requires a running Kryptus instance"]
-    fn test_kryptus_query_against_server() {
-        let mut connector = SslConnector::builder(SslMethod::tls()).unwrap();
-        connector.set_verify(SslVerifyMode::NONE);
-        let connector = connector.build();
-        let host = std::env::var("KRYPTUS_HOST").unwrap();
-        let port = std::env::var("KRYPTUS_PORT").unwrap();
-        let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
-        let mut tls = connector.connect(&host, stream).unwrap();
-
-        let mut client = ClientServerBuilder::new(&mut tls)
-            .with_credentials(
-                std::env::var("KRYPTUS_USER").unwrap(),
-                Some(std::env::var("KRYPTUS_PASS").unwrap()),
-            )
-            .build();
-
-        let response_payload = client.query().unwrap();
-
-        dbg!(response_payload);
-    }
-
-    #[test]
-    fn test_pykmip_query_response() {
-        let response_hex = concat!(
-            "42007b010000014042007a0100000048420069010000002042006a0200000004000000010000000042006b02000000040",
-            "00000000000000042009209000000080000000060ff457142000d0200000004000000010000000042000f01000000e842",
-            "005c0500000004000000180000000042007f0500000004000000000000000042007c01000000c042005c0500000004000",
-            "000010000000042005c0500000004000000020000000042005c0500000004000000030000000042005c05000000040000",
-            "00050000000042005c0500000004000000080000000042005c05000000040000000a0000000042005c050000000400000",
-            "00b0000000042005c05000000040000000c0000000042005c0500000004000000120000000042005c0500000004000000",
-            "130000000042005c0500000004000000140000000042005c05000000040000001800000000"
-        );
-        let response_bytes = hex::decode(response_hex).unwrap();
-
-        let mut stream = MockStream {
-            response: Cursor::new(response_bytes),
-        };
-
-        let mut client = ClientServerBuilder::new(&mut stream).build();
-
-        let result = client
-            .do_request_payload(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
-            .unwrap();
-
-        if let ResponsePayload::Query(payload) = result {
-            dbg!(payload);
-        } else {
-            panic!("Expected query response!");
-        }
     }
 }

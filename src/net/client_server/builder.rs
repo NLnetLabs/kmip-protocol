@@ -7,32 +7,32 @@ use tokio::sync::Mutex;
 use std::sync::Mutex;
 
 use crate::{
-    net::client_server::ClientServer,
+    net::client_server::Client,
     types::{
         request::{Authentication, CredentialValue, Password, Username},
         traits::ReadWrite,
     },
 };
 
-/// Use this builder to construct a [ClientServer] struct.
+/// Use this builder to construct a [Client] struct.
 #[derive(Debug)]
-pub struct ClientServerBuilder<T: ReadWrite> {
+pub struct ClientBuilder<T: ReadWrite> {
     stream: T,
     auth: Option<Authentication>,
     max_messagesize: i32,
 }
 
-impl<T: ReadWrite> ClientServerBuilder<T> {
-    /// Build a [ClientServer] struct that will read/write from/to the given stream.
+impl<T: ReadWrite> ClientBuilder<T> {
+    /// Build a [Client] struct that will read/write from/to the given stream.
     ///
-    /// Creates a [ClientServerBuilder] which can be used to create a [ClientServer] which
+    /// Creates a [ClientBuilder] which can be used to create a [Client] which
     /// will read/write from/to the given stream. The stream is expected to be
     /// a type which can read from and write to an established TCP connection
     /// to the KMIP server. In production the stream should also perform TLS
     /// de/encryption on the data read from/written to the stream.
     ///
     /// The `stream` argument must implement the read and write traits which
-    /// the [ClientServer] will use to read/write from/to the stream.
+    /// the [Client] will use to read/write from/to the stream.
     pub fn new(stream: T) -> Self {
         Self {
             stream,
@@ -41,9 +41,9 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         }
     }
 
-    /// Configure the [ClientServer] to include username/password
-    /// authentication credentials in KMIP requests, or the server to require
-    /// requests to be authenticated with the given credentials.
+    /// Configure the [Client] to include username/password authentication
+    /// credentials in KMIP requests, or the server to require requests to
+    /// be authenticated with the given credentials.
     pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
         self.auth = Some(Authentication::build(CredentialValue::UsernameAndPassword(
             Username(username),
@@ -52,15 +52,14 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         self
     }
 
-    /// Configure the [ClientBuilder] or server to reject messages above a
-    /// certain size.
+    /// Configure the [Client] or server to reject messages above a certain size.
     pub fn with_max_message_size(mut self, max: i32) -> Self {
         self.max_messagesize = max;
         self
     }
 
-    /// Build the configured [ClientServer] struct instance.
-    pub fn build(self) -> ClientServer<T> {
+    /// Build the configured [Client] struct instance.
+    pub fn build(self) -> Client<T> {
         let auth = self.auth;
         let stream = Arc::new(Mutex::new(self.stream));
         let max_message_size = self.max_messagesize;
@@ -68,7 +67,7 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         let write_buf = vec![MaybeUninit::uninit(); 8192];
         let connection_error_count = Default::default();
 
-        ClientServer {
+        Client {
             auth,
             max_message_size,
             stream,

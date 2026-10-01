@@ -5,13 +5,13 @@ use std::sync::Arc;
 
 use crate::net::tls::common::rustls::create_rustls_config;
 use crate::net::tls::common::util::create_kmip_client;
-use crate::net::{ClientServer, ConnectionSettings, NetError, NetResult};
+use crate::net::{ConnectionSettings, NetError, NetResult};
 
 use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 use tokio_rustls::client::TlsStream;
 
-pub type Client = ClientServer<TlsStream<TcpStream>>;
+pub type Client = crate::net::Client<TlsStream<TcpStream>>;
 
 async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await

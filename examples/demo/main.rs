@@ -12,7 +12,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::net::{ClientCertificate, ClientServer, ConnectionSettings, NetResult};
+use kmip_protocol::net::{Client, ClientCertificate, ConnectionSettings, NetResult};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
@@ -79,7 +79,7 @@ async fn main() {
 }
 
 #[maybe_async::maybe_async]
-async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_prefix: &str) -> NetResult<()> {
+async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix: &str) -> NetResult<()> {
     query_server_properties(&mut client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
@@ -135,7 +135,7 @@ async fn exec_test_requests<T: ReadWrite>(mut client: ClientServer<T>, key_name_
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> NetResult<()> {
+async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> NetResult<()> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 

@@ -9,7 +9,7 @@ use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub type Client = crate::net::ClientServer<SslStream<TcpStream>>;
+pub type Client = crate::net::Client<SslStream<TcpStream>>;
 
 pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     connect_with_tcp_stream_factory(conn_settings, |addr, settings| {
@@ -122,11 +122,11 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> NetResult<SslConn
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         tls_connector.set_keylog_callback(|_, line| {
-            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
-                if let Ok(mut file) = OpenOptions::new().append(true).open(path) {
-                    use std::io::Write;
-                    writeln!(file, "{}", line).ok();
-                }
+            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME)
+                && let Ok(mut file) = OpenOptions::new().append(true).open(path)
+            {
+                use std::io::Write;
+                writeln!(file, "{}", line).ok();
             }
         });
     }
