@@ -4,11 +4,10 @@ use std::sync::PoisonError;
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum NetError {
-    AuthenticationError,
     ConfigurationError(String),
     SerializeError(String),
-    NetworkWriteError(String),
-    NetworkReadError(String),
+    RequestWriteError(String),
+    ResponseReadError(String),
     DeserializeError {
         err: String,
 
@@ -39,7 +38,7 @@ impl NetError {
     /// Is this a possibly transient problem with the connection to the server?
     pub fn is_connection_error(&self) -> bool {
         use NetError::*;
-        matches!(self, NetworkWriteError(_) | NetworkReadError(_))
+        matches!(self, RequestWriteError(_) | ResponseReadError(_))
     }
 }
 
@@ -58,11 +57,10 @@ impl From<std::io::Error> for NetError {
 impl std::fmt::Display for NetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NetError::AuthenticationError => f.write_str("Authentication error"),
             NetError::ConfigurationError(e) => write!(f, "Configuration error: {}", e),
             NetError::SerializeError(e) => write!(f, "Serialize error: {}", e),
-            NetError::NetworkWriteError(e) => write!(f, "Request send error: {}", e),
-            NetError::NetworkReadError(e) => write!(f, "Response read error: {}", e),
+            NetError::RequestWriteError(e) => write!(f, "Request send error: {}", e),
+            NetError::ResponseReadError(e) => write!(f, "Response read error: {}", e),
             NetError::DeserializeError { err: e, req, res } => write!(
                 f,
                 "Deserialize error: {e}\nRequest: {}\nResponse: {}",

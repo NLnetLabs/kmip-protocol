@@ -2,18 +2,21 @@
 use std::{
     io::{Cursor, Read, Write},
     net::TcpStream,
+    time::SystemTime,
 };
 
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
 use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
 use crate::{
-    net::{ClientServerBuilder, payload_to_response},
+    net::{ClientBuilder, NetError, NetResult},
     ttlv::to_vec,
     types::{
         common::{ObjectType, Operation},
         request::{QueryFunction, RequestPayload},
-        response::{self, ProtocolVersion, ResponsePayload, ResultStatus},
+        response::{
+            self, ProtocolVersion, ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus,
+        },
     },
 };
 
@@ -100,7 +103,7 @@ fn test_query() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     let response_payload = client.query().unwrap();
 
@@ -177,7 +180,7 @@ fn test_create_rsa_key_pair() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     let response_payload = client
         .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -216,7 +219,7 @@ fn test_multiple_requests() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     // Query for each mock response and assert that the query succeeds or
     // fails as expected.
@@ -235,11 +238,14 @@ fn test_connection_dropped() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     // Attempt to query the mock server which should fail due to the lack
     // of response.
-    assert!(matches!(client.query(), Err(crate::net::NetError::NetworkReadError(_))));
+    assert!(matches!(
+        client.query(),
+        Err(crate::net::NetError::ResponseReadError(_))
+    ));
 
     // The client closing the connection is NOT considered an error.
     assert_eq!(client.connection_error_count(), 0);
@@ -256,7 +262,7 @@ fn test_connection_dropped_after_one_response() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     // The first query should get the operation failed error response from
     // the mock server.
@@ -264,7 +270,10 @@ fn test_connection_dropped_after_one_response() {
 
     // The second query should fail with a network error as there are no
     // more bytes to read from the mock network stream.
-    assert!(matches!(client.query(), Err(crate::net::NetError::NetworkReadError(_))));
+    assert!(matches!(
+        client.query(),
+        Err(crate::net::NetError::ResponseReadError(_))
+    ));
 
     // The client closing the connection is NOT considered an error.
     assert_eq!(client.connection_error_count(), 0);
@@ -283,11 +292,14 @@ fn test_partial_response() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     // The first query should fail with a network error as there are no
     // more bytes to read from the mock network stream.
-    assert!(matches!(client.query(), Err(crate::net::NetError::NetworkReadError(_))));
+    assert!(matches!(
+        client.query(),
+        Err(crate::net::NetError::ResponseReadError(_))
+    ));
 
     // The client closing the connection is NOT considered an error.
     assert_eq!(client.connection_error_count(), 0);
@@ -305,7 +317,7 @@ fn test_unsupported_valid_ttlv() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     // The query should fail with a deserializer error as the Protocol
     // Version TTLV cannot be deserialized as a Response Message TTLV.
@@ -336,7 +348,7 @@ fn test_pykmip_query_against_server_with_openssl() {
     let stream = TcpStream::connect("localhost:5696").unwrap();
     let mut tls = connector.connect("localhost", stream).unwrap();
 
-    let mut client = ClientServerBuilder::new(&mut tls).build();
+    let mut client = ClientBuilder::new(&mut tls).build();
 
     let response_payload = client.query().unwrap();
 
@@ -471,7 +483,7 @@ fn test_pykmip_query_against_server_with_rustls() {
     let mut stream = TcpStream::connect("localhost:5696").unwrap();
     let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
-    let mut client = ClientServerBuilder::new(&mut tls).build();
+    let mut client = ClientBuilder::new(&mut tls).build();
 
     let response_payload = client.query().unwrap();
 
@@ -490,7 +502,7 @@ fn test_kryptus_query_against_server() {
     let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
     let mut tls = connector.connect(&host, stream).unwrap();
 
-    let mut client = ClientServerBuilder::new(&mut tls)
+    let mut client = ClientBuilder::new(&mut tls)
         .with_credentials(
             std::env::var("KRYPTUS_USER").unwrap(),
             Some(std::env::var("KRYPTUS_PASS").unwrap()),
@@ -519,7 +531,7 @@ fn test_pykmip_query_response() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientServerBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream).build();
 
     let mut batch_items = client
         .do_request_payload(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
@@ -531,4 +543,57 @@ fn test_pykmip_query_response() {
         batch_item.unwrap().payload,
         Some(ResponsePayload::Query { .. })
     ));
+}
+
+//------------ Helper functions ----------------------------------------------
+
+fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> NetResult<ResponseMessage> {
+    if batch_items.len() >= i32::MAX as usize {
+        return Err(NetError::SerializeError(format!(
+            "Too many batch items: {} > {}",
+            batch_items.len(),
+            i32::MAX
+        )));
+    }
+
+    let timestamp = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .try_into()
+        .unwrap();
+
+    let protocol_version = batch_items
+        .iter()
+        .filter_map(|item| item.payload.as_ref())
+        .map(|payload| payload.protocol_version())
+        .max()
+        .unwrap_or_default();
+
+    Ok(ResponseMessage {
+        header: ResponseHeader {
+            protocol_version,
+            timestamp,
+            batch_count: batch_items.len().try_into().unwrap(),
+        },
+        batch_items,
+    })
+}
+
+fn payload_to_response(
+    result_status: ResultStatus,
+    result_reason: Option<ResultReason>,
+    result_message: Option<String>,
+    payload: Option<ResponsePayload>,
+) -> NetResult<ResponseMessage> {
+    let batch_items = vec![response::BatchItem {
+        operation: payload.as_ref().map(|p| p.operation()),
+        unique_batch_item_id: None,
+        result_status,
+        result_reason,
+        result_message,
+        payload,
+        message_extension: None,
+    }];
+    batch_items_to_response(batch_items)
 }

@@ -7,10 +7,10 @@ mod client_server;
 pub mod tls;
 
 pub use client_server::{
-    ClientServer,
-    builder::ClientServerBuilder,
+    Client,
+    builder::ClientBuilder,
     error::{NetError, NetResult},
-    util::{batch_items_to_request, batch_items_to_response, payload_to_request, payload_to_response},
+    util::{batch_items_to_request, payload_to_request},
 };
 
 mod config;

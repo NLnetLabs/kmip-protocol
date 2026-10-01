@@ -24,7 +24,7 @@ use std::sync::Mutex;
 use crate::{
     net::client_server::{
         error::{NetError, NetResult},
-        util::{batch_items_to_request, batch_items_to_response, payload_to_request, payload_to_response},
+        util::{batch_items_to_request, payload_to_request},
     },
     ttlv::{FastScanError, FastScanner},
     types::{
@@ -76,9 +76,9 @@ macro_rules! get_response_payload_for_type {
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
-/// Use the [ClientServerBuilder] to build a [ClientServer] instance to work with.
+/// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
-pub struct ClientServer<T: ReadWrite> {
+pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
     max_message_size: i32,
     stream: Arc<Mutex<T>>,
@@ -89,7 +89,7 @@ pub struct ClientServer<T: ReadWrite> {
 
 //--- High level client interface
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
     ///
     /// See also: [do_request()](Self::do_request())
@@ -302,7 +302,7 @@ impl<T: ReadWrite> ClientServer<T> {
 //
 // For sending requests and receiving responses.
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
     ///
@@ -397,96 +397,9 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 }
 
-//--- Lower level server interface
-//
-// For receiving requests and sending responses.
+//------------ Internals -----------------------------------------------------
 
-impl<T: ReadWrite> ClientServer<T> {
-    /// Receive a KMIP request from the network.
-    ///
-    /// Unlike do_request() and do_requests() this function only performs the
-    /// receiving half of the message exchange as the caller has to inspect the
-    /// received message and determinate an appropriate response.
-    #[maybe_async::maybe_async]
-    pub async fn receive_request(&mut self) -> NetResult<RequestMessage> {
-        trace!("Acquiring stream lock");
-        let mut lock = Self::get_mut_stream(&self.stream).await?;
-        let stream = lock.deref_mut();
-
-        trace!("Waiting for a request from the client");
-        let req = Self::read_message_from_stream(
-            stream,
-            &mut self.read_buf,
-            self.max_message_size,
-            RequestMessage::fast_scan,
-            self.connection_error_count.clone(),
-        )
-        .await?;
-        drop(lock);
-
-        // Check that the request is correctly authenticated.
-        if req.header().authentication() != self.auth.as_ref() {
-            return Err(NetError::AuthenticationError);
-        }
-
-        Ok(req)
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response(&mut self, response: ResponseMessage) -> NetResult<()> {
-        trace!("Serializing response to KMIP wire bytes");
-        let len = self.write_buf.len();
-        assert!(len <= i32::MAX as usize);
-        let mut len = len as i32;
-
-        // TODO: Enforce a timeout on sending the response?
-        loop {
-            let mut formatter = crate::ttlv::Formatter::new(&mut self.write_buf);
-            if response.format(&mut formatter).is_ok() {
-                let response_bytes = formatter.filled().as_flattened();
-                let mut stream = Self::get_mut_stream(&self.stream).await?;
-                trace!("Writing {} response bytes to the server", response_bytes.len());
-                return stream.write_all(response_bytes).await.map_err(|err| {
-                    NetError::NetworkWriteError(format!("Failed to write KMIP response bytes to the stream: {err}"))
-                });
-            } else if len >= self.max_message_size {
-                // Buffer is already at the maximum possible size.
-                return Err(NetError::SerializeError(format!(
-                    "Message too large: {len} > {}",
-                    self.max_message_size
-                )));
-            } else {
-                // Retry with a larger buffer.
-                len = i32::max(self.max_message_size, len.saturating_mul(2));
-                self.write_buf.resize(len as usize, MaybeUninit::uninit());
-            }
-        }
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_payload(
-        &mut self,
-        result_status: ResultStatus,
-        result_reason: Option<ResultReason>,
-        result_message: Option<String>,
-        payload: Option<ResponsePayload>,
-    ) -> NetResult<()> {
-        self.send_response(payload_to_response(
-            result_status,
-            result_reason,
-            result_message,
-            payload,
-        )?)
-        .await
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_batch(&mut self, batch_items: Vec<response::BatchItem>) -> NetResult<()> {
-        self.send_response(batch_items_to_response(batch_items)?).await
-    }
-}
-
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     #[cfg(feature = "tokio")]
     async fn get_mut_stream(stream: &Mutex<T>) -> NetResult<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock().await)
@@ -605,7 +518,7 @@ impl<T: ReadWrite> ClientServer<T> {
             hex::encode_upper(bytes)
         );
         if let Err(err) = stream.write_all(bytes).await {
-            return Err(NetError::NetworkWriteError(err.to_string()));
+            return Err(NetError::RequestWriteError(err.to_string()));
         }
 
         Ok(())
@@ -615,7 +528,7 @@ impl<T: ReadWrite> ClientServer<T> {
         // If the buffer is too small, try to expand it.
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
         if wanted_buf_size > read_buf.capacity() && wanted_buf_size > limit as usize {
-            return Err(NetError::NetworkReadError(format!(
+            return Err(NetError::ResponseReadError(format!(
                 "Response too large: {wanted_buf_size} bytes > {limit} bytes"
             )));
         }
@@ -632,7 +545,7 @@ impl<T: ReadWrite> ClientServer<T> {
         trace!("Reading upto {} bytes from the KMIP server", buffer.len());
         match stream.read(buffer).await {
             // The client has closed the connection.
-            Ok(0) => Err(NetError::NetworkReadError(
+            Ok(0) => Err(NetError::ResponseReadError(
                 "Client closed connection with a partial request received".into(),
             )),
 
@@ -653,13 +566,13 @@ impl<T: ReadWrite> ClientServer<T> {
                 let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
                 // TODO: Categorize the various std::io::ErrorKinds into fatal and
                 // non-fatal variants and only abort on fatal errors.
-                Err(NetError::NetworkReadError(format!("I/O error: {err}")))
+                Err(NetError::ResponseReadError(format!("I/O error: {err}")))
             }
         }
     }
 }
 
-impl<T: ReadWrite> Clone for ClientServer<T> {
+impl<T: ReadWrite> Clone for Client<T> {
     fn clone(&self) -> Self {
         Self {
             auth: self.auth.clone(),
@@ -672,8 +585,8 @@ impl<T: ReadWrite> Clone for ClientServer<T> {
     }
 }
 
-impl<T: ReadWrite> ClientServer<T> {
-    /// Get the count of connection errors experienced by this ClientServer.
+impl<T: ReadWrite> Client<T> {
+    /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)
     }
