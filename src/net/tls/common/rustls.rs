@@ -9,11 +9,7 @@ use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 
-use crate::net::{
-    ClientCertificate, ConnectionSettings,
-    client_server::error::{NetError, NetResult},
-    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
-};
+use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;
