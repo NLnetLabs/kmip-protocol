@@ -3,8 +3,8 @@
 //! This library provides:
 //!
 //!   - Strongly-typed interfaces for a subset of the [Oasis Key Management Interoperability Protocol] aka KMIP.
-//!   - A pluggable [ClientServer] interface for sending KMIP TTLV requests to and receiving responses from a KMIP server.
-//!   - Sample "plugins" for the [ClientServer] interface for connecting to the KMIP server (a)synchronously via TCP+TLS.
+//!   - A pluggable [Client] interface for sending KMIP TTLV requests to and receiving responses from a KMIP server.
+//!   - Sample "plugins" for the [Client] interface for connecting to the KMIP server (a)synchronously via TCP+TLS.
 //!
 //! **WARNING:**
 //! Although this crate aims to offer a production quality KMIP client capability it is still immature and being
@@ -12,7 +12,7 @@
 //! to demonstrate that the library can be successfully integrated with sample client code. Please submit any feedback
 //! regarding this crate to the project [issue tracker]. Use of this code is at your own risk.
 //!
-//! [ClientServer]: client::ClientServer
+//! [Client]: client::Client
 //! [Oasis Key Management Interoperability Protocol]: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html
 //! [example demo]: https://github.com/NLnetLabs/kmip-protocol/tree/main/examples/demo
 //! [issue tracker]: https://github.com/NLnetLabs/kmip-protocol/issues/
@@ -20,7 +20,7 @@
 //! # Usage
 //!
 //! The exact features to use depend on your needs, read below to learn more about the available features. In this
-//! example the [ClientServer] interface will read & write messages synchronously to/from a [Rustls] managed TCP+TLS
+//! example the [Client] interface will read & write messages synchronously to/from a [Rustls] managed TCP+TLS
 //! connection:
 //!
 //! ```toml
@@ -56,7 +56,7 @@
 //!
 //! # Advanced usage
 //!
-//! If none of the helper functions offered by the [ClientServer] struct fit your needs you can use [ClientServer::do_request]
+//! If none of the helper functions offered by the [Client] struct fit your needs you can use [Client::do_request]
 //! directly to handle the request construction and response parsing yourself, for example:
 //!
 //! ```ignore
@@ -68,7 +68,7 @@
 //! }
 //! ```
 //!
-//! [ClientServer::do_request]: client::ClientServer::do_request
+//! [Client::do_request]: client::Client::do_request
 //!
 //! # Selecting a TLS plugin to use
 //!
@@ -178,7 +178,7 @@
 //!   - [ ] 14.2 Test Case: Key Wrapping using AES Key Wrap with Attributes
 //! - 15     Groups _(Added in KMIP v1.1)_
 //!   - [ ] 15.1 Test Case: Locate a Fresh Object from the Default Group
-//!   - [ ] 15.2 Test Case: ClientServer-side Group Management
+//!   - [ ] 15.2 Test Case: Client-side Group Management
 //!   - [ ] 15.3 Test Case: Default Object Group Member
 //! - 16     Discover Versions _(Added in KMIP v1.1)_
 //!   - [x] 16.1 Test Case: Discover Versions

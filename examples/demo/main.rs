@@ -12,7 +12,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{ClientCertificate, ClientServer, ConnectionSettings};
+use kmip_protocol::client::{ClientCertificate, Client, ConnectionSettings};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
@@ -78,7 +78,7 @@ async fn main() {
 
 #[maybe_async::maybe_async]
 async fn exec_test_requests<T: ReadWrite>(
-    mut client: ClientServer<T>,
+    mut client: Client<T>,
     key_name_prefix: &str,
 ) -> Result<(), kmip_protocol::client::Error> {
     query_server_properties(&mut client).await?;
@@ -136,7 +136,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &mut ClientServer<T>) -> Result<(), kmip_protocol::client::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> Result<(), kmip_protocol::client::Error> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 

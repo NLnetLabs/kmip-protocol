@@ -1,6 +1,6 @@
 //! TCP+TLS client "plugins" for various (a)sync TLS implementations.
 //!
-//! This module offers the following TCP+TLS "plugins" for use with the [ClientServer] interface.
+//! This module offers the following TCP+TLS "plugins" for use with the [Client] interface.
 //!
 //! Every "plugin" can be used by passing a [ConnectionSettings] instance to it:
 //!
@@ -45,7 +45,7 @@
 //! | `tokio_rustls`     | `default-features = false, features = ["tls-with-tokio-rustls"]`     | [Tokio]       | [view](https://crates.io/crates/tokio-rustls)     | Powered by Rustls                          |
 //! | `async_tls`        | `default-features = false, features = ["tls-with-async-tls"]`        | [Async Std]   | [view](https://crates.io/crates/async-tls)        | Powered by Rustls                          |
 //!
-//! [ClientServer]: crate::client::ClientServer
+//! [Client]: crate::client::Client
 //! [Tokio]: https://crates.io/crates/tokio
 //! [Async Std]: https://crates.io/crates/async-std
 //!

@@ -1,5 +1,4 @@
 use std::sync::PoisonError;
-use std::time::SystemTime;
 use std::{
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
@@ -26,7 +25,7 @@ use crate::{
         },
         response::{
             self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
-            ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
         },
         traits::ReadWrite,
     },
@@ -34,25 +33,25 @@ use crate::{
 
 use tracing::trace;
 
-/// Use this builder to construct a [ClientServer] struct.
+/// Use this builder to construct a [Client] struct.
 #[derive(Debug)]
-pub struct ClientServerBuilder<T: ReadWrite> {
+pub struct ClientBuilder<T: ReadWrite> {
     stream: T,
     auth: Option<Authentication>,
     max_messagesize: i32,
 }
 
-impl<T: ReadWrite> ClientServerBuilder<T> {
-    /// Build a [ClientServer] struct that will read/write from/to the given stream.
+impl<T: ReadWrite> ClientBuilder<T> {
+    /// Build a [Client] struct that will read/write from/to the given stream.
     ///
-    /// Creates a [ClientServerBuilder] which can be used to create a [ClientServer] which
+    /// Creates a [ClientBuilder] which can be used to create a [Client] which
     /// will read/write from/to the given stream. The stream is expected to be
     /// a type which can read from and write to an established TCP connection
     /// to the KMIP server. In production the stream should also perform TLS
     /// de/encryption on the data read from/written to the stream.
     ///
     /// The `stream` argument must implement the read and write traits which
-    /// the [ClientServer] will use to read/write from/to the stream.
+    /// the [Client] will use to read/write from/to the stream.
     pub fn new(stream: T) -> Self {
         Self {
             stream,
@@ -61,7 +60,7 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         }
     }
 
-    /// Configure the [ClientServer] to include username/password authentication
+    /// Configure the [Client] to include username/password authentication
     /// credentials in KMIP requests, or the server to require requests to
     /// be authenticated with the given credentials.
     pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
@@ -72,14 +71,14 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         self
     }
 
-    /// Configure the [ClientServer] or server to reject messages above a certain size.
+    /// Configure the [Client] or server to reject messages above a certain size.
     pub fn with_max_message_size(mut self, max: i32) -> Self {
         self.max_messagesize = max;
         self
     }
 
-    /// Build the configured [ClientServer] struct instance.
-    pub fn build(self) -> ClientServer<T> {
+    /// Build the configured [Client] struct instance.
+    pub fn build(self) -> Client<T> {
         let auth = self.auth;
         let stream = Arc::new(Mutex::new(self.stream));
         let max_message_size = self.max_messagesize;
@@ -87,7 +86,7 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
         let write_buf = vec![MaybeUninit::uninit(); 8192];
         let connection_error_count = Default::default();
 
-        ClientServer {
+        Client {
             auth,
             max_message_size,
             stream,
@@ -102,11 +101,10 @@ impl<T: ReadWrite> ClientServerBuilder<T> {
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
-    AuthenticationError,
     ConfigurationError(String),
     SerializeError(String),
-    NetworkWriteError(String),
-    NetworkReadError(String),
+    RequestWriteError(String),
+    ResponseReadError(String),
     DeserializeError {
         err: String,
 
@@ -137,7 +135,7 @@ impl Error {
     /// Is this a possibly transient problem with the connection to the server?
     pub fn is_connection_error(&self) -> bool {
         use Error::*;
-        matches!(self, NetworkWriteError(_) | NetworkReadError(_))
+        matches!(self, RequestWriteError(_) | ResponseReadError(_))
     }
 }
 
@@ -156,11 +154,10 @@ impl From<std::io::Error> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::AuthenticationError => f.write_str("Authentication error"),
             Error::ConfigurationError(e) => write!(f, "Configuration error: {}", e),
             Error::SerializeError(e) => write!(f, "Serialize error: {}", e),
-            Error::NetworkWriteError(e) => write!(f, "Request send error: {}", e),
-            Error::NetworkReadError(e) => write!(f, "Response read error: {}", e),
+            Error::RequestWriteError(e) => write!(f, "Request send error: {}", e),
+            Error::ResponseReadError(e) => write!(f, "Response read error: {}", e),
             Error::DeserializeError { err: e, req, res } => write!(
                 f,
                 "Deserialize error: {e}\nRequest: {}\nResponse: {}",
@@ -219,9 +216,9 @@ macro_rules! get_response_payload_for_type {
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
-/// Use the [ClientServerBuilder] to build a [ClientServer] instance to work with.
+/// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
-pub struct ClientServer<T: ReadWrite> {
+pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
     max_message_size: i32,
     stream: Arc<Mutex<T>>,
@@ -232,7 +229,7 @@ pub struct ClientServer<T: ReadWrite> {
 
 //--- High level client interface
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
     ///
     /// See also: [do_request()](Self::do_request())
@@ -445,7 +442,7 @@ impl<T: ReadWrite> ClientServer<T> {
 //
 // For sending requests and receiving responses.
 
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
     ///
@@ -534,96 +531,9 @@ impl<T: ReadWrite> ClientServer<T> {
     }
 }
 
-//--- Lower level server interface
-//
-// For receiving requests and sending responses.
+//------------ Internals -----------------------------------------------------
 
-impl<T: ReadWrite> ClientServer<T> {
-    /// Receive a KMIP request from the network.
-    ///
-    /// Unlike do_request() and do_requests() this function only performs the
-    /// receiving half of the message exchange as the caller has to inspect the
-    /// received message and determinate an appropriate response.
-    #[maybe_async::maybe_async]
-    pub async fn receive_request(&mut self) -> Result<RequestMessage> {
-        trace!("Acquiring stream lock");
-        let mut lock = Self::get_mut_stream(&self.stream).await?;
-        let stream = lock.deref_mut();
-
-        trace!("Waiting for a request from the client");
-        let req = Self::read_message_from_stream(
-            stream,
-            &mut self.read_buf,
-            self.max_message_size,
-            RequestMessage::fast_scan,
-            self.connection_error_count.clone(),
-        )
-        .await?;
-        drop(lock);
-
-        // Check that the request is correctly authenticated.
-        if req.header().authentication() != self.auth.as_ref() {
-            return Err(Error::AuthenticationError);
-        }
-
-        Ok(req)
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response(&mut self, response: ResponseMessage) -> Result<()> {
-        trace!("Serializing response to KMIP wire bytes");
-        let len = self.write_buf.len();
-        assert!(len <= i32::MAX as usize);
-        let mut len = len as i32;
-
-        // TODO: Enforce a timeout on sending the response?
-        loop {
-            let mut formatter = crate::ttlv::Formatter::new(&mut self.write_buf);
-            if response.format(&mut formatter).is_ok() {
-                let response_bytes = formatter.filled().as_flattened();
-                let mut stream = Self::get_mut_stream(&self.stream).await?;
-                trace!("Writing {} response bytes to the server", response_bytes.len());
-                return stream.write_all(response_bytes).await.map_err(|err| {
-                    Error::NetworkWriteError(format!("Failed to write KMIP response bytes to the stream: {err}"))
-                });
-            } else if len >= self.max_message_size {
-                // Buffer is already at the maximum possible size.
-                return Err(Error::SerializeError(format!(
-                    "Message too large: {len} > {}",
-                    self.max_message_size
-                )));
-            } else {
-                // Retry with a larger buffer.
-                len = i32::max(self.max_message_size, len.saturating_mul(2));
-                self.write_buf.resize(len as usize, MaybeUninit::uninit());
-            }
-        }
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_payload(
-        &mut self,
-        result_status: ResultStatus,
-        result_reason: Option<ResultReason>,
-        result_message: Option<String>,
-        payload: Option<ResponsePayload>,
-    ) -> Result<()> {
-        self.send_response(payload_to_response(
-            result_status,
-            result_reason,
-            result_message,
-            payload,
-        )?)
-        .await
-    }
-
-    #[maybe_async::maybe_async]
-    pub async fn send_response_batch(&mut self, batch_items: Vec<response::BatchItem>) -> Result<()> {
-        self.send_response(batch_items_to_response(batch_items)?).await
-    }
-}
-
-impl<T: ReadWrite> ClientServer<T> {
+impl<T: ReadWrite> Client<T> {
     #[cfg(feature = "tokio")]
     async fn get_mut_stream(stream: &Mutex<T>) -> Result<impl DerefMut<Target = T> + '_> {
         Ok(stream.lock().await)
@@ -742,7 +652,7 @@ impl<T: ReadWrite> ClientServer<T> {
             hex::encode_upper(bytes)
         );
         if let Err(err) = stream.write_all(&bytes).await {
-            return Err(Error::NetworkWriteError(err.to_string()));
+            return Err(Error::RequestWriteError(err.to_string()));
         }
 
         Ok(())
@@ -753,7 +663,7 @@ impl<T: ReadWrite> ClientServer<T> {
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
         if wanted_buf_size > read_buf.capacity() {
             if wanted_buf_size > limit as usize {
-                return Err(Error::NetworkReadError(format!(
+                return Err(Error::ResponseReadError(format!(
                     "Response too large: {wanted_buf_size} bytes > {limit} bytes"
                 )));
             }
@@ -771,7 +681,7 @@ impl<T: ReadWrite> ClientServer<T> {
         trace!("Reading upto {} bytes from the KMIP server", buffer.len());
         match stream.read(buffer).await {
             // The client has closed the connection.
-            Ok(0) => Err(Error::NetworkReadError(
+            Ok(0) => Err(Error::ResponseReadError(
                 "Client closed connection with a partial request received".into(),
             )),
 
@@ -792,13 +702,13 @@ impl<T: ReadWrite> ClientServer<T> {
                 let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
                 // TODO: Categorize the various std::io::ErrorKinds into fatal and
                 // non-fatal variants and only abort on fatal errors.
-                Err(Error::NetworkReadError(format!("I/O error: {err}")))
+                Err(Error::ResponseReadError(format!("I/O error: {err}")))
             }
         }
     }
 }
 
-impl<T: ReadWrite> Clone for ClientServer<T> {
+impl<T: ReadWrite> Clone for Client<T> {
     fn clone(&self) -> Self {
         Self {
             auth: self.auth.clone(),
@@ -811,8 +721,8 @@ impl<T: ReadWrite> Clone for ClientServer<T> {
     }
 }
 
-impl<T: ReadWrite> ClientServer<T> {
-    /// Get the count of connection errors experienced by this ClientServer.
+impl<T: ReadWrite> Client<T> {
+    /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)
     }
@@ -825,18 +735,21 @@ mod test {
     use std::{
         io::{Cursor, Read, Write},
         net::TcpStream,
+        time::SystemTime,
     };
 
     #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
     use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
     use crate::{
-        client::client::{ClientServerBuilder, payload_to_response},
+        client::{Error, client::ClientBuilder},
         ttlv::to_vec,
         types::{
             common::{ObjectType, Operation},
             request::{QueryFunction, RequestPayload},
-            response::{self, ProtocolVersion, ResponsePayload, ResultStatus},
+            response::{
+                self, ProtocolVersion, ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus,
+            },
         },
     };
 
@@ -874,43 +787,11 @@ mod test {
 
     struct MockStream {
         pub bytes: Cursor<Vec<u8>>,
-        pub is_client: bool,
-    }
-
-    impl MockStream {
-        pub fn new(bytes: Vec<u8>) -> Self {
-            Self {
-                bytes: Cursor::new(bytes),
-                is_client: true,
-            }
-        }
-
-        pub fn new_server() -> Self {
-            Self {
-                bytes: Cursor::new(vec![]),
-                is_client: false,
-            }
-        }
-
-        #[allow(unused)]
-        pub fn become_server(&mut self) {
-            self.bytes.set_position(0);
-            self.is_client = false;
-        }
-
-        pub fn become_client(&mut self) {
-            self.bytes.set_position(0);
-            self.is_client = true;
-        }
     }
 
     impl Write for MockStream {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            if self.is_client {
-                std::io::sink().write(buf)
-            } else {
-                self.bytes.write(buf)
-            }
+            std::io::sink().write(buf)
         }
 
         fn flush(&mut self) -> std::io::Result<()> {
@@ -920,12 +801,12 @@ mod test {
 
     impl Read for MockStream {
         fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-            if self.is_client { self.bytes.read(buf) } else { Ok(0) }
+            self.bytes.read(buf)
         }
     }
 
     #[test]
-    fn test_client_query() {
+    fn test_query() {
         // Decoded by copying the quoted hex lines below into /tmp/t then running:
         //   cargo run -q --example hex_to_txt
         //
@@ -983,8 +864,10 @@ mod test {
         );
         let response_bytes = hex::decode(response_hex).unwrap();
 
-        let mut stream = MockStream::new(response_bytes);
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut stream = MockStream {
+            bytes: Cursor::new(response_bytes),
+        };
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client.query().unwrap();
 
@@ -996,7 +879,7 @@ mod test {
     }
 
     #[test]
-    fn test_client_create_rsa_key_pair() {
+    fn test_create_rsa_key_pair() {
         // Decoded by copying the quoted hex lines below into /tmp/t then running:
         //   cargo run -q --example hex_to_txt
         //
@@ -1022,8 +905,10 @@ mod test {
         );
         let response_bytes = hex::decode(response_hex).unwrap();
 
-        let mut stream = MockStream::new(response_bytes);
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut stream = MockStream {
+            bytes: Cursor::new(response_bytes),
+        };
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let response_payload = client
             .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -1035,7 +920,7 @@ mod test {
     }
 
     #[test]
-    fn test_client_multiple_requests() {
+    fn test_multiple_requests() {
         // Define mock KMIP responses
         let payload = ResponsePayload::Query(response::QueryResponsePayload::default());
         let good_response_bytes =
@@ -1057,10 +942,12 @@ mod test {
         test_entries
             .iter()
             .for_each(|(bytes, _)| mock_response_stream.extend_from_slice(bytes));
-        let mut stream = MockStream::new(mock_response_stream);
+        let mut stream = MockStream {
+            bytes: Cursor::new(mock_response_stream),
+        };
 
         // Create a real KMIP client that "connects" to a mock network stream.
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         // Query for each mock response and assert that the query succeeds or
         // fails as expected.
@@ -1072,31 +959,38 @@ mod test {
     }
 
     #[test]
-    fn test_client_connection_dropped() {
+    fn test_connection_dropped() {
         // Configure the mock stream to be empty.
-        let mut stream = MockStream::new(vec![]);
+        let mut stream = MockStream {
+            bytes: Cursor::new(vec![]),
+        };
 
         // Create a real KMIP client that "connects" to a mock network stream.
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         // Attempt to query the mock server which should fail due to the lack
         // of response.
-        assert!(matches!(client.query(), Err(crate::client::Error::NetworkReadError(_))));
+        assert!(matches!(
+            client.query(),
+            Err(crate::client::Error::ResponseReadError(_))
+        ));
 
         // The client closing the connection is NOT considered an error.
         assert_eq!(client.connection_error_count(), 0);
     }
 
     #[test]
-    fn test_client_connection_dropped_after_one_response() {
+    fn test_connection_dropped_after_one_response() {
         let bad_response_bytes =
             response::to_vec(payload_to_response(ResultStatus::OperationFailed, None, None, None).unwrap()).unwrap();
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream::new(bad_response_bytes);
+        let mut stream = MockStream {
+            bytes: Cursor::new(bad_response_bytes),
+        };
 
         // Create a real KMIP client that "connects" to a mock network stream.
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         // The first query should get the operation failed error response from
         // the mock server.
@@ -1104,44 +998,54 @@ mod test {
 
         // The second query should fail with a network error as there are no
         // more bytes to read from the mock network stream.
-        assert!(matches!(client.query(), Err(crate::client::Error::NetworkReadError(_))));
+        assert!(matches!(
+            client.query(),
+            Err(crate::client::Error::ResponseReadError(_))
+        ));
 
         // The client closing the connection is NOT considered an error.
         assert_eq!(client.connection_error_count(), 0);
     }
 
     #[test]
-    fn test_client_partial_response() {
+    fn test_partial_response() {
         let mut response_bytes =
             response::to_vec(payload_to_response(ResultStatus::OperationFailed, None, None, None).unwrap()).unwrap();
 
         response_bytes.truncate(response_bytes.len() / 2);
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream::new(response_bytes);
+        let mut stream = MockStream {
+            bytes: Cursor::new(response_bytes),
+        };
 
         // Create a real KMIP client that "connects" to a mock network stream.
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         // The first query should fail with a network error as there are no
         // more bytes to read from the mock network stream.
-        assert!(matches!(client.query(), Err(crate::client::Error::NetworkReadError(_))));
+        assert!(matches!(
+            client.query(),
+            Err(crate::client::Error::ResponseReadError(_))
+        ));
 
         // The client closing the connection is NOT considered an error.
         assert_eq!(client.connection_error_count(), 0);
     }
 
     #[test]
-    fn test_client_unsupported_valid_ttlv() {
+    fn test_unsupported_valid_ttlv() {
         // Sere a protocol version TTLV instead of a ResponseMessage TTLV
         // as expected.
         let garbage_response = to_vec(|f| ProtocolVersion { major: 1, minor: 0 }.format(f)).unwrap();
 
         // Configure the mock stream to contain one response.
-        let mut stream = MockStream::new(garbage_response.clone());
+        let mut stream = MockStream {
+            bytes: Cursor::new(garbage_response.clone()),
+        };
 
         // Create a real KMIP client that "connects" to a mock network stream.
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         // The query should fail with a deserializer error as the Protocol
         // Version TTLV cannot be deserialized as a Response Message TTLV.
@@ -1154,57 +1058,6 @@ mod test {
         // in the error details.
         assert_eq!(*res, garbage_response);
         assert_eq!(client.connection_error_count(), 0);
-    }
-
-    #[test]
-    fn test_server() {
-        // Configure the mock stream.
-        let mut stream = MockStream::new_server();
-
-        // Create a real KMIP server that "connects" to a mock network stream.
-        let mut server = ClientServerBuilder::new(&mut stream).build();
-
-        // Copied from test_client_query().
-        let response_hex = concat!(
-            "42007B010000023042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
-            "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F01000001D842",
-            "005C0500000004000000180000000042007F0500000004000000000000000042007C01000001B042005C0500000004000",
-            "000010000000042005C0500000004000000020000000042005C0500000004000000030000000042005C05000000040000",
-            "00040000000042005C0500000004000000080000000042005C0500000004000000090000000042005C050000000400000",
-            "00A0000000042005C05000000040000000B0000000042005C05000000040000000C0000000042005C0500000004000000",
-            "0D0000000042005C05000000040000000E0000000042005C05000000040000000F0000000042005C05000000040000001",
-            "00000000042005C0500000004000000110000000042005C0500000004000000120000000042005C050000000400000013",
-            "0000000042005C0500000004000000140000000042005C0500000004000000150000000042005C0500000004000000160",
-            "000000042005C0500000004000000180000000042005C0500000004000000190000000042005C05000000040000001A00",
-            "0000004200570500000004000000010000000042005705000000040000000200000000420057050000000400000003000",
-            "000004200570500000004000000040000000042005705000000040000000600000000"
-        );
-        let response_bytes = hex::decode(response_hex).unwrap();
-        let response = response::from_slice(&response_bytes).unwrap();
-        server.send_response(response.clone()).unwrap();
-        server.send_response(response.clone()).unwrap();
-
-        // Create a real KMIP client that "connects" to a mock network stream.
-        stream.become_client();
-        let mut client = ClientServerBuilder::new(&mut stream).build();
-
-        // First query should succeed
-        let response_payload = client.query().unwrap();
-        assert_eq!(response_payload.operations, Some(TEST_OPERATIONS.to_vec()));
-        assert_eq!(response_payload.object_types, Some(TEST_OBJECT_TYPES.to_vec()));
-        assert_eq!(response_payload.vendor_identification, None);
-        assert_eq!(response_payload.server_information, None);
-
-        // Second query should succeed
-        let response_payload2 = client.query().unwrap();
-        assert_eq!(response_payload2.operations, Some(TEST_OPERATIONS.to_vec()));
-        assert_eq!(response_payload2.object_types, Some(TEST_OBJECT_TYPES.to_vec()));
-        assert_eq!(response_payload2.vendor_identification, None);
-        assert_eq!(response_payload2.server_information, None);
-        assert_eq!(client.connection_error_count(), 0);
-
-        // Third query should fail as we only served two responses.
-        assert!(client.query().is_err());
     }
 
     #[cfg(feature = "tls-with-openssl")]
@@ -1223,7 +1076,7 @@ mod test {
         let stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = connector.connect("localhost", stream).unwrap();
 
-        let mut client = ClientServerBuilder::new(&mut tls).build();
+        let mut client = ClientBuilder::new(&mut tls).build();
 
         let response_payload = client.query().unwrap();
 
@@ -1358,7 +1211,7 @@ mod test {
         let mut stream = TcpStream::connect("localhost:5696").unwrap();
         let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
-        let mut client = ClientServerBuilder::new(&mut tls).build();
+        let mut client = ClientBuilder::new(&mut tls).build();
 
         let response_payload = client.query().unwrap();
 
@@ -1377,7 +1230,7 @@ mod test {
         let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
         let mut tls = connector.connect(&host, stream).unwrap();
 
-        let mut client = ClientServerBuilder::new(&mut tls)
+        let mut client = ClientBuilder::new(&mut tls)
             .with_credentials(
                 std::env::var("KRYPTUS_USER").unwrap(),
                 Some(std::env::var("KRYPTUS_PASS").unwrap()),
@@ -1404,10 +1257,9 @@ mod test {
 
         let mut stream = MockStream {
             bytes: Cursor::new(response_bytes),
-            is_client: true,
         };
 
-        let mut client = ClientServerBuilder::new(&mut stream).build();
+        let mut client = ClientBuilder::new(&mut stream).build();
 
         let mut batch_items = client
             .do_request_payload(RequestPayload::Query(vec![QueryFunction::QueryOperations]))
@@ -1419,6 +1271,61 @@ mod test {
             batch_item.unwrap().payload,
             Some(ResponsePayload::Query { .. })
         ));
+    }
+
+    //------------ Helper functions ------------------------------------------
+
+    fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> crate::client::Result<ResponseMessage> {
+        if batch_items.len() >= i32::MAX as usize {
+            return Err(Error::SerializeError(format!(
+                "Too many batch items: {} > {}",
+                batch_items.len(),
+                i32::MAX
+            )));
+        }
+
+        let timestamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            .try_into()
+            .unwrap();
+
+        let protocol_version = batch_items
+            .iter()
+            .filter_map(|item| item.payload.as_ref())
+            .map(|payload| payload.protocol_version())
+            .max()
+            .unwrap_or_default();
+
+        Ok(ResponseMessage {
+            header: ResponseHeader {
+                protocol_version,
+                timestamp,
+                batch_count: batch_items.len().try_into().unwrap(),
+            },
+            batch_items,
+        })
+    }
+
+    type Type = ResponseMessage;
+
+    fn payload_to_response(
+        result_status: ResultStatus,
+        result_reason: Option<ResultReason>,
+        result_message: Option<String>,
+        payload: Option<ResponsePayload>,
+    ) -> crate::client::Result<Type> {
+        let batch_items = vec![response::BatchItem {
+            operation: payload.as_ref().map(|p| p.operation()),
+            unique_batch_item_id: None,
+            result_status,
+            result_reason,
+            result_message,
+            payload,
+            message_extension: None,
+        }];
+        batch_items_to_response(batch_items)
     }
 }
 
@@ -1457,39 +1364,6 @@ pub fn batch_items_to_request(
     ))
 }
 
-pub fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> Result<ResponseMessage> {
-    if batch_items.len() >= i32::MAX as usize {
-        return Err(Error::SerializeError(format!(
-            "Too many batch items: {} > {}",
-            batch_items.len(),
-            i32::MAX
-        )));
-    }
-
-    let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        .try_into()
-        .unwrap();
-
-    let protocol_version = batch_items
-        .iter()
-        .filter_map(|item| item.payload.as_ref())
-        .map(|payload| payload.protocol_version())
-        .max()
-        .unwrap_or_default();
-
-    Ok(ResponseMessage {
-        header: ResponseHeader {
-            protocol_version,
-            timestamp,
-            batch_count: batch_items.len().try_into().unwrap(),
-        },
-        batch_items,
-    })
-}
-
 pub fn payload_to_request(
     auth: Option<Authentication>,
     max_response_size: Option<MaximumResponseSize>,
@@ -1497,22 +1371,4 @@ pub fn payload_to_request(
 ) -> Result<RequestMessage> {
     let batch_items = vec![request::BatchItem(payload.operation(), None, payload)];
     batch_items_to_request(auth, max_response_size, batch_items)
-}
-
-pub fn payload_to_response(
-    result_status: ResultStatus,
-    result_reason: Option<ResultReason>,
-    result_message: Option<String>,
-    payload: Option<ResponsePayload>,
-) -> Result<ResponseMessage> {
-    let batch_items = vec![response::BatchItem {
-        operation: payload.as_ref().map(|p| p.operation()),
-        unique_batch_item_id: None,
-        result_status,
-        result_reason,
-        result_message,
-        payload,
-        message_extension: None,
-    }];
-    batch_items_to_response(batch_items)
 }

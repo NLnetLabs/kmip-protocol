@@ -11,20 +11,20 @@ use tokio::net::TcpStream;
 use tokio_rustls::client::TlsStream;
 use tokio_rustls::TlsConnector;
 
-pub type ClientServer = crate::client::ClientServer<TlsStream<TcpStream>>;
+pub type Client = crate::client::Client<TlsStream<TcpStream>>;
 
 async fn default_tcpstream_factory<'a>(addr: SocketAddr, _: &'a ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<ClientServer> {
+pub async fn connect<'a>(conn_settings: &'a ConnectionSettings) -> Result<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> Result<ClientServer>
+) -> Result<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,
