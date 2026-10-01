@@ -2,12 +2,12 @@ use std::sync::PoisonError;
 
 /// There was a problem sending/receiving a KMIP request/response.
 #[non_exhaustive]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum NetError {
+    AuthenticationError,
     ConfigurationError(String),
     SerializeError(String),
-    RequestWriteError(String),
-    ResponseReadError(String),
+    IoError(std::io::Error),
     DeserializeError {
         err: String,
 
@@ -37,8 +37,7 @@ impl NetError {
 
     /// Is this a possibly transient problem with the connection to the server?
     pub fn is_connection_error(&self) -> bool {
-        use NetError::*;
-        matches!(self, RequestWriteError(_) | ResponseReadError(_))
+        matches!(self, Self::IoError(_))
     }
 }
 
@@ -46,7 +45,7 @@ impl std::error::Error for NetError {}
 
 impl From<std::io::Error> for NetError {
     fn from(err: std::io::Error) -> Self {
-        NetError::ServerError(format!("I/O error: {err}"))
+        NetError::IoError(err)
     }
 }
 
@@ -57,20 +56,20 @@ impl From<std::io::Error> for NetError {
 impl std::fmt::Display for NetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NetError::ConfigurationError(e) => write!(f, "Configuration error: {}", e),
-            NetError::SerializeError(e) => write!(f, "Serialize error: {}", e),
-            NetError::RequestWriteError(e) => write!(f, "Request send error: {}", e),
-            NetError::ResponseReadError(e) => write!(f, "Response read error: {}", e),
-            NetError::DeserializeError { err: e, req, res } => write!(
+            NetError::AuthenticationError => f.write_str("Authentication error"),
+            NetError::ConfigurationError(err) => write!(f, "Configuration error: {err}"),
+            NetError::SerializeError(err) => write!(f, "Serialize error: {err}"),
+            NetError::IoError(err) => write!(f, "I/O error: {err}"),
+            NetError::DeserializeError { err, req, res } => write!(
                 f,
-                "Deserialize error: {e}\nRequest: {}\nResponse: {}",
+                "Deserialize error: {err}\nRequest: {}\nResponse: {}",
                 hex::encode_upper(req),
                 hex::encode_upper(res)
             ),
-            NetError::ServerError(e) => write!(f, "Server error: {e}"),
-            NetError::InternalError(e) => write!(f, "Internal error: {}", e),
-            NetError::ItemNotFound(e) => write!(f, "Item not found: {}", e),
-            NetError::Unknown(e) => write!(f, "Unknown error: {}", e),
+            NetError::ServerError(err) => write!(f, "Server error: {err}"),
+            NetError::InternalError(err) => write!(f, "Internal error: {err}"),
+            NetError::ItemNotFound(err) => write!(f, "Item not found: {err}"),
+            NetError::Unknown(err) => write!(f, "Unknown error: {err}"),
             NetError::UnexpectedData(data) => write!(f, "Unexpected data: {data}"),
         }
     }
