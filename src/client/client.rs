@@ -1370,3 +1370,18 @@ pub fn payload_to_request(
     let batch_items = vec![request::BatchItem(payload.operation(), None, payload)];
     batch_items_to_request(auth, max_response_size, batch_items)
 }
+
+impl TryFrom<Result<Vec<Result<response::BatchItem>>>> for ResponsePayload {
+    type Error = Error;
+
+    fn try_from(res: Result<Vec<Result<response::BatchItem>>>) -> Result<Self> {
+        res?.pop()
+            .transpose()?
+            .ok_or_else(|| Error::UnexpectedData("No successful response batch item found".into()))
+            .and_then(|batch_item| {
+                batch_item
+                    .payload
+                    .ok_or_else(|| Error::UnexpectedData("No successful response payload found".into()))
+            })
+    }
+}
