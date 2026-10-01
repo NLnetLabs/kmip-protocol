@@ -1164,7 +1164,7 @@ mod test {
         // Create a real KMIP server that "connects" to a mock network stream.
         let mut server = ClientServerBuilder::new(&mut stream).build();
 
-        // Copiedf from test_client_query().
+        // Copied from test_client_query().
         let response_hex = concat!(
             "42007B010000023042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
             "0000000000000004200920900000008000000004B7918AA42000D0200000004000000010000000042000F01000001D842",
