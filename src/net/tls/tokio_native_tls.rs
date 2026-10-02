@@ -1,25 +1,27 @@
 use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 
-use crate::client::tls::common::util::create_kmip_client;
-use crate::client::{Client, ClientCertificate, ConnectionSettings, Error, Result};
+use crate::net::tls::common::util::create_kmip_client;
+use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult};
 
 use tokio::net::TcpStream;
 use tokio_native_tls::TlsStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 
+pub type Client = crate::net::Client<TlsStream<TcpStream>>;
+
 async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect(conn_settings: &ConnectionSettings) -> Result<Client<TlsStream<TcpStream>>> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> Result<Client<TlsStream<TcpStream>>>
+) -> NetResult<Client>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,
@@ -27,7 +29,7 @@ where
     let addr = format!("{}:{}", conn_settings.host, conn_settings.port)
         .to_socket_addrs()?
         .next()
-        .ok_or(Error::ConfigurationError(
+        .ok_or(NetError::ConfigurationError(
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
@@ -38,7 +40,7 @@ where
     let tcp_stream = if let Some(timeout) = connect_timeout {
         tokio::time::timeout(timeout, connect)
             .await
-            .map_err(|err| Error::ConfigurationError(format!("Failed to connect to host or timed out: {}", err)))??
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to connect to host or timed out: {}", err)))??
     } else {
         connect.await?
     };
@@ -50,12 +52,12 @@ where
     let tls_stream = tls_client
         .connect(&conn_settings.host, tcp_stream)
         .await
-        .map_err(|err| Error::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
+        .map_err(|err| NetError::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
     Ok(create_kmip_client(tls_stream, conn_settings))
 }
 
-fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnector> {
+fn create_tls_connector(conn_settings: &ConnectionSettings) -> NetResult<TlsConnector> {
     let mut connector = TlsConnector::builder();
 
     if conn_settings.insecure {
@@ -66,13 +68,13 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnect
 
         if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
             let cert = Certificate::from_pem(cert_bytes)
-                .map_err(|err| Error::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
+                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
             connector.add_root_certificate(cert);
         }
 
         if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
             let cert = Certificate::from_pem(cert_bytes)
-                .map_err(|err| Error::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
+                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
             connector.add_root_certificate(cert);
         }
     }
@@ -82,14 +84,15 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnect
             ClientCertificate::SeparatePem { .. } => {
                 // From: https://docs.rs/tokio-native-tls/0.3.0/tokio_native_tls/native_tls/struct.Identity.html
                 // openssl pkcs12 -export -out identity.pfx -inkey key.pem -in cert.pem -certfile chain_certs.pem
-                return Err(Error::ConfigurationError(
+                return Err(NetError::ConfigurationError(
                     "PEM format client certificate and key are not supported".to_string(),
                 ));
             }
             ClientCertificate::CombinedPkcs12 { cert_bytes } => {
                 const EMPTY_PASSWORD: &str = "";
-                let identity = Identity::from_pkcs12(cert_bytes, EMPTY_PASSWORD)
-                    .map_err(|err| Error::ConfigurationError(format!("Failed to parse client certificate: {}", err)))?;
+                let identity = Identity::from_pkcs12(cert_bytes, EMPTY_PASSWORD).map_err(|err| {
+                    NetError::ConfigurationError(format!("Failed to parse client certificate: {}", err))
+                })?;
                 connector.identity(identity);
             }
         }
@@ -97,7 +100,7 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<TlsConnect
 
     let tls_connector = connector
         .build()
-        .map_err(|err| Error::ConfigurationError(format!("Failed to build TLS connector: {}", err)))?;
+        .map_err(|err| NetError::ConfigurationError(format!("Failed to build TLS connector: {}", err)))?;
 
     Ok(tls_connector)
 }
