@@ -1,7 +1,7 @@
 use std::sync::PoisonError;
 use std::{
     mem::MaybeUninit,
-    ops::{Deref, DerefMut},
+    ops::DerefMut,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -24,8 +24,8 @@ use crate::{
             RequestHeader, RequestMessage, RequestPayload, RevocationReason, Username,
         },
         response::{
-            self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
-            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+            self, CreateKeyPairResponsePayload, GetResponsePayload, QueryResponsePayload, ResponseMessage,
+            ResponsePayload, ResultReason, ResultStatus,
         },
         traits::ReadWrite,
     },
@@ -185,38 +185,6 @@ impl<T> From<PoisonError<T>> for Error {
 
 /// A client for serializing KMIP and deserializing KMIP responses to/from an
 /// established read/write stream.
-/// Helper macro to avoid repetetive blocks of almost identical code
-macro_rules! get_response_payload_for_type {
-    // $batch_items: Vec<Result<response::BatchItem>> {
-    ($batch_items:expr, $payload_type:path) => {
-        // Process the successful response. It should have a single batch item.
-        if $batch_items.is_empty() {
-            return Err(Error::UnexpectedData(format!(
-                "Expected response with a single successful {} batch item but response is empty",
-                stringify!($payload_type),
-            )));
-        } else if $batch_items.len() != 1 {
-            return Err(Error::UnexpectedData(format!(
-                "Expected response with a single successful {} batch item but response has {} batch items",
-                stringify!($payload_type),
-                $batch_items.len(),
-            )));
-        } else {
-            $batch_items.pop().unwrap().and_then(|batch_item| {
-                if let Some($payload_type(payload)) = batch_item.payload {
-                    Ok(payload)
-                } else {
-                    Err(Error::UnexpectedData(format!(
-                        "Expected {} response payload but response has: {:?}",
-                        stringify!($payload_type),
-                        batch_item.payload
-                    )))
-                }
-            })
-        }
-    };
-}
-
 ///
 /// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
@@ -245,11 +213,16 @@ impl<T: ReadWrite> Client<T> {
         ];
         let request = RequestPayload::Query(wanted_info);
 
-        // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Query)
+        // Execute the request and capture the response
+        let ResponsePayload::Query(payload) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Query payload but response has {res}"
+            )));
+        };
+
+        Ok(payload)
     }
 
     /// Serialize a KMIP 1.0 [Create Key
@@ -287,40 +260,49 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
-            (
-                payload.private_key_unique_identifier.deref().clone(),
-                payload.public_key_unique_identifier.deref().clone(),
-            )
-        })
+        // Execute the request and capture the response
+        let ResponsePayload::CreateKeyPair(payload) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Query payload but response has {res}"
+            )));
+        };
+
+        let CreateKeyPairResponsePayload {
+            private_key_unique_identifier: UniqueIdentifier(prikey),
+            public_key_unique_identifier: UniqueIdentifier(pubkey),
+        } = payload;
+
+        Ok((prikey, pubkey))
     }
 
     /// Serialize a KMIP 1.2 [Rng Retrieve](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562)
     /// operation to retrieve a number of random bytes.
     ///
     /// See also: [do_request()](Self::do_request())
-    ///
     #[maybe_async::maybe_async]
-    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> Result<RNGRetrieveResponsePayload> {
+    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> Result<Vec<u8>> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
+        let ResponsePayload::RNGRetrieve(payload) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected RNGRetrieve payload but response has {res}"
+            )));
+        };
+
+        Ok(payload.0.0)
     }
 
     /// Serialize a KMIP 1.2 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558)
     /// operation to sign the given bytes with the given private key ID.
     ///
     /// See also: [do_request()](Self::do_request())
-    ///
     #[maybe_async::maybe_async]
-    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<SignResponsePayload> {
+    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> Result<Vec<u8>> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             Some(
@@ -333,9 +315,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        get_response_payload_for_type!(response, ResponsePayload::Sign)
+        let ResponsePayload::Sign(payload) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Sign payload but response has {res}"
+            )));
+        };
+
+        Ok(payload.signature_data)
     }
 
     /// Serialize a KMIP 1.0 [Activate](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226)
@@ -351,10 +339,15 @@ impl<T: ReadWrite> Client<T> {
         let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
+        let ResponsePayload::Activate(_) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Activate payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Revoke](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227)
@@ -377,10 +370,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
+        let ResponsePayload::Revoke(_) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Revoke payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Destroy](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228)
@@ -396,10 +394,15 @@ impl<T: ReadWrite> Client<T> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
+        let ResponsePayload::Destroy(_) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Destroy payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [ModifyAttribute](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222)
@@ -411,7 +414,7 @@ impl<T: ReadWrite> Client<T> {
     /// compose the Modify Attribute request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> Result<ModifyAttributeResponsePayload> {
+    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> Result<()> {
         // Setup the request
         let request = RequestPayload::ModifyAttribute(
             Some(UniqueIdentifier(key_id.to_string())),
@@ -419,10 +422,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
+        let ResponsePayload::ModifyAttribute(_) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected ModifyAttribute payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Get](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218)
@@ -440,10 +448,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Get)
+        let ResponsePayload::Get(payload) = res else {
+            return Err(Error::UnexpectedData(format!(
+                "Expected Get payload but response has {res}"
+            )));
+        };
+
+        Ok(payload)
     }
 }
 
@@ -1380,11 +1393,12 @@ pub fn payload_to_request(
     batch_items_to_request(auth, max_response_size, batch_items)
 }
 
-impl TryFrom<Result<Vec<Result<response::BatchItem>>>> for ResponsePayload {
+/// Extract the first successful operation payload from a KMIP response.
+impl TryFrom<Vec<Result<response::BatchItem>>> for ResponsePayload {
     type Error = Error;
 
-    fn try_from(res: Result<Vec<Result<response::BatchItem>>>) -> Result<Self> {
-        res?.pop()
+    fn try_from(mut res: Vec<Result<response::BatchItem>>) -> Result<Self> {
+        res.pop()
             .transpose()?
             .ok_or_else(|| Error::UnexpectedData("No successful response batch item found".into()))
             .and_then(|batch_item| {

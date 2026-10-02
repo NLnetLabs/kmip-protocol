@@ -12,7 +12,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{ClientCertificate, Client, ConnectionSettings};
+use kmip_protocol::client::{Client, ClientCertificate, ConnectionSettings};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
@@ -105,12 +105,12 @@ async fn exec_test_requests<T: ReadWrite>(
             key_needs_revoking = true;
 
             info!("Signing with private key {}..", private_key_id);
-            if let Ok(payload) = client
+            if let Ok(signature_data) = client
                 .sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8])
                 .await
                 .log_error()
             {
-                info!("{}", hex::encode_upper(payload.signature_data));
+                info!("{}", hex::encode_upper(signature_data));
             }
         }
 
@@ -127,8 +127,8 @@ async fn exec_test_requests<T: ReadWrite>(
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(payload) = client.rng_retrieve(32).await.log_error() {
-        info!("{}", hex::encode_upper(payload.0.0));
+    if let Ok(random_bytes) = client.rng_retrieve(32).await.log_error() {
+        info!("{}", hex::encode_upper(random_bytes));
     }
 
     Ok(())
