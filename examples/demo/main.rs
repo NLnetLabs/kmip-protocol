@@ -75,7 +75,7 @@ async fn main() {
 
     let client = client.expect("Failed to establish TLS connection");
 
-    exec_test_requests(client).await.unwrap();
+    exec_test_requests(client, "test").await.unwrap();
 }
 
 #[maybe_async::maybe_async]
