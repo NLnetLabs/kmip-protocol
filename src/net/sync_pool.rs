@@ -12,7 +12,7 @@ use std::string::String;
 use std::{sync::Arc, time::Duration};
 
 use crate::net::ConnectionSettings;
-use crate::net::client_server::error::{NetError, NetResult};
+use crate::net::client::error::{NetError, NetResult};
 
 use log::error;
 use r2d2::PooledConnection;
@@ -23,7 +23,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "tls-with-rustls")] {
         use crate::net::tls::rustls::{Client, connect};
     } else {
-        pub type Client = crate::net::client_server::ClientServer<std::net::TcpStream>;
+        pub type Client = crate::net::client::ClientServer<std::net::TcpStream>;
     }
 }
 //------------ KmipConnError -------------------------------------------------
