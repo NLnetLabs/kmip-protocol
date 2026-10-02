@@ -468,6 +468,28 @@ impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
     ///
+    /// Tip: For cases when the response is expected to have only a single
+    /// batch item in the response use `TryInto` to simplify handling of the
+    /// result, e.g.:
+    ///
+    /// ```ignore
+    /// // Setup the request.
+    /// let wanted_info = vec![
+    ///     QueryFunction::QueryOperations,
+    ///     QueryFunction::QueryObjects,
+    ///     QueryFunction::QueryServerInformation,
+    /// ];
+    /// let request = RequestPayload::Query(wanted_info);
+    ///
+    /// // Execute the request and capture the response.
+    /// let res = client.do_request_payload(request).await?.try_into()?;
+    /// let ResponsePayload::Query(payload) = res else {
+    ///     return Err(Error::UnexpectedData(format!(
+    ///         "Expected Query payload but response has {res}"
+    ///     )));
+    /// };
+    /// ```
+    ///
     /// Note: Enforcing a timeout on this operation is the responsibility of
     /// the caller.
     #[maybe_async::maybe_async]
@@ -1394,6 +1416,9 @@ pub fn payload_to_request(
 }
 
 /// Extract the first successful operation payload from a KMIP response.
+///
+/// Useful when invoking [`Client::do_request()`] for cases where only a single
+/// batch item is expected in the response.
 impl TryFrom<Vec<Result<response::BatchItem>>> for ResponsePayload {
     type Error = Error;
 
