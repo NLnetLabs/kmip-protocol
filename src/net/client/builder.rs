@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 use std::sync::Mutex;
 
 use crate::{
-    net::client_server::Client,
+    net::client::Client,
     types::{
         request::{Authentication, CredentialValue, Password, Username},
         traits::ReadWrite,
