@@ -9,7 +9,7 @@ use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub type Client = crate::net::ClientServer<SslStream<TcpStream>>;
+pub type Client = crate::net::Client<SslStream<TcpStream>>;
 
 pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     connect_with_tcp_stream_factory(conn_settings, |addr, settings| {

@@ -31,7 +31,6 @@ tokio = { version = "1.13.1", features = ["full"], optional = true }
 tokio-native-tls = { version = "0.3.0", optional = true }
 tokio-rustls = { version = "0.26.4", optional = true }
 tracing = "0.1.41"
-trait-set = "0.2.0"
 webpki = {version = "0.21.4", optional = true }
 webpki-roots = { version = "1", optional = true }
 
@@ -49,6 +48,11 @@ proptest = ["dep:proptest"]
 
 [[example]]
 name = "demo"
+required-features = ["tls"]
+test = false
+
+[[example]]
+name = "hex_to_txt"
 test = false
 
 [[test]]
@@ -65,5 +69,5 @@ rcgen = "0.14"
 
 # for examples/demo
 log = "0.4.14"
+simple-logging = "2.0.2"
 structopt = { version = "0.3.22", default-features = false }
-tracing-subscriber = "0.3"

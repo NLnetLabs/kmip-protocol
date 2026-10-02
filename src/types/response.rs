@@ -427,7 +427,7 @@ pub type ModifyAttributeResponsePayload = AttributeEditResponsePayload;
 pub type DeleteAttributeResponsePayload = AttributeEditResponsePayload;
 
 ///  See KMIP 1.0 section 4.24 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct QueryResponsePayload {
     pub operations: Option<Vec<Operation>>,
     pub object_types: Option<Vec<ObjectType>>,
@@ -774,7 +774,7 @@ impl ResponseHeader {
     pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
         let mut formatter = formatter.format_struct(Self::TAG)?;
         self.protocol_version.format(&mut formatter)?;
-        formatter.format_long_int(Self::TIMESTAMP_TAG, self.timestamp)?;
+        formatter.format_date_time(Self::TIMESTAMP_TAG, self.timestamp)?;
         formatter.format_int(Self::BATCH_COUNT_TAG, self.batch_count)?;
         Ok(formatter.finish())
     }
@@ -841,7 +841,9 @@ impl BatchItem {
         let result_message = scanner
             .scan_opt_text(Self::RESULT_MESSAGE_TAG)?
             .map(ToString::to_string);
-        let payload = if let Some(operation) = operation {
+        let payload = if result_status == ResultStatus::Success
+            && let Some(operation) = operation
+        {
             ResponsePayload::fast_scan_opt(&mut scanner, operation)?
         } else {
             None
@@ -984,44 +986,31 @@ impl ResponsePayload {
 impl ResponsePayload {
     pub fn fast_scan_opt(scanner: &mut FastScanner<'_>, operation: Operation) -> Result<Option<Self>, FastScanError> {
         let this = match operation {
-            Operation::Create => CreateResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Create(v))),
-            Operation::CreateKeyPair => {
-                CreateKeyPairResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::CreateKeyPair(v)))
-            }
-            Operation::Register => {
-                RegisterResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Register(v)))
-            }
-            Operation::Locate => LocateResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Locate(v))),
-            Operation::Get => GetResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Get(v))),
-            Operation::GetAttributes => {
-                GetAttributesResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::GetAttributes(v)))
-            }
+            Operation::Create => CreateResponsePayload::fast_scan_opt(scanner)?.map(Self::Create),
+            Operation::CreateKeyPair => CreateKeyPairResponsePayload::fast_scan_opt(scanner)?.map(Self::CreateKeyPair),
+            Operation::Register => RegisterResponsePayload::fast_scan_opt(scanner)?.map(Self::Register),
+            Operation::Locate => LocateResponsePayload::fast_scan_opt(scanner)?.map(Self::Locate),
+            Operation::Get => GetResponsePayload::fast_scan_opt(scanner)?.map(Self::Get),
+            Operation::GetAttributes => GetAttributesResponsePayload::fast_scan_opt(scanner)?.map(Self::GetAttributes),
             Operation::GetAttributeList => {
-                GetAttributeListResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::GetAttributeList(v)))
+                GetAttributeListResponsePayload::fast_scan_opt(scanner)?.map(Self::GetAttributeList)
             }
-            Operation::AddAttribute => {
-                AddAttributeResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::AddAttribute(v)))
-            }
+            Operation::AddAttribute => AddAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::AddAttribute),
             Operation::ModifyAttribute => {
-                ModifyAttributeResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::ModifyAttribute(v)))
+                ModifyAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::ModifyAttribute)
             }
             Operation::DeleteAttribute => {
-                DeleteAttributeResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::DeleteAttribute(v)))
+                DeleteAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::DeleteAttribute)
             }
-            Operation::Activate => {
-                ActivateResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Activate(v)))
-            }
-            Operation::Revoke => RevokeResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Revoke(v))),
-            Operation::Destroy => DestroyResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Destroy(v))),
-            Operation::Query => QueryResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Query(v))),
+            Operation::Activate => ActivateResponsePayload::fast_scan_opt(scanner)?.map(Self::Activate),
+            Operation::Revoke => RevokeResponsePayload::fast_scan_opt(scanner)?.map(Self::Revoke),
+            Operation::Destroy => DestroyResponsePayload::fast_scan_opt(scanner)?.map(Self::Destroy),
+            Operation::Query => QueryResponsePayload::fast_scan_opt(scanner)?.map(Self::Query),
             Operation::DiscoverVersions => {
-                DiscoverVersionsResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::DiscoverVersions(v)))
+                DiscoverVersionsResponsePayload::fast_scan_opt(scanner)?.map(Self::DiscoverVersions)
             }
-            Operation::Sign => SignResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::Sign(v))),
-            Operation::RNGRetrieve => {
-                RNGRetrieveResponsePayload::fast_scan_opt(scanner)?.and_then(|v| Some(Self::RNGRetrieve(v)))
-            }
-
+            Operation::Sign => SignResponsePayload::fast_scan_opt(scanner)?.map(Self::Sign),
+            Operation::RNGRetrieve => RNGRetrieveResponsePayload::fast_scan_opt(scanner)?.map(Self::RNGRetrieve),
             _ => unimplemented!(),
         };
         Ok(this)

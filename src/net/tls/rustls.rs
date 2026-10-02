@@ -5,10 +5,7 @@ use std::{
 };
 
 use crate::net::{
-    client_server::{
-        ClientServer,
-        error::{NetError, NetResult},
-    },
+    client::error::{NetError, NetResult},
     tls::common::{rustls::create_rustls_config, util::create_kmip_client},
 };
 
@@ -16,7 +13,7 @@ use crate::net::ConnectionSettings;
 
 use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
 
-pub type Client = ClientServer<StreamOwned<ClientConnection, TcpStream>>;
+pub type Client = crate::net::client::Client<StreamOwned<ClientConnection, TcpStream>>;
 
 pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     connect_with_tcpstream_factory(conn_settings, |addr, settings| {
