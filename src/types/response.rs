@@ -812,7 +812,7 @@ impl ResponseHeader {
     }
 }
 
-///  See KMIP 1.2 sefction 2.1.14 [Nonce](
+///  See KMIP 1.2 section 2.1.14 [Nonce](
 /// https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613470).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Nonce {
