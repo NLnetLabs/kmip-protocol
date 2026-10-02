@@ -1,10 +1,10 @@
 use std::{mem::MaybeUninit, sync::Arc};
 
-#[cfg(feature = "tokio")]
-use tokio::sync::Mutex;
-
 #[cfg(not(feature = "tokio"))]
 use std::sync::Mutex;
+
+#[cfg(feature = "tokio")]
+use tokio::sync::Mutex;
 
 use crate::{
     net::client::Client,

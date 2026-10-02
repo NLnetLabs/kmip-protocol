@@ -5,18 +5,20 @@ pub mod util;
 
 use std::{
     mem::MaybeUninit,
-    ops::{Deref, DerefMut},
+    ops::DerefMut,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
 };
 
+#[cfg(not(feature = "tokio"))]
+use std::sync::Mutex;
+
 #[cfg(feature = "tokio")]
 use tokio::sync::Mutex;
 
-#[cfg(not(feature = "tokio"))]
-use std::sync::Mutex;
+use tracing::trace;
 
 use crate::{
     net::{
@@ -35,46 +37,12 @@ use crate::{
             RevocationReason,
         },
         response::{
-            self, GetResponsePayload, ModifyAttributeResponsePayload, QueryResponsePayload, RNGRetrieveResponsePayload,
-            ResponseMessage, ResponsePayload, ResultReason, ResultStatus, SignResponsePayload,
+            self, CreateKeyPairResponsePayload, GetResponsePayload, QueryResponsePayload, ResponseMessage,
+            ResponsePayload, ResultReason, ResultStatus,
         },
         traits::*,
     },
 };
-
-use tracing::trace;
-
-/// Helper macro to avoid repetetive blocks of almost identical code
-macro_rules! get_response_payload_for_type {
-    // $batch_items: Vec<Result<response::BatchItem>> {
-    ($batch_items:expr, $payload_type:path) => {
-        // Process the successful response. It should have a single batch item.
-        if $batch_items.is_empty() {
-            return Err(NetError::UnexpectedData(format!(
-                "Expected response with a single successful {} batch item but response is empty",
-                stringify!($payload_type),
-            )));
-        } else if $batch_items.len() != 1 {
-            return Err(NetError::UnexpectedData(format!(
-                "Expected response with a single successful {} batch item but response has {} batch items",
-                stringify!($payload_type),
-                $batch_items.len(),
-            )));
-        } else {
-            $batch_items.pop().unwrap().and_then(|batch_item| {
-                if let Some($payload_type(payload)) = batch_item.payload {
-                    Ok(payload)
-                } else {
-                    Err(NetError::UnexpectedData(format!(
-                        "Expected {} response payload but response has: {:?}",
-                        stringify!($payload_type),
-                        batch_item.payload
-                    )))
-                }
-            })
-        }
-    };
-}
 
 /// A client for serializing KMIP requests and deserializing KMIP responses
 /// to/from an established read/write stream.
@@ -107,10 +75,15 @@ impl<T: ReadWrite> Client<T> {
         let request = RequestPayload::Query(wanted_info);
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Query)
+        let ResponsePayload::Query(payload) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Query payload but response has {res}"
+            )));
+        };
+
+        Ok(payload)
     }
 
     /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
@@ -145,15 +118,21 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::CreateKeyPair).map(|payload| {
-            (
-                payload.private_key_unique_identifier.deref().clone(),
-                payload.public_key_unique_identifier.deref().clone(),
-            )
-        })
+        // Execute the request and capture the response
+        let ResponsePayload::CreateKeyPair(payload) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Query payload but response has {res}"
+            )));
+        };
+
+        let CreateKeyPairResponsePayload {
+            private_key_unique_identifier: UniqueIdentifier(prikey),
+            public_key_unique_identifier: UniqueIdentifier(pubkey),
+        } = payload;
+
+        Ok((prikey, pubkey))
     }
 
     /// Serialize a KMIP 1.2 [Rng Retrieve](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562)
@@ -162,14 +141,19 @@ impl<T: ReadWrite> Client<T> {
     /// See also: [do_request()](Self::do_request())
     ///
     #[maybe_async::maybe_async]
-    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> NetResult<RNGRetrieveResponsePayload> {
+    pub async fn rng_retrieve(&mut self, num_bytes: i32) -> NetResult<Vec<u8>> {
         let request = RequestPayload::RNGRetrieve(DataLength(num_bytes));
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::RNGRetrieve)
+        let ResponsePayload::RNGRetrieve(payload) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected RNGRetrieve payload but response has {res}"
+            )));
+        };
+
+        Ok(payload.0.0)
     }
 
     /// Serialize a KMIP 1.2 [Sign](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558)
@@ -178,7 +162,7 @@ impl<T: ReadWrite> Client<T> {
     /// See also: [do_request()](Self::do_request())
     ///
     #[maybe_async::maybe_async]
-    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> NetResult<SignResponsePayload> {
+    pub async fn sign(&mut self, private_key_id: &str, in_bytes: &[u8]) -> NetResult<Vec<u8>> {
         let request = RequestPayload::Sign(
             Some(UniqueIdentifier(private_key_id.to_owned())),
             Some(
@@ -191,9 +175,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        get_response_payload_for_type!(response, ResponsePayload::Sign)
+        let ResponsePayload::Sign(payload) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Sign payload but response has {res}"
+            )));
+        };
+
+        Ok(payload.signature_data)
     }
 
     /// Serialize a KMIP 1.0 [Activate](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226)
@@ -208,10 +198,15 @@ impl<T: ReadWrite> Client<T> {
         let request = RequestPayload::Activate(UniqueIdentifier(private_key_id.to_owned()).into());
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Activate).map(|_| ())
+        let ResponsePayload::Activate(_) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Activate payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Revoke](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227)
@@ -233,10 +228,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Revoke).map(|_| ())
+        let ResponsePayload::Revoke(_) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Revoke payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Destroy](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228)
@@ -251,10 +251,15 @@ impl<T: ReadWrite> Client<T> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Destroy).map(|_| ())
+        let ResponsePayload::Destroy(_) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Destroy payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [ModifyAttribute](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222)
@@ -265,7 +270,7 @@ impl<T: ReadWrite> Client<T> {
     /// To modify other attributes of managed objects you must compose the Modify Attribute request manually and pass
     /// it to [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
-    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> NetResult<ModifyAttributeResponsePayload> {
+    pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> NetResult<()> {
         // Setup the request
         let request = RequestPayload::ModifyAttribute(
             Some(UniqueIdentifier(key_id.to_string())),
@@ -273,10 +278,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::ModifyAttribute)
+        let ResponsePayload::ModifyAttribute(_) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected ModifyAttribute payload but response has {res}"
+            )));
+        };
+
+        Ok(())
     }
 
     /// Serialize a KMIP 1.0 [Get](http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218)
@@ -294,10 +304,15 @@ impl<T: ReadWrite> Client<T> {
         );
 
         // Execute the request and capture the response
-        let mut response = self.do_request_payload(request).await?;
+        let res = self.do_request_payload(request).await?.try_into()?;
 
-        // Process the successful response
-        get_response_payload_for_type!(response, ResponsePayload::Get)
+        let ResponsePayload::Get(payload) = res else {
+            return Err(NetError::UnexpectedData(format!(
+                "Expected Get payload but response has {res}"
+            )));
+        };
+
+        Ok(payload)
     }
 }
 
@@ -308,6 +323,28 @@ impl<T: ReadWrite> Client<T> {
 impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
+    ///
+    /// Tip: For cases when the response is expected to consist of only a
+    /// single batch item,`TryInto` can be used to simplify handling of the
+    /// result, e.g.:
+    ///
+    /// ```ignore
+    /// // Setup the request.
+    /// let wanted_info = vec![
+    ///     QueryFunction::QueryOperations,
+    ///     QueryFunction::QueryObjects,
+    ///     QueryFunction::QueryServerInformation,
+    /// ];
+    /// let request = RequestPayload::Query(wanted_info);
+    ///
+    /// // Execute the request and capture the response.
+    /// let res = client.do_request_payload(request).await?.try_into()?;
+    /// let ResponsePayload::Query(payload) = res else {
+    ///     return Err(NetError::UnexpectedData(format!(
+    ///         "Expected Query payload but response has {res}"
+    ///     )));
+    /// };
+    /// ```
     ///
     /// Note: Enforcing a timeout on this operation is the responsibility of
     /// the caller.

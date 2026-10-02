@@ -11,11 +11,11 @@ use std::{
     },
 };
 
-#[cfg(feature = "tokio")]
-use tokio::sync::Mutex;
-
 #[cfg(not(feature = "tokio"))]
 use std::sync::Mutex;
+
+#[cfg(feature = "tokio")]
+use tokio::sync::Mutex;
 
 use crate::{
     net::{NetError, NetResult, batch_items_to_response, payload_to_response},
