@@ -50,11 +50,15 @@ pub fn payload_to_request(
     batch_items_to_request(auth, max_response_size, batch_items)
 }
 
-impl TryFrom<NetResult<Vec<NetResult<response::BatchItem>>>> for ResponsePayload {
+/// Extract the first successful operation payload from a KMIP response.
+///
+/// Useful when invoking [`Client::do_request()`] for cases where only a single
+/// batch item is expected in the response.
+impl TryFrom<Vec<NetResult<response::BatchItem>>> for ResponsePayload {
     type Error = NetError;
 
-    fn try_from(res: NetResult<Vec<NetResult<response::BatchItem>>>) -> Result<Self, Self::Error> {
-        res?.pop()
+    fn try_from(mut res: Vec<NetResult<response::BatchItem>>) -> NetResult<Self> {
+        res.pop()
             .transpose()?
             .ok_or_else(|| NetError::UnexpectedData("No successful response batch item found".into()))
             .and_then(|batch_item| {
