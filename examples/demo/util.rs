@@ -1,5 +1,3 @@
-use kmip_protocol::client::Client;
-use kmip_protocol::types::traits::ReadWrite;
 use log::error;
 
 use crate::config::Opt;
@@ -31,19 +29,14 @@ where
     }
 }
 
-pub(crate) trait SelfLoggingError<T: ReadWrite, U> {
-    fn log_error(self, client: &Client<T>) -> Self;
+pub(crate) trait SelfLoggingError<U> {
+    fn log_error(self) -> Self;
 }
 
-impl<T: ReadWrite, U> SelfLoggingError<T, U> for kmip_protocol::client::Result<U> {
-    fn log_error(self, client: &Client<T>) -> Self {
+impl<U> SelfLoggingError<U> for kmip_protocol::client::Result<U> {
+    fn log_error(self) -> Self {
         if let Err(err) = &self {
-            error!(
-                "{}: [req: {:?}, res: {:?}]",
-                err,
-                client.last_req_diag_str(),
-                client.last_res_diag_str()
-            );
+            error!("{err}");
         }
         self
     }

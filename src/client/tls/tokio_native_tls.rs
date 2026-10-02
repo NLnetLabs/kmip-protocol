@@ -5,8 +5,8 @@ use crate::client::tls::common::util::create_kmip_client;
 use crate::client::{Client, ClientCertificate, ConnectionSettings, Error, Result};
 
 use tokio::net::TcpStream;
-use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 use tokio_native_tls::TlsStream;
+use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 
 async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await

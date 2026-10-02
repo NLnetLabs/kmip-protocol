@@ -9,18 +9,17 @@
 //! |------------------------|------------------------------------------|
 //! | `sync` (default)       | `std::io::Read + std::io::Write`         |
 //! | `async-with-tokio`     | `tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin` |
-//! | `async-with-async-std` | `async_std::io::ReadExt + async_std::io::WriteExt + std::marker::Unpin` |
 //!
 //! This enables code that is otherwise identical to be re-used.
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sync")] {
-        trait_set::trait_set! {
-            pub trait ReadWrite = std::io::Read + std::io::Write;
-        }
+        pub trait ReadWrite: std::io::Read + std::io::Write {}
+
+        impl<T: ?Sized + std::io::Read + std::io::Write> ReadWrite for T {}
     } else if #[cfg(feature = "async-with-tokio")] {
-        trait_set::trait_set! {
-            pub trait ReadWrite = tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin;
-        }
+        pub trait ReadWrite: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin {}
+
+        impl<T: ?Sized + tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + std::marker::Unpin> ReadWrite for T {}
     }
 }

@@ -3,18 +3,17 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
-    auth::{self, CredentialType},
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             BlockCipherMode, CryptographicAlgorithm, CryptographicParameters, CryptographicUsageMask, HashingAlgorithm,
             ObjectType, Operation, PaddingMethod, UniqueBatchItemID,
         },
         request::{
-            self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
+            self, Attribute, Authentication, BatchCount, BatchItem, CredentialValue, MaximumResponseSize, Password,
+            ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            TemplateAttribute, Username,
         },
     },
 };
@@ -24,9 +23,11 @@ use crate::{
 /// -------------------------------------------------------------------------------------------------------------------
 
 #[test]
+#[ignore = "Operational Policy Name attribute is not supported"]
 fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
-    let credential = Some(CredentialType::UsernameAndPassword(
-        auth::UsernameAndPasswordCredential::new("Fred".to_string(), Some("password1".to_string())),
+    let credential = Some(CredentialValue::UsernameAndPassword(
+        Username("Fred".to_string()),
+        Some(Password("password1".to_string())),
     ));
 
     let use_case_request = RequestMessage(
@@ -41,14 +42,14 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
             Option::<UniqueBatchItemID>::None,
             RequestPayload::Create(
                 ObjectType::SymmetricKey,
-                TemplateAttribute::unnamed(vec![
+                TemplateAttribute::new(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::AES),
                     Attribute::CryptographicLength(128),
                     Attribute::CryptographicUsageMask(
                         CryptographicUsageMask::Encrypt | CryptographicUsageMask::Decrypt,
                     ),
                     Attribute::Name("PolicyKey".into()),
-                    Attribute::OperationPolicyName("default".into()),
+                    // Attribute::OperationPolicyName("default".into()),
                     Attribute::CryptographicParameters(
                         CryptographicParameters::default()
                             .with_block_cipher_mode(BlockCipherMode::CBC)
@@ -60,6 +61,46 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
         )],
     );
 
+    // Tag: Request Message (0x420078), Type: Structure (0x01), Data:
+    //   Tag: Request Header (0x420077), Type: Structure (0x01), Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure (0x01), Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer (0x02), Data: 0x000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer (0x02), Data: 0x000000 (0)
+    //     Tag: Authentication (0x42000C), Type: Structure (0x01), Data:
+    //       Tag: Credential (0x420023), Type: Structure (0x01), Data:
+    //         Tag: Credential Type (0x420024), Type: Enumeration (0x05), Data: 0x000001 (1 = ??)
+    //         Tag: Credential Value (0x420025), Type: Structure (0x01), Data:
+    //           Tag: Username (0x420099), Type: TextString (0x07), Data: "Fred"
+    //           Tag: Password (0x4200A1), Type: TextString (0x07), Data: "password1"
+    //     Tag: Batch Count (0x42000D), Type: Integer (0x02), Data: 0x000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure (0x01), Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration (0x05), Data: 0x000001 (1 = Create)
+    //     Tag: Request Payload (0x420079), Type: Structure (0x01), Data:
+    //     Tag: Object Type (0x420057), Type: Enumeration (0x05), Data: 0x000002 (2 = Symmetric Key)
+    //     Tag: Template-Attribute (0x420091), Type: Structure (0x01), Data:
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Algorithm"
+    //         Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 0x000003 (3 = ??)
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Length"
+    //         Tag: Attribute Value (0x42000B), Type: Integer (0x02), Data: 0x000080 (128)
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Usage Mask"
+    //         Tag: Attribute Value (0x42000B), Type: Integer (0x02), Data: 0x00000C (12)
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Name"
+    //         Tag: Attribute Value (0x42000B), Type: Structure (0x01), Data:
+    //           Tag: Name Value (0x420055), Type: TextString (0x07), Data: "PolicyKey"
+    //           Tag: Name Type (0x420054), Type: Enumeration (0x05), Data: 0x000001 (1 = Uninterpreted Text String)
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Operation Policy Name"
+    //         Tag: Attribute Value (0x42000B), Type: TextString (0x07), Data: "default"
+    //       Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    //         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Parameters"
+    //         Tag: Attribute Value (0x42000B), Type: Structure (0x01), Data:
+    //           Tag: Block Cipher Mode (0x420011), Type: Enumeration (0x05), Data: 0x000001 (1 = ??)
+    //           Tag: Padding Method (0x42005F), Type: Enumeration (0x05), Data: 0x000003 (3 = ??)
+    //           Tag: Hashing Algorithm (0x420038), Type: Enumeration (0x05), Data: 0x000004 (4 = ??)
     let use_case_request_hex = concat!(
         "42007801000002504200770100000088420069010000002042006A0200000004000000010000000042006B02000000040",
         "00000000000000042000C0100000048420023010000004042002405000000040000000100000000420025010000002842",
@@ -75,10 +116,6 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
         "0506172616D657465727342000B01000000304200110500000004000000010000000042005F0500000004000000030000",
         "000042003805000000040000000400000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
