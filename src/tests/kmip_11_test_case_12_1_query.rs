@@ -11,7 +11,7 @@ use crate::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
             ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
         },
-        response::{ResponsePayload, ResultReason, ResultStatus},
+        response::{ResponsePayload, ResultReason, ResultStatus, ServerInformation},
     },
 };
 
@@ -20,7 +20,7 @@ use crate::{
 /// -------------------------------------------------------------------------------------------------------------------
 
 #[test]
-fn kmip_1_1_testcase_time_0_query_operations_objects_max_response_size_256_request() {
+fn kmip_1_1_testcase_12_1_time_0_query_operations_objects_max_response_size_256_request() {
     #[rustfmt::skip]
     let use_case_request = 
         RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
@@ -58,7 +58,7 @@ fn kmip_1_1_testcase_time_0_query_operations_objects_max_response_size_256_reque
 }
 
 #[test]
-fn kmip_1_1_testcase_time_0_query_operation_failed_response_too_large_response() {
+fn kmip_1_1_testcase_12_1_time_0_query_operation_failed_response_too_large_response() {
     let use_case_response_hex = concat!(
         "42007B01000000C842007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A556B42000D0200000004000000010000000042000F010000007042",
@@ -85,7 +85,7 @@ fn kmip_1_1_testcase_time_0_query_operation_failed_response_too_large_response()
 }
 
 #[test]
-fn kmip_1_1_testcase_time_1_query_operations_objects_max_response_size_2048_request() {
+fn kmip_1_1_testcase_12_1_time_1_query_operations_objects_max_response_size_2048_request() {
     #[rustfmt::skip]
     let use_case_request = 
         RequestMessage(                             // Tag: 0x420078, Type: 0x01 (Structure)
@@ -125,8 +125,7 @@ fn kmip_1_1_testcase_time_1_query_operations_objects_max_response_size_2048_requ
 }
 
 #[test]
-#[ignore = "Failing, to be investigated"]
-fn kmip_1_1_testcase_time_1_query_operation_succeeded_response() {
+fn kmip_1_1_testcase_12_1_time_1_query_operation_succeeded_response() {
     let use_case_response_hex = concat!(
         "42007B01000002C042007A0100000048420069010000002042006A0200000004000000010000000042006B02000000040",
         "0000001000000004200920900000008000000004F9A556B42000D0200000004000000010000000042000F010000026842",
@@ -204,9 +203,9 @@ fn kmip_1_1_testcase_time_1_query_operation_succeeded_response() {
 
         assert_eq!(
             payload.vendor_identification,
-            Some("IBM test server, not-TKLM 2.0.1.1 KMIP 2.0.0.1".into())
+            Some("IBM test server, not-TKLM 2.0.1.1 KMIP 2.0.0.1".to_string())
         );
-        assert!(payload.server_information.is_none());
+        assert_eq!(payload.server_information, Some(ServerInformation));
     } else {
         panic!("Wrong payload");
     }
