@@ -117,12 +117,11 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         tls_connector.set_keylog_callback(|_, line| {
-            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
-                if let Ok(mut file) = OpenOptions::new().append(true).open(path) {
+            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME)
+                && let Ok(mut file) = OpenOptions::new().append(true).open(path) {
                     use std::io::Write;
                     writeln!(file, "{}", line).ok();
                 }
-            }
         });
     }
 
