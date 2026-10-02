@@ -987,32 +987,22 @@ impl ResponsePayload {
     pub fn fast_scan_opt(scanner: &mut FastScanner<'_>, operation: Operation) -> Result<Option<Self>, FastScanError> {
         let this = match operation {
             Operation::Create => CreateResponsePayload::fast_scan_opt(scanner)?.map(Self::Create),
-            Operation::CreateKeyPair => {
-                CreateKeyPairResponsePayload::fast_scan_opt(scanner)?.map(Self::CreateKeyPair)
-            }
-            Operation::Register => {
-                RegisterResponsePayload::fast_scan_opt(scanner)?.map(Self::Register)
-            }
+            Operation::CreateKeyPair => CreateKeyPairResponsePayload::fast_scan_opt(scanner)?.map(Self::CreateKeyPair),
+            Operation::Register => RegisterResponsePayload::fast_scan_opt(scanner)?.map(Self::Register),
             Operation::Locate => LocateResponsePayload::fast_scan_opt(scanner)?.map(Self::Locate),
             Operation::Get => GetResponsePayload::fast_scan_opt(scanner)?.map(Self::Get),
-            Operation::GetAttributes => {
-                GetAttributesResponsePayload::fast_scan_opt(scanner)?.map(Self::GetAttributes)
-            }
+            Operation::GetAttributes => GetAttributesResponsePayload::fast_scan_opt(scanner)?.map(Self::GetAttributes),
             Operation::GetAttributeList => {
                 GetAttributeListResponsePayload::fast_scan_opt(scanner)?.map(Self::GetAttributeList)
             }
-            Operation::AddAttribute => {
-                AddAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::AddAttribute)
-            }
+            Operation::AddAttribute => AddAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::AddAttribute),
             Operation::ModifyAttribute => {
                 ModifyAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::ModifyAttribute)
             }
             Operation::DeleteAttribute => {
                 DeleteAttributeResponsePayload::fast_scan_opt(scanner)?.map(Self::DeleteAttribute)
             }
-            Operation::Activate => {
-                ActivateResponsePayload::fast_scan_opt(scanner)?.map(Self::Activate)
-            }
+            Operation::Activate => ActivateResponsePayload::fast_scan_opt(scanner)?.map(Self::Activate),
             Operation::Revoke => RevokeResponsePayload::fast_scan_opt(scanner)?.map(Self::Revoke),
             Operation::Destroy => DestroyResponsePayload::fast_scan_opt(scanner)?.map(Self::Destroy),
             Operation::Query => QueryResponsePayload::fast_scan_opt(scanner)?.map(Self::Query),
@@ -1020,9 +1010,7 @@ impl ResponsePayload {
                 DiscoverVersionsResponsePayload::fast_scan_opt(scanner)?.map(Self::DiscoverVersions)
             }
             Operation::Sign => SignResponsePayload::fast_scan_opt(scanner)?.map(Self::Sign),
-            Operation::RNGRetrieve => {
-                RNGRetrieveResponsePayload::fast_scan_opt(scanner)?.map(Self::RNGRetrieve)
-            }
+            Operation::RNGRetrieve => RNGRetrieveResponsePayload::fast_scan_opt(scanner)?.map(Self::RNGRetrieve),
 
             _ => unimplemented!(),
         };

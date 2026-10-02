@@ -705,12 +705,11 @@ impl<T: ReadWrite> Client<T> {
     fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> Result<()> {
         // If the buffer is too small, try to expand it.
         let wanted_buf_size = read_buf.len() + extra_bytes_needed;
-        if wanted_buf_size > read_buf.capacity()
-            && wanted_buf_size > limit as usize {
-                return Err(Error::ResponseReadError(format!(
-                    "Response too large: {wanted_buf_size} bytes > {limit} bytes"
-                )));
-            }
+        if wanted_buf_size > read_buf.capacity() && wanted_buf_size > limit as usize {
+            return Err(Error::ResponseReadError(format!(
+                "Response too large: {wanted_buf_size} bytes > {limit} bytes"
+            )));
+        }
         read_buf.resize(wanted_buf_size, 0);
         Ok(())
     }

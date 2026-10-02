@@ -6,7 +6,7 @@ use std::{
 use crate::client::tls::common::util::create_kmip_client;
 
 use crate::client::{
-    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, Client, ClientCertificate, ConnectionSettings, Error, Result,
+    Client, ClientCertificate, ConnectionSettings, Error, Result, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
 };
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
@@ -118,10 +118,11 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> Result<SslConnect
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         tls_connector.set_keylog_callback(|_, line| {
             if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME)
-                && let Ok(mut file) = OpenOptions::new().append(true).open(path) {
-                    use std::io::Write;
-                    writeln!(file, "{}", line).ok();
-                }
+                && let Ok(mut file) = OpenOptions::new().append(true).open(path)
+            {
+                use std::io::Write;
+                writeln!(file, "{}", line).ok();
+            }
         });
     }
 
