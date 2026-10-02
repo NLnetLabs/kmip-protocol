@@ -94,3 +94,6 @@ pub mod tokio_native_tls;
 
 #[cfg(feature = "tls-with-tokio-rustls")]
 pub mod tokio_rustls;
+
+#[cfg(test)]
+mod tests;
