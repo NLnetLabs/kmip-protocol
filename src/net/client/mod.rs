@@ -1,6 +1,5 @@
 //! A high level KMIP "operation" oriented client interface for request/response construction & (de)serialization.
 pub mod builder;
-pub mod error;
 pub mod tests;
 pub mod util;
 
@@ -13,20 +12,23 @@ use std::{
     },
 };
 
-use tracing::trace;
+#[cfg(not(feature = "tokio"))]
+use std::sync::Mutex;
 
 #[cfg(feature = "tokio")]
 use tokio::sync::Mutex;
 
-#[cfg(not(feature = "tokio"))]
-use std::sync::Mutex;
+use tracing::trace;
 
 use crate::{
-    net::client::{
-        error::{NetError, NetResult},
-        util::{batch_items_to_request, payload_to_request},
+    net::{
+        batch_items_to_request,
+        common::{
+            error::{NetError, NetResult},
+            io::read_message_from_stream,
+        },
+        payload_to_request,
     },
-    ttlv::{FastScanError, FastScanner},
     types::{
         common::*,
         request::{
@@ -42,7 +44,8 @@ use crate::{
     },
 };
 
-/// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
+/// A client for serializing KMIP requests and deserializing KMIP responses
+/// to/from an established read/write stream.
 ///
 /// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
@@ -376,8 +379,8 @@ impl<T: ReadWrite> Client<T> {
         };
 
         trace!("Waiting for a response from the server");
-        let res = Self::read_message_from_stream(
-            &mut stream,
+        let res = read_message_from_stream(
+            stream.deref_mut(),
             &mut self.read_buf,
             self.max_message_size,
             ResponseMessage::fast_scan,
@@ -487,125 +490,14 @@ impl<T: ReadWrite> Client<T> {
     }
 
     #[maybe_async::maybe_async]
-    async fn read_message_from_stream<F, R>(
-        stream: &mut T,
-        read_buf: &mut Vec<u8>,
-        limit: i32,
-        op: F,
-        connection_error_count: Arc<AtomicUsize>,
-    ) -> NetResult<R>
-    where
-        F: Fn(&mut FastScanner) -> std::result::Result<R, FastScanError>,
-    {
-        trace!("Awaiting KMIP server response");
-        read_buf.clear();
-        loop {
-            // Try reading from the buffer.
-            let available = read_buf.len();
-            let available_rounded = read_buf.len() - available % 8;
-            let ttlv_bytes = &read_buf[..available_rounded];
-            let mut scanner = FastScanner::new(ttlv_bytes).expect("the provided buffer has a multiple of 8 bytes");
-            match scanner.have_next() {
-                Ok(()) => {
-                    trace!(
-                        "Received {available_rounded} bytes from the server: {}",
-                        hex::encode_upper(ttlv_bytes)
-                    );
-                    // A complete TTLV element is available. Try to parse it.
-                    return op(&mut scanner).map_err(|err| NetError::DeserializeError {
-                        err: err.to_string(),
-                        req: Default::default(), // do_requests() will populate this
-                        res: read_buf.clone().into(),
-                    });
-                }
-                Err(Some(n)) => {
-                    // n more bytes are needed to complete the current message
-                    // in the buffer.
-                    Self::enlarge_read_buffer_if_needed(read_buf, n as usize, limit)?;
-                }
-                Err(None) => {
-                    // More bytes are needed to complete the current message
-                    // in the buffer but we don't know how many so fetch at
-                    // least 8 bytes (as TTLV messages are always a multiple
-                    // of 8 bytes and thus FastScanner only accepts multiples
-                    // of 8 bytes).
-                    Self::enlarge_read_buffer_if_needed(read_buf, 8, limit)?;
-                }
-            }
-
-            // The buffer did not contain enough data, try to read more.
-
-            let write_start_idx = available;
-            let updated_buffer_len = read_buf.len();
-            let bytes_to_write_into = &mut read_buf[write_start_idx..updated_buffer_len];
-            let read_byte_count =
-                Self::read_from_stream(stream, bytes_to_write_into, connection_error_count.clone()).await?;
-
-            // Don't pass any extra zeroes in the buffer to the TTLV parser,
-            // only give it bytes that we actually read.
-            read_buf.truncate(write_start_idx + read_byte_count);
-        }
-    }
-
-    #[maybe_async::maybe_async]
     async fn write_to_stream(stream: &mut T, bytes: &[u8]) -> NetResult<()> {
         trace!(
             "Writing {} bytes to the server: {}",
             bytes.len(),
             hex::encode_upper(bytes)
         );
-        if let Err(err) = stream.write_all(bytes).await {
-            return Err(NetError::RequestWriteError(err.to_string()));
-        }
-
+        stream.write_all(bytes).await?;
         Ok(())
-    }
-
-    fn enlarge_read_buffer_if_needed(read_buf: &mut Vec<u8>, extra_bytes_needed: usize, limit: i32) -> NetResult<()> {
-        // If the buffer is too small, try to expand it.
-        let wanted_buf_size = read_buf.len() + extra_bytes_needed;
-        if wanted_buf_size > read_buf.capacity() && wanted_buf_size > limit as usize {
-            return Err(NetError::ResponseReadError(format!(
-                "Response too large: {wanted_buf_size} bytes > {limit} bytes"
-            )));
-        }
-        read_buf.resize(wanted_buf_size, 0);
-        Ok(())
-    }
-
-    #[maybe_async::maybe_async]
-    async fn read_from_stream(
-        stream: &mut T,
-        buffer: &mut [u8],
-        connection_error_count: Arc<AtomicUsize>,
-    ) -> NetResult<usize> {
-        trace!("Reading upto {} bytes from the KMIP server", buffer.len());
-        match stream.read(buffer).await {
-            // The client has closed the connection.
-            Ok(0) => Err(NetError::ResponseReadError(
-                "Client closed connection with a partial request received".into(),
-            )),
-
-            // Some data was received successfully.
-            Ok(amt) => {
-                trace!("Read {amt} bytes from the KMIP server");
-                Ok(amt)
-            }
-
-            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {
-                // This is a recoverable error.
-                trace!("KMIP server connection interrupted, continuing.");
-                Ok(0)
-            }
-
-            // An unexpected error has occurred.
-            Err(err) => {
-                let _ = connection_error_count.fetch_add(1, Ordering::SeqCst);
-                // TODO: Categorize the various std::io::ErrorKinds into fatal and
-                // non-fatal variants and only abort on fatal errors.
-                Err(NetError::ResponseReadError(format!("I/O error: {err}")))
-            }
-        }
     }
 }
 

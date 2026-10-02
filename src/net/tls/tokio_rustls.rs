@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::future::Future;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
