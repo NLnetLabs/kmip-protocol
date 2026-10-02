@@ -173,7 +173,8 @@ impl std::fmt::Display for Error {
     }
 }
 
-/// The successful or failed outcome resulting from sending a request to a KMIP server.
+/// The successful or failed outcome resulting from sending a request to a
+/// KMIP server.
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl<T> From<PoisonError<T>> for Error {
@@ -182,6 +183,8 @@ impl<T> From<PoisonError<T>> for Error {
     }
 }
 
+/// A client for serializing KMIP and deserializing KMIP responses to/from an
+/// established read/write stream.
 /// Helper macro to avoid repetetive blocks of almost identical code
 macro_rules! get_response_payload_for_type {
     // $batch_items: Vec<Result<response::BatchItem>> {
@@ -214,7 +217,6 @@ macro_rules! get_response_payload_for_type {
     };
 }
 
-/// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
 ///
 /// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
@@ -250,14 +252,17 @@ impl<T: ReadWrite> Client<T> {
         get_response_payload_for_type!(response, ResponsePayload::Query)
     }
 
-    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
+    /// Serialize a KMIP 1.0 [Create Key
+    /// Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc
+    /// 262581269) request to create an RSA key pair.
     ///
     /// See also: [do_request()](Self::do_request())
     ///
     /// Creates an RSA key pair.
     ///
-    /// To create keys of other types or with other parameters you must compose the Create Key Pair request manually
-    /// and pass it to [do_request()](Self::do_request()) directly.
+    /// To create keys of other types or with other parameters you must
+    /// compose the Create Key Pair request manually and pass it to
+    /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn create_rsa_key_pair(
         &mut self,
@@ -338,7 +343,8 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    /// To activate other kinds of managed object you must compose the Activate request manually and pass it to
+    /// To activate other kinds of managed object you must
+    /// compose the Activate request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn activate_key(&mut self, private_key_id: &str) -> Result<()> {
@@ -356,7 +362,8 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    /// To deactivate other kinds of managed object you must compose the Revoke request manually and pass it to
+    /// To deactivate other kinds of managed object you must
+    /// compose the Revoke request manually and pass it to
     /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn revoke_key(&mut self, private_key_id: &str) -> Result<()> {
@@ -381,8 +388,9 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    /// To destroy other kinds of managed object you must compose the Destroy request manually and pass it to
-    /// [do_request()](Self::do_request()) directly.
+    /// To destroy other kinds of managed object you must compose the Destroy
+    /// request manually and pass it to [do_request()](Self::do_request())
+    /// directly.
     #[maybe_async::maybe_async]
     pub async fn destroy_key(&mut self, key_id: &str) -> Result<()> {
         let request = RequestPayload::Destroy(Some(UniqueIdentifier(key_id.to_owned())));
@@ -399,8 +407,9 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// See also: [do_request()](Self::do_request())
     ///
-    /// To modify other attributes of managed objects you must compose the Modify Attribute request manually and pass
-    /// it to [do_request()](Self::do_request()) directly.
+    /// To modify other attributes of managed objects you must
+    /// compose the Modify Attribute request manually and pass it to
+    /// [do_request()](Self::do_request()) directly.
     #[maybe_async::maybe_async]
     pub async fn rename_key(&mut self, key_id: &str, new_name: String) -> Result<ModifyAttributeResponsePayload> {
         // Setup the request
