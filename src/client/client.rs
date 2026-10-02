@@ -468,8 +468,8 @@ impl<T: ReadWrite> Client<T> {
     /// Write request bytes to the given stream and read, deserialize and
     /// sanity check the response.
     ///
-    /// Tip: For cases when the response is expected to have only a single
-    /// batch item in the response use `TryInto` to simplify handling of the
+    /// Tip: For cases when the response is expected to consist of only a
+    /// single batch item,`TryInto` can be used to simplify handling of the
     /// result, e.g.:
     ///
     /// ```ignore
