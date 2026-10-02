@@ -22,7 +22,7 @@ use tokio::sync::Mutex;
 use std::sync::Mutex;
 
 use crate::{
-    net::client_server::{
+    net::client::{
         error::{NetError, NetResult},
         util::{batch_items_to_request, payload_to_request},
     },

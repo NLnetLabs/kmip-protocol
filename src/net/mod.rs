@@ -1,12 +1,12 @@
 //! For sending KMIP requests and receiving responses.
 
 #[allow(clippy::module_inception)]
-mod client_server;
+mod client;
 
 #[cfg(feature = "tls")]
 pub mod tls;
 
-pub use client_server::{
+pub use client::{
     Client,
     builder::ClientBuilder,
     error::{NetError, NetResult},

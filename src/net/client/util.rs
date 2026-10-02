@@ -1,5 +1,5 @@
 use crate::{
-    net::client_server::error::{NetError, NetResult},
+    net::client::error::{NetError, NetResult},
     types::{
         request::{self, Authentication, MaximumResponseSize, RequestHeader, RequestMessage, RequestPayload},
         response::{self, ResponsePayload},
