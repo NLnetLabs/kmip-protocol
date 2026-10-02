@@ -1345,6 +1345,10 @@ mod test {
                 protocol_version,
                 timestamp,
                 batch_count: batch_items.len().try_into().unwrap(),
+                nonce: None,
+                attestation_type: None,
+                client_correlation_value: None,
+                server_correlation_value: None,
             },
             batch_items,
         })
