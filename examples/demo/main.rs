@@ -190,6 +190,7 @@ impl From<Opt> for ConnectionSettings {
             }
         };
 
+        let server_name = opt.server_name;
         let server_cert = opt.server_cert_path.map(|path| load_binary_file(&path));
         let ca_cert = opt.ca_cert_path.map(|path| load_binary_file(&path));
 
@@ -205,6 +206,7 @@ impl From<Opt> for ConnectionSettings {
             insecure: opt.insecure,
             client_cert,
             server_cert,
+            server_name,
             ca_cert,
             connect_timeout,
             read_timeout,

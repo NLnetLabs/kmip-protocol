@@ -44,8 +44,13 @@ where
     let tls_connector = create_tls_connector(conn_settings)
         .map_err(|err| NetError::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
+    let sni_name = conn_settings
+        .server_name
+        .as_ref()
+        .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
+
     let tls_stream = tls_connector
-        .connect(&conn_settings.host, tcp_stream)
+        .connect(&sni_name, tcp_stream)
         .map_err(|err| NetError::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
     Ok(create_kmip_client(tls_stream, conn_settings))
@@ -122,11 +127,11 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> NetResult<SslConn
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         tls_connector.set_keylog_callback(|_, line| {
-            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME) {
-                if let Ok(mut file) = OpenOptions::new().append(true).open(path) {
-                    use std::io::Write;
-                    writeln!(file, "{}", line).ok();
-                }
+            if let Ok(path) = std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME)
+                && let Ok(mut file) = OpenOptions::new().append(true).open(path)
+            {
+                use std::io::Write;
+                writeln!(file, "{}", line).ok();
             }
         });
     }

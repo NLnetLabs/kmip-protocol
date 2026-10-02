@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 /// kmip-protocol demo settings.
+/// A KMIP test client.
 #[derive(StructOpt, Debug)]
 #[structopt()]
 #[rustfmt::skip]
@@ -41,6 +42,9 @@ pub(crate) struct Opt {
 
     #[structopt(long = "server-cert", parse(from_os_str), help = "Path to the server certificate file in PEM format")]
     pub(crate) server_cert_path: Option<PathBuf>,
+
+    #[structopt(long = "server-name", help = "Server name for TLS SNI certificate matching")]
+    pub(crate) server_name: Option<String>,
 
     #[structopt(long = "ca-cert", parse(from_os_str), help = "Path to the CA certificate file in PEM format")]
     pub(crate) ca_cert_path: Option<PathBuf>,
