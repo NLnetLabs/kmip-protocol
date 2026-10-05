@@ -34,6 +34,8 @@ pub fn to_vec(payload: RequestPayload, credential: Option<CredentialValue>) -> R
             payload.protocol_version(),
             Option::<MaximumResponseSize>::None,
             credential.map(Authentication::build),
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(operation, Option::<UniqueBatchItemID>::None, payload)],
@@ -972,7 +974,7 @@ impl RequestMessage {
 impl_ttlv_serde!(struct RequestMessage as 0x420078 {
     fast_scan = |scanner| {
         let header = RequestHeader::fast_scan(&mut scanner)?;
-        let BatchCount(count) = header.3;
+        let BatchCount(count) = header.5;
         let items = (0..count)
             .map(|_| BatchItem::fast_scan(&mut scanner))
             .collect::<Result<Vec<_>, _>>()?;
@@ -993,6 +995,8 @@ pub struct RequestHeader(
     pub ProtocolVersion,
     pub Option<MaximumResponseSize>,
     pub Option<Authentication>,
+    pub Option<BatchErrorContinuationOption>,
+    pub Option<bool>, // BatchOrderOption
     pub BatchCount,
 );
 
@@ -1010,7 +1014,7 @@ impl RequestHeader {
     }
 
     pub fn batch_count(&self) -> &BatchCount {
-        &self.3
+        &self.5
     }
 }
 
@@ -1019,6 +1023,8 @@ impl_ttlv_serde!(struct RequestHeader as 0x420077 {
         ProtocolVersion::fast_scan(&mut scanner)?,
         MaximumResponseSize::fast_scan_opt(&mut scanner)?,
         Authentication::fast_scan_opt(&mut scanner)?,
+        BatchErrorContinuationOption::fast_scan_opt(&mut scanner)?,
+        scanner.scan_opt_bool(Tag::new(0x420010))?,
         BatchCount::fast_scan_opt(&mut scanner)?.unwrap_or_default(),
     );
 
@@ -1026,9 +1032,22 @@ impl_ttlv_serde!(struct RequestHeader as 0x420077 {
         self.0.format(&mut formatter)?;
         if let Some(x) = &self.1 { x.format(&mut formatter)?; }
         if let Some(x) = &self.2 { x.format(&mut formatter)?; }
-        if self.3.0 != 0 { self.3.format(&mut formatter)?; }
+        if let Some(x) = &self.3 { x.format(&mut formatter)?; }
+        if let Some(x) = &self.4 { formatter.format_bool(Tag::new(0x420010), *x)?; }
+        self.5.format(&mut formatter)?;
     };
 });
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum BatchErrorContinuationOption {
+    Continue = 1,
+    Stop,
+    Undo,
+}
+
+impl_ttlv_serde!(enum BatchErrorContinuationOption as 0x42000E);
 
 /// See KMIP 1.0 section 7.1 [Message Structure](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581256).
 #[derive(Clone, Debug, PartialEq, Eq)]
