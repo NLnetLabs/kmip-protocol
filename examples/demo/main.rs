@@ -33,15 +33,7 @@ fn main() {
 
     init_logging(&opt);
 
-    cfg_if::cfg_if! {
-        if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
-            let client = kmip_protocol::net::tls::openssl::connect(&opt.into());
-        } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::net::tls::rustls::connect(&opt.into());
-        }
-    }
-
-    let client = client.expect("Failed to establish TLS connection");
+    let client = kmip_protocol::net::tls::connect(&opt.into()).expect("Failed to establish TLS connection");
 
     let mut thread_handles = vec![];
 

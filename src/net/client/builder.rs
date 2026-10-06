@@ -17,6 +17,7 @@ use crate::{
 /// Use this builder to construct a [Client] struct.
 #[derive(Debug)]
 pub struct ClientBuilder<T: ReadWrite> {
+    server_id: String,
     stream: T,
     auth: Option<Authentication>,
     max_messagesize: i32,
@@ -33,8 +34,14 @@ impl<T: ReadWrite> ClientBuilder<T> {
     ///
     /// The `stream` argument must implement the read and write traits which
     /// the [Client] will use to read/write from/to the stream.
-    pub fn new(stream: T) -> Self {
+    ///
+    /// The `server_id` argument should identify the server being connected
+    /// to in some way. It could be a user assigned helpful label or the
+    /// IP address and port number of the server for example. It is only
+    /// informational, it is not used to establish a connection to the server.
+    pub fn new<U: ToString>(stream: T, server_id: U) -> Self {
         Self {
+            server_id: server_id.to_string(),
             stream,
             auth: None,
             max_messagesize: i32::MAX,
@@ -60,6 +67,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
 
     /// Build the configured [Client] struct instance.
     pub fn build(self) -> Client<T> {
+        let server_id = self.server_id;
         let auth = self.auth;
         let stream = Arc::new(Mutex::new(self.stream));
         let max_message_size = self.max_messagesize;
@@ -68,6 +76,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
         let connection_error_count = Default::default();
 
         Client {
+            server_id,
             auth,
             max_message_size,
             stream,
