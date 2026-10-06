@@ -57,15 +57,9 @@ async fn main() {
 
     init_logging(&opt);
 
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
-        } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::net::tls::tokio_rustls::connect(&opt.into()).await;
-        }
-    }
-
-    let client = client.expect("Failed to establish TLS connection");
+    let client = kmip_protocol::net::tls::connect(&opt.into())
+        .await
+        .expect("Failed to establish TLS connection");
 
     exec_test_requests(client, "test").await.unwrap();
 }
