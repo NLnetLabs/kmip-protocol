@@ -73,6 +73,8 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -226,6 +228,8 @@ fn kmip_1_3_testcase_5_9_8_1_step_2_sign_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(

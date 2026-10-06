@@ -35,6 +35,8 @@ pub fn batch_items_to_request(
             max_protocol_version,
             max_response_size,
             auth,
+            None,
+            None,
             request::BatchCount(batch_items.len().try_into().unwrap()),
         ),
         batch_items,

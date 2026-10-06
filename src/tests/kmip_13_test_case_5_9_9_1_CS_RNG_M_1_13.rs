@@ -28,6 +28,8 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
