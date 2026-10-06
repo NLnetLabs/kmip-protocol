@@ -8,20 +8,20 @@ use tokio::net::TcpStream;
 use tokio_native_tls::TlsStream;
 use tokio_native_tls::native_tls::{Certificate, Identity, Protocol, TlsConnector};
 
-pub type Client = crate::net::Client<TlsStream<TcpStream>>;
+pub type TlsClient = crate::net::Client<TlsStream<TcpStream>>;
 
 async fn default_tcpstream_factory(addr: SocketAddr, _: &ConnectionSettings) -> std::io::Result<TcpStream> {
     TcpStream::connect(addr).await
 }
 
-pub async fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
+pub async fn connect(conn_settings: &ConnectionSettings) -> NetResult<TlsClient> {
     connect_with_tcpstream_factory(conn_settings, default_tcpstream_factory).await
 }
 
 pub async fn connect_with_tcpstream_factory<'a, F, Fut>(
     conn_settings: &'a ConnectionSettings,
     tcpstream_factory: F,
-) -> NetResult<Client>
+) -> NetResult<TlsClient>
 where
     F: Fn(SocketAddr, &'a ConnectionSettings) -> Fut,
     Fut: Future<Output = std::io::Result<TcpStream>>,

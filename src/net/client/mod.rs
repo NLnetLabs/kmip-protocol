@@ -47,6 +47,7 @@ use crate::{
 /// Use the [ClientBuilder] to build a [Client] instance to work with.
 #[derive(Debug)]
 pub struct Client<T: ReadWrite> {
+    server_id: String,
     auth: Option<Authentication>,
     max_message_size: i32,
     stream: Arc<Mutex<T>>,
@@ -612,6 +613,7 @@ impl<T: ReadWrite> Client<T> {
 impl<T: ReadWrite> Clone for Client<T> {
     fn clone(&self) -> Self {
         Self {
+            server_id: self.server_id.clone(),
             auth: self.auth.clone(),
             max_message_size: self.max_message_size,
             stream: self.stream.clone(),
@@ -623,6 +625,10 @@ impl<T: ReadWrite> Clone for Client<T> {
 }
 
 impl<T: ReadWrite> Client<T> {
+    pub fn server_id(&self) -> &str {
+        &self.server_id
+    }
+
     /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)

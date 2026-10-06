@@ -197,14 +197,7 @@
 #[cfg(all(feature = "sync", feature = "async-with-tokio"))]
 compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-with-tokio\" features");
 
-#[cfg(any(
-    feature = "tls-with-openssl",
-    feature = "tls-with-openssl-vendored",
-    feature = "tls-with-rustls",
-    feature = "tls-with-tokio-native-tls",
-    feature = "tls-with-tokio-rustls",
-    doc
-))]
+#[cfg(any(feature = "tls", doc))]
 pub mod net;
 
 pub mod ttlv;
