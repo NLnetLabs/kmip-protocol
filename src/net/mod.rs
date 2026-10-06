@@ -19,16 +19,6 @@ pub mod sync_pool;
 #[cfg(feature = "async-pool")]
 pub mod async_pool;
 
-pub mod pool {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "sync-pool")] {
-            pub use super::sync_pool::*;
-        } else if #[cfg(feature = "async-pool")] {
-            pub use super::async_pool::*;
-        }
-    }
-}
-
 mod config;
 
 pub use config::{ClientCertificate, ConnectionSettings};

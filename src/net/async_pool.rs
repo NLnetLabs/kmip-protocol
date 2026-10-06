@@ -22,7 +22,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "tls-with-tokio-native-tls")] {
         use crate::net::tls::tokio_native_tls::{Client, connect};
     } else if #[cfg(feature = "async-with-tokio")] {
-        pub type Client = crate::net::ClientServer<tokio::net::TcpStream>;
+        pub type Client = crate::net::Client<tokio::net::TcpStream>;
     } else {
         compile_error!("async_pool enabled without any async feature.");
     }
@@ -83,23 +83,21 @@ impl<'a> DerefMut for KmipConn<'a> {
 /// This pool can be used to acquire a KMIP client without first having to
 /// wait for it to connect at the TCP/TLS level, and without unnecessarily
 /// closing the connection when finished.
-// TODO: Move this to the kmip-protocol crate and add an AsyncConnPool variant
-// implemented using the bb8 crate instead of the bb8 crate.
 #[derive(Clone, Debug)]
-pub struct AsyncConnPool {
+pub struct ConnPool {
     server_id: String,
     conn_settings: Arc<ConnectionSettings>,
     pool: bb8::Pool<ConnectionManager>,
 }
 
-impl AsyncConnPool {
+impl ConnPool {
     pub async fn new(
         server_id: String,
         conn_settings: Arc<ConnectionSettings>,
         max_conncurrent_connections: u32,
         max_life_time: Option<Duration>,
         max_idle_time: Option<Duration>,
-    ) -> Result<AsyncConnPool, KmipConnError> {
+    ) -> Result<ConnPool, KmipConnError> {
         let pool = bb8::Pool::builder()
             // Don't pre-create idle connections to the KMIP server
             .min_idle(Some(0))
@@ -172,8 +170,8 @@ where
         max_conncurrent_connections: u32,
         max_life_time: Option<Duration>,
         max_idle_time: Option<Duration>,
-    ) -> Result<AsyncConnPool, KmipConnError> {
-        AsyncConnPool::new(
+    ) -> Result<ConnPool, KmipConnError> {
+        ConnPool::new(
             server_id,
             conn_settings,
             max_conncurrent_connections,

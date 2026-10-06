@@ -23,9 +23,10 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "tls-with-rustls")] {
         use crate::net::tls::rustls::{Client, connect};
     } else {
-        pub type Client = crate::net::client::ClientServer<std::net::TcpStream>;
+        pub type Client = crate::net::client::Client<std::net::TcpStream>;
     }
 }
+
 //------------ KmipConnError -------------------------------------------------
 
 #[derive(Clone, Debug)]
@@ -75,20 +76,20 @@ impl DerefMut for KmipConn {
 /// Connections are re-used until timed out or the connection is lost, and are
 /// re-created as necessary.
 #[derive(Clone, Debug)]
-pub struct SyncConnPool {
+pub struct ConnPool {
     server_id: String,
     conn_settings: Arc<ConnectionSettings>,
     pool: r2d2::Pool<ConnectionManager>,
 }
 
-impl SyncConnPool {
+impl ConnPool {
     pub fn new(
         server_id: String,
         conn_settings: Arc<ConnectionSettings>,
         max_conncurrent_connections: u32,
         max_life_time: Option<Duration>,
         max_idle_time: Option<Duration>,
-    ) -> Result<SyncConnPool, KmipConnError> {
+    ) -> Result<ConnPool, KmipConnError> {
         let pool = r2d2::Pool::builder()
             // Don't pre-create idle connections to the KMIP server
             .min_idle(Some(0))
@@ -164,8 +165,8 @@ where
         max_conncurrent_connections: u32,
         max_life_time: Option<Duration>,
         max_idle_time: Option<Duration>,
-    ) -> Result<SyncConnPool, KmipConnError> {
-        SyncConnPool::new(
+    ) -> Result<ConnPool, KmipConnError> {
+        ConnPool::new(
             server_id,
             conn_settings,
             max_conncurrent_connections,
