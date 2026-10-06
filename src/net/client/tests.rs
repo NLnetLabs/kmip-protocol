@@ -502,7 +502,7 @@ fn test_kryptus_query_against_server() {
     let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
     let mut tls = connector.connect(&host, stream).unwrap();
 
-    let mut client = ClientBuilder::new(&mut tls)
+    let mut client = ClientBuilder::new(&mut tls, "test")
         .with_credentials(
             std::env::var("KRYPTUS_USER").unwrap(),
             Some(std::env::var("KRYPTUS_PASS").unwrap()),
