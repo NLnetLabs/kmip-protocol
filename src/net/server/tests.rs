@@ -123,7 +123,7 @@ fn test_server() {
 
     // Create a real KMIP client that "connects" to a mock network stream.
     stream.change_mode(MockStreamMode::Client);
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // First query should succeed
     let response_payload = client.query().unwrap();
