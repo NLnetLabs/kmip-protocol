@@ -82,22 +82,22 @@
 pub mod common;
 
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-pub mod openssl;
+mod openssl;
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
 use openssl as backend;
 
 #[cfg(feature = "tls-with-rustls")]
-pub mod rustls;
+mod rustls;
 #[cfg(feature = "tls-with-rustls")]
 use rustls as backend;
 
 #[cfg(feature = "tls-with-tokio-native-tls")]
-pub mod tokio_native_tls;
+mod tokio_native_tls;
 #[cfg(feature = "tls-with-tokio-native-tls")]
 use tokio_native_tls as backend;
 
 #[cfg(feature = "tls-with-tokio-rustls")]
-pub mod tokio_rustls;
+mod tokio_rustls;
 #[cfg(feature = "tls-with-tokio-rustls")]
 use tokio_rustls as backend;
 
