@@ -205,7 +205,7 @@ compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-w
     feature = "tls-with-tokio-rustls",
     doc
 ))]
-pub mod client;
+pub mod net;
 
 pub mod ttlv;
 pub mod types;
