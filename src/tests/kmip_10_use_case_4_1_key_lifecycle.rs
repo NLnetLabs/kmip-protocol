@@ -32,6 +32,8 @@ fn kmip_1_0_usecase_4_1_step_1_client_a_create_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -115,6 +117,8 @@ fn kmip_1_0_usecase_4_1_step_2_client_a_get_attribute_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -196,6 +200,8 @@ fn kmip_1_0_usecase_4_1_step_3_client_a_activate_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -263,6 +269,8 @@ fn kmip_1_0_usecase_4_1_step_4_client_a_get_attribute_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -344,6 +352,8 @@ fn kmip_1_0_usecase_4_1_step_5_client_b_locate_symmetric_key_by_name_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -417,6 +427,8 @@ fn kmip_1_0_usecase_4_1_step_6_client_b_get_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -512,6 +524,8 @@ fn kmip_1_0_usecase_4_1_step_7_client_b_revoke_symmetric_key_compromised_request
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -583,6 +597,8 @@ fn kmip_1_0_usecase_4_1_step_8_client_b_get_attribute_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -664,6 +680,8 @@ fn kmip_1_0_usecase_4_1_step_9_client_a_get_attribute_list_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -772,6 +790,8 @@ fn kmip_1_0_usecase_4_1_step_11_client_a_add_attribute_batch_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(2),
         ),
         vec![
@@ -907,6 +927,8 @@ fn kmip_1_0_usecase_4_1_step_12_client_a_modify_attribute_batch_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(2),
         ),
         vec![
@@ -1041,6 +1063,8 @@ fn kmip_1_0_usecase_4_1_step_13_client_a_delete_attribute_batch_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(2),
         ),
         vec![
@@ -1170,6 +1194,8 @@ fn kmip_1_0_usecase_4_1_step_15_client_a_destroy_symmetric_key_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            None,
+            None,
             BatchCount(1),
         ),
         vec![BatchItem(

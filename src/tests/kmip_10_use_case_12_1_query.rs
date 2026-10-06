@@ -31,6 +31,7 @@ fn kmip_1_0_usecase_12_1_step_1_query_operations_objects_max_response_size_256_r
                 ),                                  //
                 Some(MaximumResponseSize(256)),     //     Tag: 0x420050, Type: 0x02 (Integer), Data: 0x00000100 (256)
                 Option::<Authentication>::None,     //
+                None, None,                         //
                 BatchCount(1),                      //     Tag: 0x42000D, Type: 0x02 (Integer), Data: 0x00000001 (1)
             ),                                      //
             vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
@@ -96,6 +97,7 @@ fn kmip_1_0_usecase_12_1_step_2_query_operations_objects_max_response_size_2048_
                 ),                                  //
                 Some(MaximumResponseSize(2048)),    //     Tag: 0x420050, Type: 0x02 (Integer), Data: 0x00000800 (2048)
                 Option::<Authentication>::None,     //
+                None, None,                         //
                 BatchCount(1),                      //     Tag: 0x42000D, Type: 0x02 (Integer), Data: 0x00000001 (1)
             ),                                      //
             vec![BatchItem(                         //   Tag: 0x42000F, Type: 0x01 (Structure)
