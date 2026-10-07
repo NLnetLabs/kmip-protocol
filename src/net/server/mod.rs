@@ -71,8 +71,10 @@ impl<T: ReadWrite> Server<T> {
         drop(lock);
 
         // Check that the request is correctly authenticated.
-        if req.header().authentication() != self.auth.as_ref() {
-            return Err(NetError::AuthenticationError);
+        if self.auth.is_some() {
+            if req.header().authentication() != self.auth.as_ref() {
+                return Err(NetError::AuthenticationError);
+            }
         }
 
         Ok(req)
