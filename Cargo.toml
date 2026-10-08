@@ -27,18 +27,23 @@ maybe-async = "0.2.6"
 openssl = { version = "0.10.35", optional = true }
 proptest = { version = "1.9.0", optional = true }
 r2d2 = { version = "0.8.10", optional = true }
-rustls = { version = "0.23.41", features = ["std", "logging", "tls12"], optional = true }
+rustls = { version = "0.23.41", default-features = false, features = ["std", "logging", "tls12"], optional = true }
 rustls-pemfile = {version = "2.2.0", optional = true }
 tokio = { version = "1.13.1", features = ["full"], optional = true }
 tokio-native-tls = { version = "0.3.0", optional = true }
-tokio-rustls = { version = "0.26.4", optional = true }
+tokio-rustls = { version = "0.26.4", default-features = false, optional = true }
 tracing = "0.1.41"
 webpki = {version = "0.21.4", optional = true }
 webpki-roots = { version = "1", optional = true }
 async-trait = "0.1.92"
 
 [features]
-default = ["sync"]
+# By default use the aws-lc-rs crypto backend of rustls as it is more actively
+# supported than the ring crypto backend. To use async the application will
+# need to set default-features = false, and if using RustLS, will also need to
+# explicitly enable either the "aws-lc-rs" or the "ring" crypto backend, we only
+# supply a default crypto backend for the default sync mode of operation.
+default = ["sync", "aws-lc-rs"]
 sync = ["maybe-async/is_sync", "sync-pool"]
 sync-pool = ["r2d2"]
 async-with-tokio = ["tokio", "async-pool"]
@@ -50,6 +55,18 @@ tls-with-rustls = ["tls", "sync", "rustls", "rustls-pemfile", "webpki", "webpki-
 tls-with-tokio-native-tls = ["tls", "async-with-tokio", "tokio-native-tls"]
 tls-with-tokio-rustls = ["tls", "async-with-tokio", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
 proptest = ["dep:proptest"]
+
+# If default features are disabled, e.g. to use an async feature, and if also
+# using RustLS then the crypto backend MUST be specified manually by enabling
+# either the "aws-lc-rs" or "ring" features, otherwise the application
+# using this crate when constructing their own RustLS client or server will
+# encounter the following _runtime_ error from RustLS:
+#
+#   Could not automatically determine the process-level CryptoProvider from Rustls crate features.
+#   Call CryptoProvider::install_default() before this point to select a provider manually, or make sure exactly one of the 'aws-lc-rs' and 'ring' features is enabled.
+#   See the documentation of the CryptoProvider type for more information.
+ring = ["rustls?/ring", "tokio-rustls?/ring"]
+aws-lc-rs = ["rustls?/aws-lc-rs", "tokio-rustls?/aws-lc-rs"]
 
 [[example]]
 name = "demo"
