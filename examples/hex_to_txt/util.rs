@@ -97,6 +97,7 @@ impl PrettyPrinter {
             return format!("Error: Invalid structure format for tag {}", tt.tag());
         };
 
+        let is_attribute = tt.tag().value() == 0x420008;
         let mut report = self.tag_with_data_to_string(tt, "", indent);
 
         indent += 2;
@@ -104,6 +105,7 @@ impl PrettyPrinter {
         // Process each element in this struct. Recurse on any sub-structs
         // encountered.
         let mut rest = scanner.remaining().as_flattened();
+        let mut attr_name = is_attribute.then_some(String::new());
         while let Some((scanner, next_rest)) = FastScanner::next_element(rest) {
             let first_ttl = scanner.remaining()[0];
             let tt = TagType::parse(first_ttl[0..4].try_into().unwrap());
@@ -111,7 +113,7 @@ impl PrettyPrinter {
             if tt.r#type() == Type::Structure {
                 report += &self.scanner_to_string(scanner, indent);
             } else {
-                let Ok(fragment) = self.element_to_string(tt, scanner, indent) else {
+                let Ok(fragment) = self.element_to_string(tt, scanner, indent, &mut attr_name) else {
                     return report + &format!("Invalid TTLV bytes at tag {} of type {}", tt.tag(), tt.r#type());
                 };
                 report += &fragment;
@@ -123,16 +125,76 @@ impl PrettyPrinter {
         report
     }
 
-    fn element_to_string(&self, tt: TagType, mut scanner: FastScanner, indent: usize) -> Result<String, FastScanError> {
+    fn element_to_string(
+        &self,
+        tt: TagType,
+        mut scanner: FastScanner,
+        indent: usize,
+        attr_name: &mut Option<String>,
+    ) -> Result<String, FastScanError> {
+        // Special cases:
+        //
+        // Handle data structures such as:
+        //     Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+        //       Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Algorithm"
+        //       Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 0x000004 (4 = RSA)
+        //
+        // Where we need to know that we are in an attribute structure, and
+        // that the Attribute Name determines which text string we map the
+        // enumeration value to.
+        //
+        // Also handle data structures such as:
+        //     Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+        //       Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Usage Mask"
+        //       Tag: Attribute Value (0x42000B), Type: Integer (0x02), Data: 0x000001 (1 = Sign)
+        //
+        // Where we need to know that we are in an attribute structure, and
+        // that the Attribute Name determines that we must treat the value as
+        // a bit mask consisting of potentially many different bit matches and
+        // their mapped string names.
         #[rustfmt::skip]
             let data = match tt.r#type() {
                 Type::Structure   => { unreachable!() }
-                Type::Integer     => { format!(" {data:#08X} ({data})", data = scanner.scan_int(tt.tag())?) }
+                Type::Integer     => {
+                    let data = scanner.scan_int(tt.tag())?;
+                    let mut is_mask = false;
+                    let enum_tag = match attr_name.as_mut().map(|v| v.as_str()) {
+                        Some("Cryptographic Usage Mask") => { is_mask = true; Tag::new(0x42002C) },
+                        _ => tt.tag(),
+                    };
+                    if is_mask {
+                        let mut values: Vec<&'static str> = vec![];
+                        for n in Self::bit_mask_values() {
+                            let data = data as u32;
+                            if data & n != 0 {
+                                values.push(self.enum_map.get(&(enum_tag, n)).unwrap_or(&"??"));
+                            }
+                        }
+                        format!(" {:#08X} ({} = {})", data, data, values.join("|"))
+                    } else {
+                    format!(" {data:#08X} ({data})")
+                    }
+                }
                 Type::LongInteger => { format!(" {data:#08X} ({data})", data = scanner.scan_long_int(tt.tag())?) }
                 Type::BigInteger  => { format!(" {data}", data = hex::encode_upper(scanner.scan_big_int(tt.tag())?)) }
-                Type::Enumeration => { let data = scanner.scan_enum(tt.tag())?; format!(" {:#08X} ({} = {})", data, data, self.enum_map.get(&(tt.tag(), data)).unwrap_or(&"??")) }
+                Type::Enumeration => {
+                    let data = scanner.scan_enum(tt.tag())?;
+                    let enum_tag = match attr_name.as_mut().map(|v| v.as_str()) {
+                        Some("Cryptographic Algorithm") => Tag::new(0x420028),
+                        Some("Key Format Type") => Tag::new(0x420042),
+                        Some("Name Type") => Tag::new(0x420054),
+                        Some("Object Type") => Tag::new(0x420042),
+                        _ => tt.tag(),
+                    };
+                    format!(" {:#08X} ({} = {})", data, data, self.enum_map.get(&(enum_tag, data)).unwrap_or(&"??"))
+                }
                 Type::Boolean     => { format!(" {data}", data = scanner.scan_bool(tt.tag())?) }
-                Type::TextString  => { let data = scanner.scan_text(tt.tag())?; format!(" \"{}\"", data) }
+                Type::TextString  => { let data = scanner.scan_text(tt.tag())?;
+                    if let Some(attr_name) = attr_name {
+                        *attr_name = data.to_string();
+                    }
+                    format!(" \"{}\"", data)
+                }
                 Type::ByteString  => { format!(" {data}", data = hex::encode_upper(scanner.scan_bytes(tt.tag())?)) }
                 Type::DateTime    => { format!(" {data:#08X}", data = scanner.scan_date_time(tt.tag())?) }
                 Type::Interval => todo!(),
@@ -160,5 +222,19 @@ impl PrettyPrinter {
                 tt.r#type().ordinal(),
             )
         }
+    }
+
+    fn bit_mask_values() -> impl std::iter::Iterator<Item = u32> {
+        let mut n = 0u32;
+        std::iter::from_fn(move || {
+            if n == 0 {
+                n = 1;
+            } else if n == 0x80000000 {
+                return None;
+            }
+            let ret_val = Some(n);
+            n <<= 1;
+            ret_val
+        })
     }
 }
