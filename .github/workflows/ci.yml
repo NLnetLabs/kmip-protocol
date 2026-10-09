@@ -10,32 +10,187 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-jobs:
-  with_default_features:
+  # Check Formatting
+  # ----------------
+  #
+  # NOTE: This job is run even if no '.rs' files have changed.  Inserting such
+  # a check would require using a separate workflow file or using third-party
+  # actions.  Most commits do change '.rs' files, and 'cargo-fmt' is pretty
+  # fast, so optimizing this is not necessary.
+  check-fmt:
+    name: Check formatting
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [1.88.0, stable, beta]
     steps:
-    - uses: actions/checkout@v3
 
-    - name: Install Rust
-      uses: hecrj/setup-rust-action@v1
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Set up the Rust toolchain.
+    #
+    # Disable the cache since it's not relevant for formatting.
+    - name: Set up Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
-        rust-version: ${{ matrix.rust }}
+        toolchain: stable
+        components: rustfmt
+        cache: false
 
-    - name: Clippy
-      if: matrix.rust == 'stable'
-      run: cargo clippy ${{ matrix.args }} --all-targets --verbose
+    # Do the actual formatting check.
+    - name: Check formatting
+      run: cargo fmt --all -- --check
 
-    - name: Run tests
-      run: cargo test --all-targets --verbose
-
-  with_extra_features:
+  # Determine MSRV
+  # --------------
+  #
+  # The MSRV needs to be determined as we will test kmip-protocol against the Rust
+  # compiler at that version.
+  determine-msrv:
+    name: Determine MSRV
     runs-on: ubuntu-latest
+    outputs:
+      msrv: ${{ steps.determine-msrv.outputs.msrv }}
+    steps:
+
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Determine the MSRV.
+    - name: Determine MSRV
+      id: determine-msrv
+      run: |
+        msrv=`cargo metadata --no-deps --format-version 1 | jq -r '.packages[]|select(.name=="cascade")|.rust_version'`
+        echo "msrv=$msrv" >> "$GITHUB_OUTPUT"
+
+  # TODO: Add feature flag checks, if/when we add feature flags.
+
+  # Check Minimal Versions
+  # ----------------------
+  #
+  # Ensure that kmip-protocol compiles with the oldest compatible versions of all
+  # packages, even those kmip-protocol depends upon indirectly.
+  check-minimal-versions:
+    name: Check minimal versions
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
+    steps:
+
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Set up the Rust toolchain.
+    - name: Set up Rust nightly
+      id: setup-rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: nightly, stable
+        cache: false
+
+    # TODO: Cache minimal-version dependencies?
+
+    # Lock all dependencies to their minimal versions.
+    - name: Lock dependencies to minimal versions
+      run: cargo +nightly update -Z minimal-versions
+
+    # Check that kmip-protocol compiles.
+    #
+    # NOTE: This does not benefit from the 'target' folder cached by a 'cargo
+    # check --all-features --all-targets' execution.  It may be worthwhile to
+    # cache this 'target' folder separately (TODO).
+    - name: Check
+      run: cargo check --all-targets --all-features --locked
+
+  # Clippy
+  # ------
+  #
+  # Clippy checks for a wide range of lints, including common code smells and
+  # subtle bugs. It covers a superset of 'cargo check'.
+  #
+  # We run Clippy only on nightly Rust, as it offers a superset of the lints
+  # compared to stable versions.
+  #
+  # 'cargo clippy' and 'cargo build' can share some state for fast execution,
+  # but it's faster to execute them in parallel than to establish an ordering
+  # between them.
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Set up the Rust toolchain.
+    - name: Set up Rust nightly
+      id: setup-rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: nightly
+        components: clippy
+        cache: false
+
+    # TODO: Restore a cache of dependencies and 'target'.
+
+    # Do the actually Clippy run.
+    - name: Check Clippy
+      run: cargo +nightly clippy --all-targets --all-features --locked
+
+  # Documentation
+  # -------------
+  #
+  # When writing documentation, it's easy to create broken documentation
+  # links; 'cargo check' / 'cargo clippy' (run manually or by LSP) will not
+  # check for them. This job builds kmip-protocol's documentation and ensures
+  # no warnings are emitted.
+  #
+  # Even with '--no-deps', 'cargo doc' will process some dependencies,
+  # presumably due to proc macros. This processing could be reused from a
+  # previous 'cargo clippy' / 'cargo build'.
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Set up the Rust toolchain.
+    - name: Set up Rust nightly
+      id: setup-rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: nightly
+        components: clippy
+        cache: false
+
+    # TODO: Restore a cache of dependencies and 'target'.
+
+    # Do the actual documentation check.
+    - name: Check documentation
+      run: cargo +nightly doc --no-deps --document-private-items --workspace --locked
+
+  # Test
+  # ----
+  #
+  # Ensure that kmip-protocol compiles and its test suite passes, on the span of
+  # supported operating systems and Rust versions.
+  test:
+    name: Test
+    needs: determine-msrv
     strategy:
       matrix:
-        rust: [stable]
+        rust: ["${{ needs.determine-msrv.outputs.msrv }}", stable, nightly]
         args: [
           "--features tls-with-openssl --example demo",
           "--features tls-with-rustls --example demo",
@@ -46,12 +201,27 @@ jobs:
           "--no-default-features --example demo --features tls-with-tokio-native-tls",
           "--no-default-features --example demo --features tls-with-tokio-rustls",
         ]
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-D warnings"
     steps:
-    - uses: actions/checkout@v3
 
-    - name: Clippy
-      if: matrix.rust == 'stable'
-      run: cargo clippy ${{ matrix.args }} --all-targets --verbose
+    # Load the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Run tests
-      run: cargo test ${{ matrix.args }} --all-targets --verbose
+    # Set up the Rust toolchain.
+    - name: Set up Rust ${{ matrix.rust }}
+      id: setup-rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        cache: false
+
+    # TODO: Restore a cache of dependencies and 'target'.
+
+    # Build and run the test suite.
+    - name: Test
+      run: cargo test ${{ matrix.args }} --all-targets --locked
+
+  # TODO: Build a cache.
