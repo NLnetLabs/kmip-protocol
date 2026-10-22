@@ -746,28 +746,48 @@ impl_ttlv_serde!(struct ResponseMessage {
 } as 0x42007A);
 
 ///  See KMIP 1.0 section 7.2 [Operations](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581257).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResponseHeader {
     pub protocol_version: ProtocolVersion,
     pub timestamp: i64,
     pub batch_count: i32,
+    pub nonce: Option<Nonce>,                           // KMIP 1.2
+    pub attestation_type: Option<Vec<AttestationType>>, // KMIP 1.2
+    pub client_correlation_value: Option<String>,       // KMIP 1.4
+    pub server_correlation_value: Option<String>,       // KMIP 1.4
 }
 
 impl ResponseHeader {
     pub const TAG: Tag = Tag::new(0x42007A);
     pub const TIMESTAMP_TAG: Tag = Tag::new(0x420092);
     pub const BATCH_COUNT_TAG: Tag = Tag::new(0x42000D);
+    pub const CLIENT_CORRELATION_VALUE_TAG: Tag = Tag::new(0x420105);
+    pub const SERVER_CORRELATION_VALUE_TAG: Tag = Tag::new(0x420106);
 
     pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
         let mut scanner = scanner.scan_struct(Self::TAG)?;
         let protocol_version = ProtocolVersion::fast_scan(&mut scanner)?;
         let timestamp = scanner.scan_date_time(Self::TIMESTAMP_TAG)?;
         let batch_count = scanner.scan_int(Self::BATCH_COUNT_TAG)?;
+        let nonce = Nonce::fast_scan_opt(&mut scanner)?;
+        let attestation_type = std::iter::from_fn(|| AttestationType::fast_scan_opt(&mut scanner).transpose())
+            .collect::<Result<Vec<_>, _>>()?;
+        let attestation_type = Some(attestation_type).filter(|a| !a.is_empty());
+        let client_correlation_value = scanner
+            .scan_opt_text(Self::CLIENT_CORRELATION_VALUE_TAG)?
+            .map(ToString::to_string);
+        let server_correlation_value = scanner
+            .scan_opt_text(Self::SERVER_CORRELATION_VALUE_TAG)?
+            .map(ToString::to_string);
         scanner.finish()?;
         Ok(Self {
             protocol_version,
             timestamp,
             batch_count,
+            nonce,
+            attestation_type,
+            client_correlation_value,
+            server_correlation_value,
         })
     }
 
@@ -776,7 +796,73 @@ impl ResponseHeader {
         self.protocol_version.format(&mut formatter)?;
         formatter.format_date_time(Self::TIMESTAMP_TAG, self.timestamp)?;
         formatter.format_int(Self::BATCH_COUNT_TAG, self.batch_count)?;
+        if let Some(nonce) = &self.nonce {
+            nonce.format(&mut formatter)?;
+        }
+        for attestation_type in self.attestation_type.iter().flatten() {
+            attestation_type.format(&mut formatter)?;
+        }
+        if let Some(client_correlation_value) = &self.client_correlation_value {
+            formatter.format_text(Self::CLIENT_CORRELATION_VALUE_TAG, client_correlation_value)?;
+        }
+        if let Some(server_correlation_value) = &self.server_correlation_value {
+            formatter.format_text(Self::SERVER_CORRELATION_VALUE_TAG, server_correlation_value)?;
+        }
         Ok(formatter.finish())
+    }
+}
+
+///  See KMIP 1.2 section 2.1.14 [Nonce](
+/// https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613470).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Nonce {
+    pub nonce_id: Vec<u8>,
+    pub nonce_value: Vec<u8>,
+}
+
+impl Nonce {
+    pub const TAG: Tag = Tag::new(0x4200C8);
+    pub const NONCE_ID_TAG: Tag = Tag::new(0x4200C9);
+    pub const NONCE_VALUE_TAG: Tag = Tag::new(0x4200CA);
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        if let Some(mut scanner) = scanner.scan_opt_struct(Self::TAG)? {
+            let nonce_id = scanner.scan_bytes(Self::NONCE_ID_TAG)?.to_vec();
+            let nonce_value = scanner.scan_bytes(Self::NONCE_VALUE_TAG)?.to_vec();
+            scanner.finish()?;
+            Ok(Some(Self { nonce_id, nonce_value }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_bytes(Self::NONCE_ID_TAG, &self.nonce_id)?;
+        formatter.format_bytes(Self::NONCE_VALUE_TAG, &self.nonce_value)?;
+        Ok(formatter.finish())
+    }
+}
+
+///  See KMIP 1.2 section 9.1.3.2.36 [Attestation Type](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776649).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum AttestationType {
+    TpmQuote,
+    TcgIntegrityReport,
+    SamlAssertion,
+}
+
+impl_ttlv_serde!(enum AttestationType as 0x4200C7);
+
+impl fmt::Display for AttestationType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            AttestationType::TpmQuote => "TpmQuote",
+            AttestationType::TcgIntegrityReport => "TcgIntegrityReport",
+            AttestationType::SamlAssertion => "SamlAssertion",
+        })
     }
 }
 
