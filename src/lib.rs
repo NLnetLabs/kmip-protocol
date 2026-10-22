@@ -12,7 +12,7 @@
 //! to demonstrate that the library can be successfully integrated with sample client code. Please submit any feedback
 //! regarding this crate to the project [issue tracker]. Use of this code is at your own risk.
 //!
-//! [Client]: client::Client
+//! [Client]: net::Client
 //! [Oasis Key Management Interoperability Protocol]: http://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html
 //! [example demo]: https://github.com/NLnetLabs/kmip-protocol/tree/main/examples/demo
 //! [issue tracker]: https://github.com/NLnetLabs/kmip-protocol/issues/
@@ -68,11 +68,18 @@
 //! }
 //! ```
 //!
-//! [Client::do_request]: client::Client::do_request
+//! [Client::do_request]: net::Client::do_request
 //!
 //! # Selecting a TLS plugin to use
 //!
-//! See the [client::tls] module for information about selecting a TLS plugin to use.
+#![cfg_attr(
+    feature = "tls",
+    doc = "See the [net::tls] module for information about selecting a TLS plugin to use."
+)]
+#![cfg_attr(
+    not(feature = "tls"),
+    doc = "TLS support is disabled. Enable the `tls` feature to use a TLS plugin. See the net::tls module for information about selecting a TLS plugin to use."
+)]
 //!
 //! # KMIP operations supported
 //!
