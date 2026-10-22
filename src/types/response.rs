@@ -868,71 +868,71 @@ impl BatchItem {
 #[allow(clippy::large_enum_variant)]
 pub enum ResponsePayload {
     /// See KMIP 1.0 section 4.1 Create.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209>
     Create(CreateResponsePayload),
 
     /// See KMIP 1.0 section 4.2 Create Key Pair.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210>
     CreateKeyPair(CreateKeyPairResponsePayload),
 
     /// See KMIP 1.0 section 4.3 Register.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211>
     Register(RegisterResponsePayload),
 
     /// See KMIP 1.0 section 4.8 Locate.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216>
     Locate(LocateResponsePayload),
 
     /// See KMIP 1.0 section 4.10 Get.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218>
     Get(GetResponsePayload),
 
     /// See KMIP 1.0 section 4.11 Get Attributes.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219>
     GetAttributes(GetAttributesResponsePayload),
 
     /// See KMIP 1.0 section 4.12 Get Attribute List.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220>
     GetAttributeList(GetAttributeListResponsePayload),
 
     /// See KMIP 1.0 section 4.13 Add Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221>
     AddAttribute(AddAttributeResponsePayload),
 
     /// See KMIP 1.0 section 4.14 Modify Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222>
     ModifyAttribute(ModifyAttributeResponsePayload),
 
     /// See KMIP 1.0 section 4.15 Delete Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223>
     DeleteAttribute(DeleteAttributeResponsePayload),
 
     /// See KMIP 1.0 section 4.18 Activate.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226>
     Activate(ActivateResponsePayload),
 
     /// See KMIP 1.0 section 4.19 Revoke.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227>
     Revoke(RevokeResponsePayload),
 
     /// See KMIP 1.0 section 4.20 Destroy.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228>
     Destroy(DestroyResponsePayload),
 
     /// See KMIP 1.0 section 4.24 Query.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232>
     Query(QueryResponsePayload),
 
     /// See KMIP 1.1 section 4.26 Discover Versions.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652>
     DiscoverVersions(DiscoverVersionsResponsePayload),
 
     /// See KMIP 1.2 section 4.31 Sign.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558>
     Sign(SignResponsePayload),
 
     /// See KMIP 1.2 section 4.35 RNG Retrieve.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562>
     RNGRetrieve(RNGRetrieveResponsePayload),
     // Note: This set of enum variants is deliberately limited to those that we currently support.
 }

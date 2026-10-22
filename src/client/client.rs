@@ -200,7 +200,8 @@ pub struct Client<T: ReadWrite> {
 //--- High level client interface
 
 impl<T: ReadWrite> Client<T> {
-    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
+    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232)
+    /// request.
     ///
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
@@ -225,9 +226,8 @@ impl<T: ReadWrite> Client<T> {
         Ok(payload)
     }
 
-    /// Serialize a KMIP 1.0 [Create Key
-    /// Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc
-    /// 262581269) request to create an RSA key pair.
+    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269)
+    /// request to create an RSA key pair.
     ///
     /// See also: [do_request()](Self::do_request())
     ///
