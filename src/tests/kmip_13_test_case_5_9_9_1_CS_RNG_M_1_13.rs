@@ -4,15 +4,16 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::{de::from_slice, ser::to_vec};
-
-use crate::types::{
-    common::{DataLength, Operation, UniqueBatchItemID},
-    request::{
-        self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload,
+use crate::{
+    tests::util::assert_req_ser_de,
+    types::{
+        common::{DataLength, Operation, UniqueBatchItemID},
+        request::{
+            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+        },
+        response::{ResponsePayload, ResultStatus},
     },
-    response::{ResponseMessage, ResponsePayload, ResultStatus},
 };
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -43,12 +44,8 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
         "00000030000000042000D0200000004000000010000000042000F010000002842005C0500000004000000250000000042",
         "007901000000104200C402000000040000002000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -63,8 +60,22 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_response() {
         "005C0500000004000000250000000042007F0500000004000000000000000042007C01000000284200C208000000209c0",
         "BCD79D775998DDC52457BBBCFCE2D4A194B039E20A3ADACB63FB6561BA545",
     );
+
+    // Tag: Response Message (0x42007B), Type: Structure, Data:
+    //   Tag: Response Header (0x42007A), Type: Structure, Data:
+    //     Tag: Protocol Version (0x420069), Type: Structure, Data:
+    //       Tag: Protocol Version Major (0x42006A), Type: Integer, Data: 0x000001 (1)
+    //       Tag: Protocol Version Minor (0x42006B), Type: Integer, Data: 0x000003 (3)
+    //     Tag: Time Stamp (0x420092), Type: DateTime, Data: 0x4ED73ED7
+    //     Tag: Batch Count (0x42000D), Type: Integer, Data: 0x000001 (1)
+    //   Tag: Batch Item (0x42000F), Type: Structure, Data:
+    //     Tag: Operation (0x42005C), Type: Enumeration, Data: 0x000025 (37 = RNG Retrieve)
+    //     Tag: Result Status (0x42007F), Type: Enumeration, Data: 0x000000 (0 = Success)
+    //     Tag: Response Payload (0x42007C), Type: Structure, Data:
+    //       Tag: Data (0x4200C2), Type: ByteString, Data: 9C0BCD79D775998DDC52457BBBCFCE2D4A194B039E20A3ADACB63FB6561BA545
+
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 3);
@@ -78,7 +89,7 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_response() {
     assert!(matches!(&item.payload, Some(ResponsePayload::RNGRetrieve(_))));
 
     if let Some(ResponsePayload::RNGRetrieve(payload)) = item.payload.as_ref() {
-        assert_eq!(payload.data, hex::decode(use_case_generated_random_bytes_hex).unwrap());
+        assert_eq!(payload.0.0, hex::decode(use_case_generated_random_bytes_hex).unwrap());
     } else {
         panic!("Wrong payload");
     }
