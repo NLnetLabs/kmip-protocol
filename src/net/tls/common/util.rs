@@ -1,5 +1,8 @@
 use crate::{
-    client::{Client, ClientBuilder, ConnectionSettings},
+    net::{
+        ConnectionSettings,
+        client::{Client, builder::ClientBuilder},
+    },
     types::traits::ReadWrite,
 };
 

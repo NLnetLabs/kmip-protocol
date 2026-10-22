@@ -48,8 +48,8 @@ At TRACE log level this crate logs all sent and received KMIP messages in hexade
 
 ```
 2026-09-29T12:20:47.590207Z  INFO demo: Creating RSA key pair
-2026-09-29T12:20:47.590217Z TRACE kmip_protocol::net::client_server: Serializing request to KMIP wire bytes
-2026-09-29T12:20:47.590257Z TRACE kmip_protocol::net::client_server: Writing 528 bytes to the server:
+2026-09-29T12:20:47.590217Z TRACE kmip_protocol::net::client: Serializing request to KMIP wire bytes
+2026-09-29T12:20:47.590257Z TRACE kmip_protocol::net::client: Writing 528 bytes to the server:
 42007801000002084200770100000048420069010000002042006A020000000400000001000000
 0042006B0200000004000000000000000042005002000000047FFFFFFF0000000042000D020000
 0004000000010000000042000F01000001B042005C050000000400000002000000004200790100
