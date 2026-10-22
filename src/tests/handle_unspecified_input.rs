@@ -3,7 +3,7 @@ use crate::types::response::{BatchItem, MessageExtension, QueryResponsePayload, 
 /// The server information response field is vendor specific and thus could contain anything.
 /// We don't attempt to make sense of it, but we shouldn't fail to deserialize this kind of response either.
 #[test]
-#[ignore = "Unexpected fields are not yet supported"]
+#[ignore = "Failing at present, to be investigated"]
 fn test_deserialize_arbitrary_server_information() {
     let fragment_hex = concat!(
         "42007C 01 00000028", // (Query) Response Payload with only the Server Information (0x420088) optional structure
