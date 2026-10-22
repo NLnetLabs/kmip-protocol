@@ -52,7 +52,7 @@ pub fn payload_to_request(
 
 /// Extract the first successful operation payload from a KMIP response.
 ///
-/// Useful when invoking [`Client::do_request()`] for cases where only a single
+/// Useful when invoking [`crate::net::client::Client::do_request()`] for cases where only a single
 /// batch item is expected in the response.
 impl TryFrom<Vec<NetResult<response::BatchItem>>> for ResponsePayload {
     type Error = NetError;

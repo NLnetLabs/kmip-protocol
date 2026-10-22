@@ -62,17 +62,17 @@ impl fmt::Debug for Tag {
 pub enum Type {
     /// A TTLV structure.
     ///
-    /// This corresponds to a user-defined [`struct`].
+    /// This corresponds to a user-defined `struct`.
     Structure = 0x01,
 
     /// A TTLV integer.
     ///
-    /// This corresponds to [`i32`].
+    /// This corresponds to `i32`.
     Integer = 0x02,
 
     /// A TTLV long integer.
     ///
-    /// This corresponds to [`i64`].
+    /// This corresponds to `i64`.
     LongInteger = 0x03,
 
     /// A TTLV big integer.
@@ -83,17 +83,17 @@ pub enum Type {
     /// A TTLV enumeration.
     ///
     /// This corresponds to [`u32`], but in practice it may be represented by
-    /// a user-defined [`enum`].
+    /// a user-defined `enum`.
     Enumeration = 0x05,
 
     /// A TTLV boolean.
     ///
-    /// This corresponds to [`bool`].
+    /// This corresponds to `bool`.
     Boolean = 0x06,
 
     /// A TTLV text string.
     ///
-    /// This corresponds to [`str`].
+    /// This corresponds to `str`.
     TextString = 0x07,
 
     /// A TTLV byte string.
