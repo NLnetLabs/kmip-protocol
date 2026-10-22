@@ -42,9 +42,11 @@ use crate::{
     },
 };
 
-/// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
+/// A client for serializing KMIP and deserializing KMIP responses to/from an
+/// established read/write stream.
 ///
-/// Use [ClientBuilder] to build a [Client] instance to work with.
+/// Use the [crate::net::ClientBuilder] to build a [Client] instance to work
+/// with.
 #[derive(Debug)]
 pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
@@ -58,7 +60,8 @@ pub struct Client<T: ReadWrite> {
 //--- High level client interface
 
 impl<T: ReadWrite> Client<T> {
-    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
+    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232)
+    /// request.
     ///
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
@@ -83,7 +86,8 @@ impl<T: ReadWrite> Client<T> {
         Ok(payload)
     }
 
-    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
+    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269)
+    /// request to create an RSA key pair.
     ///
     /// See also: [do_request()](Self::do_request())
     ///
@@ -396,8 +400,9 @@ impl<T: ReadWrite> Client<T> {
 
     /// Serialize the given request to the stream and deserialize the response.
     ///
-    /// Automatically constructs the request message wrapper around the payload including the [RequestHeader] and
-    /// [BatchItem].
+    /// Automatically constructs the request message wrapper around the
+    /// payload including the [crate::types::request::RequestHeader] and
+    /// [crate::types::request::BatchItem].
     ///
     /// Only supports a single batch item.
     ///
@@ -405,8 +410,10 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// # Errors
     ///
-    /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
-    /// the response or if the response does not indicate operation success or contains more than one batch item.
+    /// Will fail if there is a problem serializing the request, writing to or
+    /// reading from the stream, deserializing the response or if the response
+    /// does not indicate operation success or contains more than one batch
+    /// item.
     #[maybe_async::maybe_async]
     pub async fn do_request_payload(
         &mut self,
