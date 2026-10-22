@@ -108,8 +108,7 @@ pub struct FastScanner<'a> {
 impl<'a> FastScanner<'a> {
     /// Construct a new [`FastScanner`].
     ///
-    /// It is expected that the input will be scanned in its entirety.  Use
-    /// [`Self::from_partial()`] otherwise.
+    /// It is expected that the input will be scanned in its entirety.
     ///
     /// ## Errors
     ///
