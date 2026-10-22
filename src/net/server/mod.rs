@@ -32,7 +32,8 @@ use tracing::trace;
 /// A server for deserializing KMIP requests and serializing KMIP responses
 /// from/to an established read/write stream.
 ///
-/// Use the [ServerBuilder] to build a [Server] instance to work with.
+/// Use the [crate::net::ServerBuilder] to build a [Server] instance to work
+/// with.
 #[derive(Debug)]
 pub struct Server<T: ReadWrite> {
     auth: Option<Authentication>,
