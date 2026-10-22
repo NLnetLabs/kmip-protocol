@@ -18,7 +18,7 @@ use super::types::Tag;
 /// by omitting error handling and pinpointing facilities -- it detects errors
 /// without tracking any details of them.  In some cases, it will delay errors,
 /// returning garbage data instead of [`Err`].  If scanning with [`FastScanner`]
-/// fails, a different scanner (e.g. [`crate::de::from_slice()`]) needs to be
+/// fails, a different scanner (e.g. [`crate::ttlv::from_slice()`]) needs to be
 /// used to ascertain the position and cause of the error.
 //
 // TODO: Link to 'SlowScanner' instead, once it exists.
@@ -28,7 +28,7 @@ use super::types::Tag;
 /// For efficiency, the scanner will sometimes return invalid data, e.g. from
 /// [`Self::scan_int()`].  This only occurs if the input is invalid, but it is
 /// more efficient than returning an actual [`Err`].  Once invalid data has been
-/// returned, at any point, [`Self::is_delayed_error()`] will report `true`.
+/// returned, at any point, [`Self::has_delayed_error()`] will report `true`.
 ///
 /// The caller should never "trust" the data being returned, e.g. to decide how
 /// much memory to allocate.  Any field can return invalid data; the input may
@@ -40,13 +40,9 @@ use super::types::Tag;
 /// receiving a stream of serialized items (e.g. KMIP requests), one cannot
 /// wait for the end of the stream to parse.  Instead, the user should store the
 /// input in a dynamically allocated buffer.  Once some data is in the buffer, a
-/// [`FastScanner`] can be initialized over it, and [`Self::has_next()`] can be
+/// [`FastScanner`] can be initialized over it, and [`Self::have_next()`] can be
 /// used to check whether a complete TTLV item is available.  If it is, the item
 /// can be parsed; otherwise, more data needs to be buffered.
-///
-/// Note that [`Self::new()`] should not be used in this scenario; it expects
-/// the input to be exhaustive.  Use [`Self::from_partial()`] for the most part,
-/// and only use [`Self::new()`] when the stream has terminated.
 ///
 /// ```no_run
 /// # use std::{io::Read, net::TcpStream};
@@ -112,8 +108,7 @@ pub struct FastScanner<'a> {
 impl<'a> FastScanner<'a> {
     /// Construct a new [`FastScanner`].
     ///
-    /// It is expected that the input will be scanned in its entirety.  Use
-    /// [`Self::from_partial()`] otherwise.
+    /// It is expected that the input will be scanned in its entirety.
     ///
     /// ## Errors
     ///
