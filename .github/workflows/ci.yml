@@ -52,17 +52,16 @@ jobs:
     outputs:
       msrv: ${{ steps.determine-msrv.outputs.msrv }}
     steps:
+      # Load the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # Load the repository.
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Determine the MSRV.
-    - name: Determine MSRV
-      id: determine-msrv
-      run: |
-        msrv=`cargo metadata --no-deps --format-version 1 | jq -r '.packages[]|select(.name=="cascade")|.rust_version'`
-        echo "msrv=$msrv" >> "$GITHUB_OUTPUT"
+      # Determine the MSRV.
+      - name: Determine MSRV
+        id: determine-msrv
+        run: |
+          msrv=`cargo metadata --no-deps --format-version 1 | jq -r '.packages[]|select(.name=="kmip-protocol")|.rust_version'`
+          echo "msrv=$msrv" >> "$GITHUB_OUTPUT"
 
   # TODO: Add feature flag checks, if/when we add feature flags.
 
@@ -73,36 +72,48 @@ jobs:
   # packages, even those kmip-protocol depends upon indirectly.
   check-minimal-versions:
     name: Check minimal versions
+    strategy:
+      matrix:
+        rust: ["${{ needs.determine-msrv.outputs.msrv }}", stable, nightly]
+        args: [
+          "--features tls-with-openssl",
+          "--features tls-with-rustls",
+          "--no-default-features --features sync",
+          "--no-default-features --features async-with-tokio",
+          "--no-default-features --features tls-with-openssl",
+          "--no-default-features --features tls-with-rustls",
+          "--no-default-features --features tls-with-tokio-native-tls",
+          "--no-default-features --features tls-with-tokio-rustls",
+        ]
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: "-D warnings"
     steps:
-
-    # Load the repository.
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Set up the Rust toolchain.
-    - name: Set up Rust nightly
-      id: setup-rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: nightly, stable
-        cache: false
-
-    # TODO: Cache minimal-version dependencies?
-
-    # Lock all dependencies to their minimal versions.
-    - name: Lock dependencies to minimal versions
-      run: cargo +nightly update -Z minimal-versions
-
-    # Check that kmip-protocol compiles.
-    #
-    # NOTE: This does not benefit from the 'target' folder cached by a 'cargo
-    # check --all-features --all-targets' execution.  It may be worthwhile to
-    # cache this 'target' folder separately (TODO).
-    - name: Check
-      run: cargo check --all-targets --all-features --locked
+      # Load the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      # Set up the Rust toolchain.
+      - name: Set up Rust nightly
+        id: setup-rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly, stable
+          cache: false
+  
+      # TODO: Cache minimal-version dependencies?
+  
+      # Lock all dependencies to their minimal versions.
+      - name: Lock dependencies to minimal versions
+        run: cargo +nightly update -Z minimal-versions
+  
+      # Check that kmip-protocol compiles.
+      #
+      # NOTE: This does not benefit from the 'target' folder cached by a 'cargo
+      # check --all-features --all-targets' execution.  It may be worthwhile to
+      # cache this 'target' folder separately (TODO).
+      - name: Check
+        run: cargo check --all-targets ${{ matrix.args }} --locked
 
   # Clippy
   # ------
@@ -123,25 +134,24 @@ jobs:
       RUSTFLAGS: "-D warnings"
       RUSTDOCFLAGS: "-D warnings"
     steps:
-
-    # Load the repository.
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Set up the Rust toolchain.
-    - name: Set up Rust nightly
-      id: setup-rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: nightly
-        components: clippy
-        cache: false
-
-    # TODO: Restore a cache of dependencies and 'target'.
-
-    # Do the actually Clippy run.
-    - name: Check Clippy
-      run: cargo +nightly clippy --all-targets --all-features --locked
+      # Load the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      # Set up the Rust toolchain.
+      - name: Set up Rust nightly
+        id: setup-rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: clippy
+          cache: false
+  
+      # TODO: Restore a cache of dependencies and 'target'.
+  
+      # Do the actually Clippy run.
+      - name: Check Clippy
+        run: cargo +nightly clippy --all-targets ${{ matrix.args }} --locked
 
   # Documentation
   # -------------
@@ -161,25 +171,24 @@ jobs:
       RUSTFLAGS: "-D warnings"
       RUSTDOCFLAGS: "-D warnings"
     steps:
-
-    # Load the repository.
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Set up the Rust toolchain.
-    - name: Set up Rust nightly
-      id: setup-rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: nightly
-        components: clippy
-        cache: false
-
-    # TODO: Restore a cache of dependencies and 'target'.
-
-    # Do the actual documentation check.
-    - name: Check documentation
-      run: cargo +nightly doc --no-deps --document-private-items --workspace --locked
+      # Load the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      # Set up the Rust toolchain.
+      - name: Set up Rust nightly
+        id: setup-rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: clippy
+          cache: false
+  
+      # TODO: Restore a cache of dependencies and 'target'.
+  
+      # Do the actual documentation check.
+      - name: Check documentation
+        run: cargo +nightly doc --no-deps --document-private-items --workspace --locked
 
   # Test
   # ----
@@ -193,36 +202,35 @@ jobs:
       matrix:
         rust: ["${{ needs.determine-msrv.outputs.msrv }}", stable, nightly]
         args: [
-          "--features tls-with-openssl --example demo",
-          "--features tls-with-rustls --example demo",
+          "--features tls-with-openssl",
+          "--features tls-with-rustls",
           "--no-default-features --features sync",
           "--no-default-features --features async-with-tokio",
-          "--no-default-features --example demo --features tls-with-openssl",
-          "--no-default-features --example demo --features tls-with-rustls",
-          "--no-default-features --example demo --features tls-with-tokio-native-tls",
-          "--no-default-features --example demo --features tls-with-tokio-rustls",
+          "--no-default-features --features tls-with-openssl",
+          "--no-default-features --features tls-with-rustls",
+          "--no-default-features --features tls-with-tokio-native-tls",
+          "--no-default-features --features tls-with-tokio-rustls",
         ]
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: "-D warnings"
     steps:
-
-    # Load the repository.
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Set up the Rust toolchain.
-    - name: Set up Rust ${{ matrix.rust }}
-      id: setup-rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        cache: false
-
-    # TODO: Restore a cache of dependencies and 'target'.
-
-    # Build and run the test suite.
-    - name: Test
-      run: cargo test ${{ matrix.args }} --all-targets --locked
+      # Load the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      # Set up the Rust toolchain.
+      - name: Set up Rust ${{ matrix.rust }}
+        id: setup-rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          cache: false
+  
+      # TODO: Restore a cache of dependencies and 'target'.
+  
+      # Build and run the test suite.
+      - name: Test
+        run: cargo test --all-targets ${{ matrix.args }} --locked
 
   # TODO: Build a cache.
