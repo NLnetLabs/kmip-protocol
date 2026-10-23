@@ -47,7 +47,8 @@ use crate::{
 /// A client for serializing KMIP requests and deserializing KMIP responses
 /// to/from an established read/write stream.
 ///
-/// Use [ClientBuilder] to build a [Client] instance to work with.
+/// Use the [crate::net::ClientBuilder] to build a [Client] instance to work
+/// with.
 #[derive(Debug)]
 pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
@@ -56,21 +57,31 @@ pub struct Client<T: ReadWrite> {
     read_buf: Vec<u8>,
     write_buf: Vec<MaybeUninit<u8>>,
     connection_error_count: Arc<AtomicUsize>,
+    cached_query_response_payload: Option<QueryResponsePayload>,
 }
 
 //--- High level client interface
 
 impl<T: ReadWrite> Client<T> {
-    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232) request.
+    /// Serialize a KMIP 1.0 [Query](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232)
+    /// request.
     ///
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
     pub async fn query(&mut self) -> NetResult<QueryResponsePayload> {
+        // Don't repeatedly query the server as the result should be the same
+        // every time for the same client connection. Instead cache the result
+        // and return it on subsequent requests.
+        if let Some(payload) = &self.cached_query_response_payload {
+            return Ok(payload.clone());
+        }
+
         // Setup the request
         let wanted_info = vec![
             QueryFunction::QueryOperations,
             QueryFunction::QueryObjects,
             QueryFunction::QueryServerInformation,
+            QueryFunction::QueryExtensionList,
         ];
         let request = RequestPayload::Query(wanted_info);
 
@@ -83,10 +94,13 @@ impl<T: ReadWrite> Client<T> {
             )));
         };
 
+        self.cached_query_response_payload = Some(payload.clone());
+
         Ok(payload)
     }
 
-    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269) request to create an RSA key pair.
+    /// Serialize a KMIP 1.0 [Create Key Pair](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581269)
+    /// request to create an RSA key pair.
     ///
     /// See also: [do_request()](Self::do_request())
     ///
@@ -399,8 +413,9 @@ impl<T: ReadWrite> Client<T> {
 
     /// Serialize the given request to the stream and deserialize the response.
     ///
-    /// Automatically constructs the request message wrapper around the payload including the [RequestHeader] and
-    /// [BatchItem].
+    /// Automatically constructs the request message wrapper around the
+    /// payload including the [crate::types::request::RequestHeader] and
+    /// [crate::types::request::BatchItem].
     ///
     /// Only supports a single batch item.
     ///
@@ -408,8 +423,10 @@ impl<T: ReadWrite> Client<T> {
     ///
     /// # Errors
     ///
-    /// Will fail if there is a problem serializing the request, writing to or reading from the stream, deserializing
-    /// the response or if the response does not indicate operation success or contains more than one batch item.
+    /// Will fail if there is a problem serializing the request, writing to or
+    /// reading from the stream, deserializing the response or if the response
+    /// does not indicate operation success or contains more than one batch
+    /// item.
     #[maybe_async::maybe_async]
     pub async fn do_request_payload(
         &mut self,
@@ -510,6 +527,7 @@ impl<T: ReadWrite> Clone for Client<T> {
             connection_error_count: self.connection_error_count.clone(),
             read_buf: vec![0u8; 8192],
             write_buf: vec![MaybeUninit::uninit(); 8192],
+            cached_query_response_payload: self.cached_query_response_payload.clone(),
         }
     }
 }

@@ -32,7 +32,8 @@ use tracing::trace;
 /// A server for deserializing KMIP requests and serializing KMIP responses
 /// from/to an established read/write stream.
 ///
-/// Use the [ServerBuilder] to build a [Server] instance to work with.
+/// Use the [crate::net::ServerBuilder] to build a [Server] instance to work
+/// with.
 #[derive(Debug)]
 pub struct Server<T: ReadWrite> {
     auth: Option<Authentication>,
@@ -71,10 +72,9 @@ impl<T: ReadWrite> Server<T> {
         drop(lock);
 
         // Check that the request is correctly authenticated.
-        if self.auth.is_some()
-            && req.header().authentication() != self.auth.as_ref() {
-                return Err(NetError::AuthenticationError);
-            }
+        if self.auth.is_some() && req.header().authentication() != self.auth.as_ref() {
+            return Err(NetError::AuthenticationError);
+        }
 
         Ok(req)
     }
@@ -156,7 +156,7 @@ impl<T: ReadWrite> Server<T> {
     where
         F: Fn(&mut FastScanner) -> std::result::Result<R, FastScanError>,
     {
-        trace!("Awaiting KMIP server response");
+        trace!("Awaiting KMIP client request");
         read_buf.clear();
         loop {
             // Try reading from the buffer.
@@ -167,7 +167,7 @@ impl<T: ReadWrite> Server<T> {
             match scanner.have_next() {
                 Ok(()) => {
                     trace!(
-                        "Received {available_rounded} bytes from the server: {}",
+                        "Received {available_rounded} bytes from the client: {}",
                         hex::encode_upper(ttlv_bytes)
                     );
                     // A complete TTLV element is available. Try to parse it.

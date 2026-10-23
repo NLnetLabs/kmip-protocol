@@ -1036,11 +1036,11 @@ impl_ttlv_serde!(struct RequestHeader as 0x420077 {
 #[allow(clippy::large_enum_variant)]
 pub enum RequestPayload {
     /// See KMIP 1.0 section 4.1 Create.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581209>
     Create(ObjectType, TemplateAttribute),
 
     /// See KMIP 1.0 section 4.2 Create Key Pair.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581210>
     CreateKeyPair(
         Option<CommonTemplateAttribute>,
         Option<PrivateKeyTemplateAttribute>,
@@ -1048,7 +1048,7 @@ pub enum RequestPayload {
     ),
 
     /// See KMIP 1.0 section 4.3 Register.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581211>
     Register(ObjectType, TemplateAttribute, Option<ManagedObject>),
 
     // TODO? Missing operation code mappings to request payloads
@@ -1057,11 +1057,11 @@ pub enum RequestPayload {
     // Certify = 6
     // Re-certify = 7
     /// See KMIP 1.0 section 4.8 Locate.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581216>
     Locate(Vec<Attribute>), // TODO: Add MaximumItems and StorageStatusMask optional request payload fields
 
     /// See KMIP 1.0 section 4.10 Get.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581218>
     Get(
         Option<UniqueIdentifier>,
         Option<KeyFormatType>,
@@ -1070,34 +1070,34 @@ pub enum RequestPayload {
     ),
 
     /// See KMIP 1.0 section 4.11 Get Attributes.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581219>
     GetAttributes(Option<UniqueIdentifier>, Option<Vec<AttributeName>>),
 
     /// See KMIP 1.0 section 4.12 Get Attribute List.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581220>
     GetAttributeList(Option<UniqueIdentifier>),
 
     /// See KMIP 1.0 section 4.13 Add Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581221>
     AddAttribute(Option<UniqueIdentifier>, Attribute),
 
     /// See KMIP 1.0 section 4.14 Modify Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581222>
     ModifyAttribute(Option<UniqueIdentifier>, Attribute),
 
     /// See KMIP 1.0 section 4.15 Delete Attribute.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581223>
     DeleteAttribute(Option<UniqueIdentifier>, AttributeName, Option<AttributeIndex>),
 
     // TODO? Missing operation code mappings to request payloads
     // Obtain Lease = 10
     // Get Usage Allocation = 11
     /// See KMIP 1.0 section 4.18 Activate.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581226>
     Activate(Option<UniqueIdentifier>),
 
     /// See KMIP 1.0 section 4.19 Revoke.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581227>
     Revoke(
         Option<UniqueIdentifier>,
         RevocationReason,
@@ -1105,7 +1105,7 @@ pub enum RequestPayload {
     ),
 
     /// See KMIP 1.0 section 4.20 Destroy.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581228>
     Destroy(Option<UniqueIdentifier>),
 
     // TODO? Missing operation code mappings to request payloads
@@ -1113,7 +1113,7 @@ pub enum RequestPayload {
     // Recover = 16
     // Validate = 17
     /// See KMIP 1.0 section 4.24 Query.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232>
     Query(Vec<QueryFunction>),
 
     // TODO? Missing operation code mappings to request payloads
@@ -1123,14 +1123,14 @@ pub enum RequestPayload {
     // Put = 1C
     // Re-key Key Pair = 1D
     /// See KMIP 1.1 section 4.26 Discover Versions.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652>
     DiscoverVersions(Vec<ProtocolVersion>),
 
     // TODO? Missing operation code mappings to request payloads
     // Encrypt = 1F
     // Decrypt = 20
     /// See KMIP 1.2 section 4.31 Sign.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613558>
     Sign(Option<UniqueIdentifier>, Option<CryptographicParameters>, Data),
 
     // TODO? Missing operation code mappings to request payloads
@@ -1138,7 +1138,7 @@ pub enum RequestPayload {
     // MAC = 23
     // MAC Verify = 24
     /// See KMIP 1.2 section 4.35 RNG Retrieve.
-    /// See: https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562
+    /// See: <https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc409613562>
     RNGRetrieve(DataLength),
 }
 
@@ -1472,10 +1472,10 @@ impl fmt::Display for WrappingMethod {
 #[non_exhaustive]
 #[repr(u32)]
 pub enum QueryFunction {
-    QueryOperations = 1,
+    QueryOperations = 0x00000001,
     QueryObjects,
     QueryServerInformation,
-    // Note: This set of enum variants is deliberately limited to those that we currently support.
+    QueryExtensionList = 0x00000005,
 }
 
 impl_ttlv_serde!(enum QueryFunction as 0x420074);
@@ -1486,6 +1486,7 @@ impl fmt::Display for QueryFunction {
             Self::QueryOperations => "QueryOperations",
             Self::QueryObjects => "QueryObjects",
             Self::QueryServerInformation => "QueryServerInformation",
+            Self::QueryExtensionList => "QueryExtensionList",
         })
     }
 }

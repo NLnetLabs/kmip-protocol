@@ -193,14 +193,14 @@ jobs:
       matrix:
         rust: ["${{ needs.determine-msrv.outputs.msrv }}", stable, nightly]
         args: [
-          "--features tls-with-openssl --example demo",
-          "--features tls-with-rustls --example demo",
+          "--features tls-with-openssl",
+          "--features tls-with-rustls",
           "--no-default-features --features sync",
           "--no-default-features --features async-with-tokio",
-          "--no-default-features --example demo --features tls-with-openssl",
-          "--no-default-features --example demo --features tls-with-rustls",
-          "--no-default-features --example demo --features tls-with-tokio-native-tls",
-          "--no-default-features --example demo --features tls-with-tokio-rustls",
+          "--no-default-features --features tls-with-openssl",
+          "--no-default-features --features tls-with-rustls",
+          "--no-default-features --features tls-with-tokio-native-tls",
+          "--no-default-features --features tls-with-tokio-rustls",
         ]
     runs-on: ubuntu-latest
     env:
