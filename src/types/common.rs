@@ -731,6 +731,7 @@ impl_ttlv_serde!(enum ObjectType as 0x420057);
 #[allow(non_camel_case_types)]
 #[repr(u32)]
 pub enum CryptographicAlgorithm {
+    // Attributes defined by KMIP 1.0.
     DES = 1,
     TRIPLE_DES,
     AES,
@@ -756,7 +757,66 @@ pub enum CryptographicAlgorithm {
     RC5,
     SKIPJACK,
     Twofish,
+
+    // Attributes added in KMIP 1.2.
     EC,
+
+    // Attributes added in KMIP 1.3.
+    One_Time_Pad,
+
+    // Attributes added in KMIP 1.4.
+    ChaCha20,
+    Poly1305,
+    ChaCha20Poly1305,
+    SHA3_224,
+    SHA3_256,
+    SHA3_384,
+    SHA3_512,
+    HMAC_SHA3_224,
+    HMAC_SHA3_256,
+    HMAC_SHA3_384,
+    HMAC_SHA3_512,
+    SHAKE_128,
+    SHAKE_256,
+
+    // Attributes added in KMIP 2.0.
+    //
+    // Note: KMIP 2.0 changed the way attributes are represented. Quoting https://www.p6r.com/articles/2018/03/24/detailed-differences-between-kmip-1-4-and-2-0/:
+    //   > Another big change has occurred to attributes both in how they
+    //   > are represented and encoded in the protocol. The text string name
+    //   > of each attribute, which was also passed in the binary TTLV
+    //   > protocol version, has finally been removed.
+    //
+    // Attributes that existed in earlier versions of KMIP can still be
+    // submitted to a KMIP 2.x server using the KMIP 1.x representation,
+    // assuming that the server supports the KMIP 1.x version that defined the
+    // attribute AND that the client request specifies that KMIP 1.x version
+    // in the request.
+    //
+    // Attributes added in KMIP 2.0 or later CANNOT be submitted to the server
+    // using the KMIP 1.x representation. This library does NOT yet support
+    // KMIP 2.x style attributes. The attributes below CANNOT therefore be
+    // sent to a spec compliant KMIP 1.x server, unless it has vendor specific
+    // extensions. One such vendor specific extension is that supported by
+    // NLnet Labs Cascade-HSM-Bridge which understands Ed448 and Ed25519
+    // attributes in requests even though it does not support KMIP 2.x style
+    // attributes.
+    ARIA,
+    SEED,
+    SM2,
+    SM3,
+    SM4,
+    GOST_R_34_10_2012,
+    GOST_R_34_11_2012,
+    GOST_R_34_13_2015,
+    GOST_28147_89,
+    XMSS,
+    SPHINCS_256,
+    McEliece,
+    McEliece_6960119,
+    McEliece_8192128,
+    Ed25519,
+    Ed448,
 }
 
 impl_ttlv_serde!(enum CryptographicAlgorithm as 0x420028);
@@ -790,6 +850,36 @@ impl fmt::Display for CryptographicAlgorithm {
             Self::SKIPJACK => "SKIPJACK",
             Self::Twofish => "Twofish",
             Self::EC => "EC",
+            Self::One_Time_Pad => "One_Time_Pad",
+            Self::ChaCha20 => "ChaCha20",
+            Self::Poly1305 => "Poly1305",
+            Self::ChaCha20Poly1305 => "ChaCha20Poly1305",
+            Self::SHA3_224 => "SHA3_224",
+            Self::SHA3_256 => "SHA3_256",
+            Self::SHA3_384 => "SHA3_384",
+            Self::SHA3_512 => "SHA3_512",
+            Self::HMAC_SHA3_224 => "HMAC_SHA3_224",
+            Self::HMAC_SHA3_256 => "HMAC_SHA3_256",
+            Self::HMAC_SHA3_384 => "HMAC_SHA3_384",
+            Self::HMAC_SHA3_512 => "HMAC_SHA3_512",
+            Self::SHAKE_128 => "SHAKE_128",
+            Self::SHAKE_256 => "SHAKE_256",
+            Self::ARIA => "ARIA",
+            Self::SEED => "SEED",
+            Self::SM2 => "SM2",
+            Self::SM3 => "SM3",
+            Self::SM4 => "SM4",
+            Self::GOST_R_34_10_2012 => "GOST_R_34_10_2012",
+            Self::GOST_R_34_11_2012 => "GOST_R_34_11_2012",
+            Self::GOST_R_34_13_2015 => "GOST_R_34_13_2015",
+            Self::GOST_28147_89 => "GOST_28147_89",
+            Self::XMSS => "XMSS",
+            Self::SPHINCS_256 => "SPHINCS_256",
+            Self::McEliece => "McEliece",
+            Self::McEliece_6960119 => "McEliece_6960119",
+            Self::McEliece_8192128 => "McEliece_8192128",
+            Self::Ed25519 => "Ed25519",
+            Self::Ed448 => "Ed448",
         })
     }
 }
