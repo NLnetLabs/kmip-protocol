@@ -1472,10 +1472,10 @@ impl fmt::Display for WrappingMethod {
 #[non_exhaustive]
 #[repr(u32)]
 pub enum QueryFunction {
-    QueryOperations = 1,
+    QueryOperations = 0x00000001,
     QueryObjects,
     QueryServerInformation,
-    // Note: This set of enum variants is deliberately limited to those that we currently support.
+    QueryExtensionList = 0x00000005,
 }
 
 impl_ttlv_serde!(enum QueryFunction as 0x420074);
@@ -1486,6 +1486,7 @@ impl fmt::Display for QueryFunction {
             Self::QueryOperations => "QueryOperations",
             Self::QueryObjects => "QueryObjects",
             Self::QueryServerInformation => "QueryServerInformation",
+            Self::QueryExtensionList => "QueryExtensionList",
         })
     }
 }

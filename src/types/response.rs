@@ -433,6 +433,7 @@ pub struct QueryResponsePayload {
     pub object_types: Option<Vec<ObjectType>>,
     pub vendor_identification: Option<String>,
     pub server_information: Option<ServerInformation>,
+    pub extension_information: Option<Vec<ExtensionInformation>>,
 }
 
 impl QueryResponsePayload {
@@ -466,6 +467,9 @@ impl QueryResponsePayload {
         if let Some(server_information) = &self.server_information {
             server_information.format(&mut formatter)?;
         }
+        for extension_information in self.extension_information.iter().flatten() {
+            extension_information.format(&mut formatter)?;
+        }
         Ok(formatter.finish())
     }
 
@@ -480,12 +484,17 @@ impl QueryResponsePayload {
             .scan_opt_text(Self::VENDOR_IDENTIFICATION_TAG)?
             .map(ToString::to_string);
         let server_information = ServerInformation::fast_scan_opt(&mut scanner)?;
+        let extension_information =
+            std::iter::from_fn(|| ExtensionInformation::fast_scan_opt(&mut scanner).transpose())
+                .collect::<Result<Vec<_>, _>>()?;
+        let extension_information = Some(extension_information).filter(|a| !a.is_empty());
         scanner.finish()?;
         let this = Self {
             operations,
             object_types,
             vendor_identification,
             server_information,
+            extension_information,
         };
         Ok(this)
     }
@@ -1087,3 +1096,102 @@ impl_ttlv_serde!(struct Attribute as 0x420008 {
         self.value.format(&mut formatter)?;
     };
 });
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExtensionInformation {
+    pub extension_name: String,
+    pub extension_tag: Option<i32>,
+    pub extension_type: Option<ItemType>,
+    pub extension_enumeration: Option<i32>,
+    pub extension_attribute: Option<bool>,
+    pub extension_parent_tag: Option<i32>,
+    pub extension_description: Option<String>,
+}
+
+impl ExtensionInformation {
+    pub const TAG: Tag = Tag::new(0x4200A4);
+    pub const EXTENSION_NAME_TAG: Tag = Tag::new(0x4200A5);
+    pub const EXTENSION_TAG_TAG: Tag = Tag::new(0x4200A6);
+    pub const EXTENSION_TYPE_TAG: Tag = Tag::new(0x4200A7);
+    pub const EXTENSION_ENUMERATION_TAG: Tag = Tag::new(0x420129);
+    pub const EXTENSION_ATTRIBUTE_TAG: Tag = Tag::new(0x42012A);
+    pub const EXTENSION_PARENT_TAG_TAG: Tag = Tag::new(0x42012B);
+    pub const EXTENSION_DESCRIPTION_TAG: Tag = Tag::new(0x42012C);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let scanner = scanner.scan_struct(Self::TAG)?;
+        Self::fast_scan_inner(scanner)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        if let Some(scanner) = scanner.scan_opt_struct(Self::TAG)? {
+            Ok(Some(Self::fast_scan_inner(scanner)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn fast_scan_inner(mut scanner: FastScanner<'_>) -> Result<Self, FastScanError> {
+        let extension_name = scanner.scan_text(Self::EXTENSION_NAME_TAG)?.to_string();
+        let extension_tag = scanner.scan_opt_int(Self::EXTENSION_TAG_TAG)?;
+        let extension_type = ItemType::fast_scan_opt(&mut scanner)?;
+        let extension_enumeration = scanner.scan_opt_int(Self::EXTENSION_ENUMERATION_TAG)?;
+        let extension_attribute = scanner.scan_opt_bool(Self::EXTENSION_ATTRIBUTE_TAG)?;
+        let extension_parent_tag = scanner.scan_opt_int(Self::EXTENSION_PARENT_TAG_TAG)?;
+        let extension_description = scanner
+            .scan_opt_text(Self::EXTENSION_DESCRIPTION_TAG)?
+            .map(ToString::to_string);
+        scanner.finish()?;
+        Ok(Self {
+            extension_name,
+            extension_tag,
+            extension_type,
+            extension_enumeration,
+            extension_attribute,
+            extension_parent_tag,
+            extension_description,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_text(Self::EXTENSION_NAME_TAG, &self.extension_name)?;
+        if let Some(v) = self.extension_tag {
+            formatter.format_int(Self::EXTENSION_TAG_TAG, v)?;
+        }
+        if let Some(v) = self.extension_type {
+            v.format(&mut formatter)?;
+        }
+        if let Some(v) = self.extension_enumeration {
+            formatter.format_int(Self::EXTENSION_ENUMERATION_TAG, v)?;
+        }
+        if let Some(v) = self.extension_attribute {
+            formatter.format_bool(Self::EXTENSION_ATTRIBUTE_TAG, v)?;
+        }
+        if let Some(v) = self.extension_parent_tag {
+            formatter.format_int(Self::EXTENSION_PARENT_TAG_TAG, v)?;
+        }
+        if let Some(v) = &self.extension_description {
+            formatter.format_text(Self::EXTENSION_DESCRIPTION_TAG, v)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum ItemType {
+    Structure,
+    Integer,
+    LongInteger,
+    BigInteger,
+    Enumeration,
+    Boolean,
+    TextString,
+    ByteString,
+    DateTime,
+    Interval,
+}
+
+impl_ttlv_serde!(enum ItemType as 0x4200A7);
