@@ -74,6 +74,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
             read_buf,
             write_buf,
             connection_error_count,
+            cached_query_response_payload: None,
         }
     }
 }
