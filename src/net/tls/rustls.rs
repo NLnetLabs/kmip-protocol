@@ -13,9 +13,9 @@ use crate::net::ConnectionSettings;
 
 use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
 
-pub type Client = crate::net::client::Client<StreamOwned<ClientConnection, TcpStream>>;
+pub type TlsClient = crate::net::client::Client<StreamOwned<ClientConnection, TcpStream>>;
 
-pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
+pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<TlsClient> {
     connect_with_tcpstream_factory(conn_settings, |addr, settings| {
         let tcpstream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
@@ -26,7 +26,10 @@ pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     })
 }
 
-pub fn connect_with_tcpstream_factory<F>(conn_settings: &ConnectionSettings, tcpstream_factory: F) -> NetResult<Client>
+pub fn connect_with_tcpstream_factory<F>(
+    conn_settings: &ConnectionSettings,
+    tcpstream_factory: F,
+) -> NetResult<TlsClient>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> NetResult<TcpStream>,
 {

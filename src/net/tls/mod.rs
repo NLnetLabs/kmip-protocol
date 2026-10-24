@@ -82,13 +82,61 @@
 pub mod common;
 
 #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
-pub mod openssl;
+mod openssl;
+#[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))]
+use openssl as backend;
 
 #[cfg(feature = "tls-with-rustls")]
-pub mod rustls;
+mod rustls;
+#[cfg(feature = "tls-with-rustls")]
+use rustls as backend;
 
 #[cfg(feature = "tls-with-tokio-native-tls")]
-pub mod tokio_native_tls;
+mod tokio_native_tls;
+#[cfg(feature = "tls-with-tokio-native-tls")]
+use tokio_native_tls as backend;
 
 #[cfg(feature = "tls-with-tokio-rustls")]
-pub mod tokio_rustls;
+mod tokio_rustls;
+#[cfg(feature = "tls-with-tokio-rustls")]
+use tokio_rustls as backend;
+
+pub use backend::{TlsClient, connect, connect_with_tcpstream_factory};
+
+/// A provider of KMIP client instances connected to a specific server.
+///
+/// This trait provides access to ready to use [`backend::Client`] instances
+/// connected via TCP+TLS to a particular KMIP server.
+///
+/// Whether or not the connection comes from a pool of already established
+/// long lived connections or is established on use is determined by the
+/// implementation.
+#[maybe_async::maybe_async]
+pub trait ConnectionProvider: std::fmt::Debug + Clone {
+    /// If possible, obtain a TCP+TLS connection to the KMIP server.
+    ///
+    /// The connection may be an existing connection or a new connection.
+    async fn get(&self) -> Result<TlsClient, String>;
+
+    /// Returns a value that identifies which KMIP server is connected to.
+    ///
+    /// The value should be meaningful if displayed to an end user.
+    ///
+    /// Two different connections to the same KMIP server should return the
+    /// same value.
+    ///
+    /// The return value should not be relied upon to have any particular
+    /// structure.
+    fn server_id(&self) -> &str;
+}
+
+#[maybe_async::maybe_async]
+impl ConnectionProvider for TlsClient {
+    async fn get(&self) -> Result<TlsClient, String> {
+        Ok(self.clone())
+    }
+
+    fn server_id(&self) -> &str {
+        self.server_id()
+    }
+}

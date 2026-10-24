@@ -33,6 +33,7 @@ tokio-rustls = { version = "0.26.4", optional = true }
 tracing = "0.1.41"
 webpki = {version = "0.21.4", optional = true }
 webpki-roots = { version = "1", optional = true }
+async-trait = "0.1.92"
 
 [features]
 default = ["sync"]

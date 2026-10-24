@@ -103,7 +103,7 @@ fn test_query() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     let response_payload = client.query().unwrap();
 
@@ -180,7 +180,7 @@ fn test_create_rsa_key_pair() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     let response_payload = client
         .create_rsa_key_pair(1024, "My Private Key".into(), "My Public Key".into())
@@ -219,7 +219,7 @@ fn test_multiple_requests() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // Query for each mock response and assert that the query succeeds or
     // fails as expected.
@@ -238,7 +238,7 @@ fn test_connection_dropped() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // Attempt to query the mock server which should fail due to the lack
     // of response.
@@ -262,7 +262,7 @@ fn test_connection_dropped_after_one_response() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // The first query should get the operation failed error response from
     // the mock server.
@@ -292,7 +292,7 @@ fn test_partial_response() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // The first query should fail with a network error as there are no
     // more bytes to read from the mock network stream.
@@ -317,7 +317,7 @@ fn test_unsupported_valid_ttlv() {
     };
 
     // Create a real KMIP client that "connects" to a mock network stream.
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     // The query should fail with a deserializer error as the Protocol
     // Version TTLV cannot be deserialized as a Response Message TTLV.
@@ -348,7 +348,7 @@ fn test_pykmip_query_against_server_with_openssl() {
     let stream = TcpStream::connect("localhost:5696").unwrap();
     let mut tls = connector.connect("localhost", stream).unwrap();
 
-    let mut client = ClientBuilder::new(&mut tls).build();
+    let mut client = ClientBuilder::new(&mut tls, "test").build();
 
     let response_payload = client.query().unwrap();
 
@@ -483,7 +483,7 @@ fn test_pykmip_query_against_server_with_rustls() {
     let mut stream = TcpStream::connect("localhost:5696").unwrap();
     let mut tls = rustls::Stream::new(&mut sess, &mut stream);
 
-    let mut client = ClientBuilder::new(&mut tls).build();
+    let mut client = ClientBuilder::new(&mut tls, "test").build();
 
     let response_payload = client.query().unwrap();
 
@@ -502,7 +502,7 @@ fn test_kryptus_query_against_server() {
     let stream = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
     let mut tls = connector.connect(&host, stream).unwrap();
 
-    let mut client = ClientBuilder::new(&mut tls)
+    let mut client = ClientBuilder::new(&mut tls, "test")
         .with_credentials(
             std::env::var("KRYPTUS_USER").unwrap(),
             Some(std::env::var("KRYPTUS_PASS").unwrap()),
@@ -531,7 +531,7 @@ fn test_pykmip_query_response() {
         response: Cursor::new(response_bytes),
     };
 
-    let mut client = ClientBuilder::new(&mut stream).build();
+    let mut client = ClientBuilder::new(&mut stream, "test").build();
 
     let mut batch_items = client
         .do_request_payload(RequestPayload::Query(vec![QueryFunction::QueryOperations]))

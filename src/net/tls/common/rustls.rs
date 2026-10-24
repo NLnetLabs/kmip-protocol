@@ -80,9 +80,9 @@ where
     if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
         let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
             .next()
-            .ok_or(NetError::ConfigurationError(format!(
-                "Failed to parse PEM bytes for server certificate"
-            )))?
+            .ok_or(NetError::ConfigurationError(
+                "Failed to parse PEM bytes for server certificate".to_string(),
+            ))?
             .map_err(|err| {
                 NetError::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
             })?;
@@ -94,9 +94,9 @@ where
     if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
         let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
             .next()
-            .ok_or(NetError::ConfigurationError(format!(
-                "Failed to parse PEM bytes for CA certificate"
-            )))?
+            .ok_or(NetError::ConfigurationError(
+                "Failed to parse PEM bytes for CA certificate".to_string(),
+            ))?
             .map_err(|err| {
                 NetError::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}"))
             })?;

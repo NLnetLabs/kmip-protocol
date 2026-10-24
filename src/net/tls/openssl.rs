@@ -9,10 +9,10 @@ use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
-pub type Client = crate::net::Client<SslStream<TcpStream>>;
+pub type TlsClient = crate::net::Client<SslStream<TcpStream>>;
 
-pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
-    connect_with_tcp_stream_factory(conn_settings, |addr, settings| {
+pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<TlsClient> {
+    connect_with_tcpstream_factory(conn_settings, |addr, settings| {
         let tcp_stream = if let Some(timeout) = settings.connect_timeout {
             TcpStream::connect_timeout(addr, timeout)?
         } else {
@@ -22,10 +22,10 @@ pub fn connect(conn_settings: &ConnectionSettings) -> NetResult<Client> {
     })
 }
 
-pub fn connect_with_tcp_stream_factory<F>(
+pub fn connect_with_tcpstream_factory<F>(
     conn_settings: &ConnectionSettings,
     tcp_stream_factory: F,
-) -> NetResult<Client>
+) -> NetResult<TlsClient>
 where
     F: Fn(&SocketAddr, &ConnectionSettings) -> NetResult<TcpStream>,
 {
