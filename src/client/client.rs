@@ -70,7 +70,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
         self
     }
 
-    /// Configure the [Client] or server to reject messages above a certain size.
+    /// Configure the [Client] to reject messages above a certain size.
     pub fn with_max_message_size(mut self, max: i32) -> Self {
         self.max_messagesize = max;
         self
