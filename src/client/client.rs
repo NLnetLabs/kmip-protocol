@@ -42,7 +42,7 @@ pub struct ClientBuilder<T: ReadWrite> {
 }
 
 impl<T: ReadWrite> ClientBuilder<T> {
-    /// Build a [Client] struct that will read/write from/to the given stream.
+    /// Build a [Client] that will read/write from/to the given stream.
     ///
     /// Creates a [ClientBuilder] which can be used to create a [Client] which
     /// will read/write from/to the given stream. The stream is expected to be
