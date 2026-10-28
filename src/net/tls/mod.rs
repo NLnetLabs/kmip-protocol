@@ -28,7 +28,7 @@
 //! For `async` connections the initial connection timeout is implemented as an `async` timeout around the connection
 //! attempt. For `sync` cn
 //!
-//! [ConnectionSettings]: crate::client::ConnectionSettings
+//! [ConnectionSettings]: crate::net::ConnectionSettings
 //! [socket2]: https://crates.io/crates/socket2/
 //!
 //! # Enabling a plugin
@@ -43,11 +43,9 @@
 //! | `rustls`           | `features = ["tls-with-rustls"]`                                     | None          | [view](https://crates.io/crates/rustls)           | Pure Rust, strict                          |
 //! | `tokio_native_tls` | `default-features = false, features = ["tls-with-tokio-native-tls"]` | [Tokio]       | [view](https://crates.io/crates/tokio-native-tls) | Uses host O/S specific native TLS          |
 //! | `tokio_rustls`     | `default-features = false, features = ["tls-with-tokio-rustls"]`     | [Tokio]       | [view](https://crates.io/crates/tokio-rustls)     | Powered by Rustls                          |
-//! | `async_tls`        | `default-features = false, features = ["tls-with-async-tls"]`        | [Async Std]   | [view](https://crates.io/crates/async-tls)        | Powered by Rustls                          |
 //!
-//! [Client]: crate::client::Client
+//! [Client]: crate::net::Client
 //! [Tokio]: https://crates.io/crates/tokio
-//! [Async Std]: https://crates.io/crates/async-std
 //!
 //! # Disabling default features
 //!

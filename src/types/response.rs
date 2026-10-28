@@ -1011,7 +1011,6 @@ impl ResponsePayload {
             }
             Operation::Sign => SignResponsePayload::fast_scan_opt(scanner)?.map(Self::Sign),
             Operation::RNGRetrieve => RNGRetrieveResponsePayload::fast_scan_opt(scanner)?.map(Self::RNGRetrieve),
-
             _ => unimplemented!(),
         };
         Ok(this)
