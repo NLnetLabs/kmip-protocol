@@ -61,8 +61,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
     }
 
     /// Configure the [Client] to include username/password authentication
-    /// credentials in KMIP requests, or the server to require requests to
-    /// be authenticated with the given credentials.
+    /// credentials in KMIP requests.
     pub fn with_credentials(mut self, username: String, password: Option<String>) -> Self {
         self.auth = Some(Authentication::build(CredentialValue::UsernameAndPassword(
             Username(username),
