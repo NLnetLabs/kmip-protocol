@@ -76,7 +76,7 @@ impl<T: ReadWrite> ClientBuilder<T> {
         self
     }
 
-    /// Build the configured [Client] struct instance.
+    /// Build the configured [Client] instance.
     pub fn build(self) -> Client<T> {
         let auth = self.auth;
         let stream = Arc::new(Mutex::new(self.stream));
