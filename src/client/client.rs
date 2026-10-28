@@ -540,14 +540,27 @@ impl<T: ReadWrite> Client<T> {
         })
     }
 
-    /// Serialize the given request to the stream and deserialize the response.
+    /// Serialize the given request payload to the stream and deserialize
+    /// the response.
     ///
-    /// Automatically constructs the request message wrapper around the payload including the [RequestHeader] and
-    /// [BatchItem].
+    /// Automatically constructs the [RequestMessage] wrapper around the
+    /// payload including the [RequestHeader] and a [BatchItem] container
+    /// for the payload.
     ///
-    /// Only supports a single batch item.
+    /// Any authentication configured via
+    /// [ClientBuilder::with_credentials()] will be sent with the request.
     ///
-    /// Sets the request operation to [RequestPayload::operation()].
+    /// Any limit on the response size configured via
+    /// [ClientBuilder::with_max_message_size()] will be enforced.
+    ///
+    /// Sets the request batch item operation to
+    /// [RequestPayload::operation()].
+    ///
+    /// If you need to send more than a single batch item at once, see
+    /// [Client::do_request_batch()].
+    ///
+    /// If you need complete control over the request being sent, see
+    /// [Client::do_request()].
     ///
     /// # Errors
     ///
@@ -563,6 +576,24 @@ impl<T: ReadWrite> Client<T> {
         .await
     }
 
+    /// Serialize the given sequence of request batch items to the stream and
+    /// deserialize the response.
+    ///
+    /// Automatically constructs the [RequestMessage] wrapper around the
+    /// batch items including the [RequestHeader].
+    ///
+    /// Any authentication configured via
+    /// [ClientBuilder::with_credentials()] will be sent with the request.
+    ///
+    /// Any limit on the response size configured via
+    /// [ClientBuilder::with_max_message_size()] will be enforced.
+    ///
+    /// Sets the request batch item operation to
+    /// [RequestPayload::operation()].
+    ///
+    /// If you need complete control over the request being sent, see
+    /// [Client::do_request()].
+    ///
     #[maybe_async::maybe_async]
     pub async fn do_request_batch(&mut self, batch_items: Vec<BatchItem>) -> Result<Vec<Result<response::BatchItem>>> {
         self.do_request(batch_items_to_request(
