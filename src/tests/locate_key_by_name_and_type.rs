@@ -1,15 +1,12 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
-use crate::response::from_slice;
+use crate::ttlv::format::Formatter;
 use crate::types::common::{ObjectType, Operation, UniqueBatchItemID};
 use crate::types::request::{
     self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
     ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
 };
-use crate::types::response::ResponseMessage;
 
 #[test]
 fn locate_request_public_key_by_name_only_serializes_without_error() {
@@ -26,7 +23,9 @@ fn locate_request_public_key_by_name_only_serializes_without_error() {
             RequestPayload::Locate(vec![Attribute::Name("Some Public Key Name".into())]),
         )],
     );
-    assert!(to_vec(&request).is_ok());
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    assert!(request.format(&mut formatter).is_ok());
 }
 
 #[test]
@@ -47,7 +46,9 @@ fn locate_request_public_key_by_name_and_type_serializes_without_error() {
             ]),
         )],
     );
-    assert!(to_vec(&request).is_ok());
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    assert!(request.format(&mut formatter).is_ok());
 }
 
 #[test]
@@ -65,7 +66,9 @@ fn locate_request_private_key_by_name_only_serializes_without_error() {
             RequestPayload::Locate(vec![Attribute::Name("Some Private Key Name".into())]),
         )],
     );
-    assert!(to_vec(&request).is_ok());
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    assert!(request.format(&mut formatter).is_ok());
 }
 
 #[test]
@@ -86,7 +89,9 @@ fn locate_request_private_key_by_name_and_type_serializes_without_error() {
             ]),
         )],
     );
-    assert!(to_vec(&request).is_ok());
+    let mut buffer = Box::<[u8]>::new_uninit_slice(1024);
+    let mut formatter = Formatter::new(&mut buffer);
+    assert!(request.format(&mut formatter).is_ok());
 }
 
 /// See: https://github.com/NLnetLabs/kmip-protocol/issues/30
@@ -121,5 +126,5 @@ fn locate_empty_response_deserializes_without_error() {
     // The unwrap() on the next line panics if deserialization isn't configured correctly to handle 42007C0100000000
     // (tag 0x42007C is the "Response Payload" tag, 0x01 says it is a TTLV Structure and 0x00000000 says it has zero
     // length).
-    let _: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    crate::types::response::from_slice(&ttlv_wire).unwrap();
 }
