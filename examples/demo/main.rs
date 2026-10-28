@@ -64,7 +64,6 @@ async fn main() {
     let opt = Opt::from_args();
 
     init_logging(&opt);
-
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
             let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;

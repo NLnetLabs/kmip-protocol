@@ -42,9 +42,11 @@ use crate::{
     },
 };
 
-/// A client for serializing KMIP and deserializing KMIP responses to/from an established read/write stream.
+/// A client for serializing KMIP and deserializing KMIP responses to/from an
+/// established read/write stream.
 ///
-/// Use the [crate::net::ClientBuilder] to build a [Client] instance to work with.
+/// Use the [crate::net::ClientBuilder] to build a [Client] instance to work
+/// with.
 #[derive(Debug)]
 pub struct Client<T: ReadWrite> {
     auth: Option<Authentication>,
