@@ -3,17 +3,15 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
-    response::from_slice,
+    tests::util::assert_req_ser_de,
     types::{
         common::{ObjectType, Operation, UniqueBatchItemID},
         request::{
             self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
             ProtocolVersionMinor, QueryFunction, RequestHeader, RequestMessage, RequestPayload,
         },
-        response::{ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
+        response::{ResponsePayload, ResultReason, ResultStatus},
     },
 };
 
@@ -55,12 +53,8 @@ fn kmip_1_0_usecase_12_1_step_1_query_operations_objects_max_response_size_256_r
     //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
         "0000200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -73,7 +67,7 @@ fn kmip_1_0_usecase_12_1_step_1_query_operation_failed_response_too_large_respon
         "756573743A203235360000000000"
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
@@ -124,12 +118,8 @@ fn kmip_1_0_usecase_12_1_step_2_query_operations_objects_max_response_size_2048_
     //   peration                      ^RequestPayload ^QueryFunction::Operations      ^QueryFunction::Objects
         "0000200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -149,7 +139,7 @@ fn kmip_1_0_usecase_12_1_step_2_query_operation_succeeded_response() {
         "000004200570500000004000000040000000042005705000000040000000600000000"
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
