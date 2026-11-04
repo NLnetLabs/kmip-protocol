@@ -208,7 +208,6 @@ compile_error!("feature \"sync\" cannot be enabled at the same time as \"async-w
     feature = "tls-with-openssl",
     feature = "tls-with-openssl-vendored",
     feature = "tls-with-rustls",
-    feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
     doc
 ))]

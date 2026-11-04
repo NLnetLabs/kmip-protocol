@@ -37,9 +37,6 @@ pub(crate) struct Opt {
     #[structopt(long = "client-key", parse(from_os_str), help = "Path to the client certificate key file in PEM format")]
     pub(crate) client_key_path: Option<PathBuf>,
 
-    #[structopt(long = "client-cert-and-key", parse(from_os_str), help = "Path to the client certificate and key file in PKCS#12 format")]
-    pub(crate) client_pkcs12_path: Option<PathBuf>,
-
     #[structopt(long = "server-cert", parse(from_os_str), help = "Path to the server certificate file in PEM format")]
     pub(crate) server_cert_path: Option<PathBuf>,
 

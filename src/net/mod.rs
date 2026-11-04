@@ -29,4 +29,4 @@ pub use server::{
 
 mod config;
 
-pub use config::{ClientCertificate, ConnectionSettings};
+pub use config::{ConnectionSettings, TlsClientAuth, TlsServerAuth};

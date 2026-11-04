@@ -2,7 +2,6 @@
     feature = "tls-with-openssl",
     feature = "tls-with-openssl-vendored",
     feature = "tls-with-rustls",
-    feature = "tls-with-tokio-native-tls",
     feature = "tls-with-tokio-rustls",
 )))]
 compile_error!("This demo requires one of the tls-with-xxx features to be enabled.");
@@ -12,7 +11,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::net::{Client, ClientCertificate, ConnectionSettings, NetResult};
+use kmip_protocol::net::{Client, ConnectionSettings, NetResult, TlsClientAuth, TlsServerAuth};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
@@ -58,7 +57,7 @@ fn main() {
     }
 }
 
-#[cfg(any(feature = "tls-with-tokio-native-tls", feature = "tls-with-tokio-rustls",))]
+#[cfg(feature = "tls-with-tokio-rustls")]
 #[tokio::main]
 async fn main() {
     let opt = Opt::from_args();
@@ -68,9 +67,7 @@ async fn main() {
     info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
-        } else if #[cfg(feature = "tls-with-tokio-rustls")] {
+        if #[cfg(feature = "tls-with-tokio-rustls")] {
             let client = kmip_protocol::net::tls::tokio_rustls::connect(&opt.into()).await;
         }
     }
@@ -143,7 +140,7 @@ async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> NetRes
     Ok(())
 }
 
-fn load_binary_file(path: &std::path::PathBuf) -> Vec<u8> {
+fn load_binary_file(path: &std::path::Path) -> Vec<u8> {
     use std::{fs::File, io::Read};
 
     let mut bytes = Vec::new();
@@ -158,33 +155,34 @@ impl From<Opt> for ConnectionSettings {
     fn from(opt: Opt) -> Self {
         let password = std::env::var("HSM_PASSWORD").ok();
 
-        let client_cert = {
-            match (&opt.client_cert_path, &opt.client_key_path, &opt.client_pkcs12_path) {
-                (None, None, None) => None,
-                (None, None, Some(path)) => Some(ClientCertificate::CombinedPkcs12 {
-                    cert_bytes: load_binary_file(path),
-                }),
-                (Some(_), None, None) => {
+        let tls_client_auth = {
+            match (&opt.client_cert_path, &opt.client_key_path) {
+                (None, None) => None,
+                (Some(_), None) => {
                     panic!("Client certificate key path requires a client private key path")
                 }
-                (None, Some(_), None) => {
+                (None, Some(_)) => {
                     panic!("Client private key path requires a client certificate path")
                 }
-                (_, Some(_), Some(_)) | (Some(_), _, Some(_)) => {
-                    panic!(
-                        "Use either but not both of: client certificate and key PEM file paths, or a PCKS#12 certficate file path"
-                    )
-                }
-                (Some(cert_path), Some(key_path), None) => Some(ClientCertificate::SeparatePem {
+                (Some(cert_path), Some(key_path)) => Some(TlsClientAuth {
                     cert_bytes: load_binary_file(cert_path),
-                    key_bytes: load_binary_file(key_path),
+                    private_key_bytes: load_binary_file(key_path),
                 }),
             }
         };
 
-        let server_name = opt.server_name;
-        let server_cert = opt.server_cert_path.map(|path| load_binary_file(&path));
-        let ca_cert = opt.ca_cert_path.map(|path| load_binary_file(&path));
+        let tls_server_auth = if opt.insecure {
+            None
+        } else {
+            let server_name = opt.server_name;
+            let cert_bytes = opt.server_cert_path.map(|path| load_binary_file(&path)).unwrap();
+            let ca_cert_bytes = opt.ca_cert_path.map(|path| load_binary_file(&path));
+            Some(TlsServerAuth {
+                cert_bytes,
+                server_name,
+                ca_cert_bytes,
+            })
+        };
 
         let connect_timeout = Some(Duration::from_secs(opt.connect_timeout));
         let read_timeout = Some(Duration::from_secs(opt.read_timeout));
@@ -195,11 +193,8 @@ impl From<Opt> for ConnectionSettings {
             port: opt.port,
             username: opt.username,
             password,
-            insecure: opt.insecure,
-            client_cert,
-            server_cert,
-            server_name,
-            ca_cert,
+            tls_client_auth,
+            tls_server_auth,
             connect_timeout,
             read_timeout,
             write_timeout,

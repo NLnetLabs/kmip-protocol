@@ -1,19 +1,33 @@
 use std::time::Duration;
 
-/// Certificate details in various supported formats for use with TLS client authentication.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ClientCertificate {
-    SeparatePem { cert_bytes: Vec<u8>, key_bytes: Vec<u8> },
-    CombinedPkcs12 { cert_bytes: Vec<u8> },
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
+pub struct TlsClientAuth {
+    /// Client certificate bytes in PEM format.
+    pub cert_bytes: Vec<u8>,
+
+    /// Client private key bytes in PEM format.
+    pub private_key_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
+pub struct TlsServerAuth {
+    /// Server certificate bytes in PEM format.
+    pub cert_bytes: Vec<u8>,
+
+    /// Server name for TLS SNI certificate matching.
+    pub server_name: Option<String>,
+
+    /// Server CA certificate bytes in PEM format.
+    pub ca_cert_bytes: Option<Vec<u8>>,
 }
 
 /// TCP and TLS settings for connecting to a KMIP server.
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct ConnectionSettings {
-    /// HSM host/domain name/IP address
+    /// HSM host/domain name/IP address.
     pub host: String,
 
-    /// HSM port number
+    /// HSM port number.
     pub port: u16,
 
     /// HSM username
@@ -22,20 +36,13 @@ pub struct ConnectionSettings {
     /// HSM password
     pub password: Option<String>,
 
-    /// Disable security features such as server certificate verification
-    pub insecure: bool,
+    /// TLS client authentication.
+    pub tls_client_auth: Option<TlsClientAuth>,
 
-    /// Client certificate authentication
-    pub client_cert: Option<ClientCertificate>,
-
-    /// Server certificate bytes in PEM format
-    pub server_cert: Option<Vec<u8>>,
-
-    /// Server name for TLS SNI certificate matching
-    pub server_name: Option<String>,
-
-    /// Server CA certificate bytes in PEM format
-    pub ca_cert: Option<Vec<u8>>,
+    /// TLS server authentication.
+    ///
+    /// If None, the server certificate will not be verified.
+    pub tls_server_auth: Option<TlsServerAuth>,
 
     /// TCP connect timeout
     pub connect_timeout: Option<Duration>,
