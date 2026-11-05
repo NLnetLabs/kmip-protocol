@@ -4,8 +4,8 @@ use pretty_assertions::{assert_eq, assert_ne};
 use crate::ttlv::format::Formatter;
 use crate::types::common::{ObjectType, Operation, UniqueBatchItemID};
 use crate::types::request::{
-    self, Attribute, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-    ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+    self, Attribute, Authentication, BatchCount, BatchErrorContinuationOption, BatchItem, MaximumResponseSize,
+    ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
 };
 
 #[test]
@@ -15,6 +15,8 @@ fn locate_request_public_key_by_name_only_serializes_without_error() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -35,6 +37,8 @@ fn locate_request_public_key_by_name_and_type_serializes_without_error() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -58,6 +62,8 @@ fn locate_request_private_key_by_name_only_serializes_without_error() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -78,6 +84,8 @@ fn locate_request_private_key_by_name_and_type_serializes_without_error() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

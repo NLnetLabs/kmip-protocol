@@ -11,9 +11,9 @@ use crate::{
             ObjectType, Operation, PaddingMethod, UniqueBatchItemID,
         },
         request::{
-            self, Attribute, Authentication, BatchCount, BatchItem, CredentialValue, MaximumResponseSize, Password,
-            ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
-            TemplateAttribute, Username,
+            self, Attribute, Authentication, BatchCount, BatchErrorContinuationOption, BatchItem, CredentialValue,
+            MaximumResponseSize, Password, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage,
+            RequestPayload, TemplateAttribute, Username,
         },
     },
 };
@@ -35,6 +35,8 @@ fn kmip_1_0_usecase_11_1_step_1_client_a_create_request_symmetric_key() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(0)),
             Option::<MaximumResponseSize>::None,
             credential.map(Authentication::build),
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

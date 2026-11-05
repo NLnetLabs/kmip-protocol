@@ -9,8 +9,8 @@ use crate::{
     types::{
         common::{DataLength, Operation, UniqueBatchItemID},
         request::{
-            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            self, Authentication, BatchCount, BatchErrorContinuationOption, BatchItem, MaximumResponseSize,
+            ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
         },
         response::{ResponsePayload, ResultStatus},
     },
@@ -28,6 +28,8 @@ fn kmip_1_3_testcase_5_9_9_1_rng_retrieve_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

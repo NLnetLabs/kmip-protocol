@@ -8,8 +8,8 @@ use crate::{
     types::{
         common::{Operation, UniqueBatchItemID},
         request::{
-            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
-            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+            self, Authentication, BatchCount, BatchErrorContinuationOption, BatchItem, MaximumResponseSize,
+            ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
         },
         response::{ProtocolVersion, ResponsePayload, ResultStatus},
     },
@@ -26,6 +26,8 @@ fn kmip_1_1_testcase_16_1_time_0_discover_versions_no_versions_provided_request(
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -87,6 +89,8 @@ fn kmip_1_1_testcase_16_1_time_1_discover_versionswith_v10_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -149,6 +153,8 @@ fn kmip_1_1_testcase_16_1_time_2_discover_versions_with_v11_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -211,6 +217,8 @@ fn kmip_1_1_testcase_16_1_time_3_discover_versions_with_v931_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(1)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(

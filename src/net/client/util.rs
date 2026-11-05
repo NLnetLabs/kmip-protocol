@@ -1,7 +1,10 @@
 use crate::{
     net::{NetError, NetResult},
     types::{
-        request::{self, Authentication, MaximumResponseSize, RequestHeader, RequestMessage, RequestPayload},
+        request::{
+            self, Authentication, BatchErrorContinuationOption, MaximumResponseSize, RequestHeader, RequestMessage,
+            RequestPayload,
+        },
         response::{self, ResponsePayload},
     },
 };
@@ -35,6 +38,8 @@ pub fn batch_items_to_request(
             max_protocol_version,
             max_response_size,
             auth,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             request::BatchCount(batch_items.len().try_into().unwrap()),
         ),
         batch_items,

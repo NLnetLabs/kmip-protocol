@@ -14,9 +14,9 @@ use crate::{
             UniqueBatchItemID, UniqueIdentifier,
         },
         request::{
-            self, Attribute, Authentication, BatchCount, BatchItem, KeyBlock, KeyValue, KeyWrappingData, ManagedObject,
-            MaximumResponseSize, PrivateKey, ProtocolVersionMajor, ProtocolVersionMinor, RequestHeader, RequestMessage,
-            RequestPayload, TemplateAttribute,
+            self, Attribute, Authentication, BatchCount, BatchErrorContinuationOption, BatchItem, KeyBlock, KeyValue,
+            KeyWrappingData, ManagedObject, MaximumResponseSize, PrivateKey, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload, TemplateAttribute,
         },
         response::{ResponsePayload, ResultStatus},
     },
@@ -73,6 +73,8 @@ fn kmip_1_3_testcase_5_9_8_1_step_1_register_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
@@ -226,6 +228,8 @@ fn kmip_1_3_testcase_5_9_8_1_step_2_sign_request() {
             request::ProtocolVersion(ProtocolVersionMajor(1), ProtocolVersionMinor(3)),
             Option::<MaximumResponseSize>::None,
             Option::<Authentication>::None,
+            Option::<BatchErrorContinuationOption>::None,
+            Option::<bool>::None,
             BatchCount(1),
         ),
         vec![BatchItem(
