@@ -259,7 +259,7 @@ jobs:
 
     - name: Install PyKMIP
       run: |
-        pip install pykmip --constraint test-resources/pykmip/constraints.txt
+        pip install pykmip --constraint test-data/pykmip/constraints.txt
 
     - name: Compile the demo example.
       run: |
@@ -269,7 +269,7 @@ jobs:
 
     - name: Run the tests against the PyKMIP server
       run: |
-        cd test-resources/pykmip
+        cd test-data/pykmip
         python run-server.py &
         sleep 5s
         openssl s_client -connect 127.0.0.1:5696 || true
@@ -278,7 +278,7 @@ jobs:
 
     - name: Dump the PyKMIP log
       if: always()
-      working-directory: test-resources/pykmip
+      working-directory: test-data/pykmip
       run: |
         ls -la
         cat server.log
