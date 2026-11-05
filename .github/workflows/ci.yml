@@ -237,6 +237,7 @@ jobs:
   # ----------------
   pykmip-test:
     name: PyKMIP Test
+    needs: determine-msrv
     runs-on: ubuntu-22.04
     strategy:
       matrix:
