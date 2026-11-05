@@ -1,5 +1,3 @@
-use crate::net::{ConnectionSettings, NetError, TlsClientAuth, TlsServerAuth};
-
 cfg_if::cfg_if! {
     if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
         use crate::net::tls::openssl::connect_with_tcpstream_factory;
@@ -20,6 +18,8 @@ fn parse_pem_files_correctly() {
     //
     // Client certificate was generated using command.
     //   rustls-cert-gen --country-name=NL --organization-name="NLnet Labs" --ed25519 --output=. --client-auth --cert-file-name client-cert
+
+    use crate::net::{ConnectionSettings, NetError, TlsClientAuth, TlsServerAuth};
 
     static ERR_MSG: &str = "configured but will not connect due to being a test";
 
