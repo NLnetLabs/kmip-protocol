@@ -1148,9 +1148,20 @@ impl ExtensionInformation {
     }
 }
 
+/// Item Type as a KMIP Integer (u32).
+///
+/// Note: We don't encode it as a u8 which is how Item Type is defined in
+/// [KMIP 1.1 section 9.1.1.2](https://docs.oasis-open.org/kmip/spec/v1.1/os/kmip-spec-v1.1-os.html#_toc8562)
+/// because this is for use with
+/// [KMIP 1.1 section 2.1.9 Extension Information](https://docs.oasis-open.org/kmip/spec/v1.1/os/kmip-spec-v1.1-os.html#_Toc333494476)
+/// which defines it as a KMIP Integer (i32).
+//
+// Note: We cannot use impl_ttlv_serde!(int ItemType as 0x4200A7) as that
+// expects the TTLV to have initial Type of Enum rather than Integer and thus
+// parsing fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
 #[non_exhaustive]
-#[repr(u32)]
+#[repr(i32)]
 pub enum ItemType {
     Structure,
     Integer,
@@ -1164,4 +1175,33 @@ pub enum ItemType {
     Interval,
 }
 
-impl_ttlv_serde!(enum ItemType as 0x4200A7);
+impl ItemType {
+    pub const TAG: Tag = Tag::new(0x4200A7);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        Self::from_ordinal(scanner.scan_int(tag)?).ok_or_else(FastScanError::assert)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        Self::fast_scan_opt_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+        scanner
+            .scan_opt_int(tag)?
+            .map(|d| Self::from_ordinal(d).ok_or_else(FastScanError::assert))
+            .transpose()
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        formatter.format_int(tag, self.ordinal())
+    }
+}
