@@ -3,9 +3,9 @@ use std::{
     net::{SocketAddr, TcpStream, ToSocketAddrs},
 };
 
-use crate::net::tls::common::util::create_kmip_client;
+use crate::net::{TlsServerAuth, tls::common::util::create_kmip_client};
 
-use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
+use crate::net::{ConnectionSettings, NetError, NetResult, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 
@@ -45,7 +45,7 @@ where
         .map_err(|err| NetError::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 
     let sni_name = conn_settings
-        .server_name
+        .tls_server_name
         .as_ref()
         .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
 
@@ -60,69 +60,63 @@ fn create_tls_connector(conn_settings: &ConnectionSettings) -> NetResult<SslConn
     let mut tls_connector = SslConnector::builder(SslMethod::tls())
         .map_err(|err| NetError::ConfigurationError(format!("Failed to intialize TLS Connector: {}", err)))?;
 
-    // TODO: What is the default verify mode?
-    // https://docs.openssl.org/3.2/man3/SSL_CTX_set_verify/#notes seems to
-    // say that it is SslVerifyMode::NONE, i.e. we never actually enable any
-    // verification to happen which sounds like a bug???
-    if conn_settings.insecure {
-        tls_connector.set_verify(SslVerifyMode::NONE);
-    } else {
-        if let Some(cert_bytes) = &conn_settings.server_cert {
-            let x509_cert = openssl::x509::X509::from_pem(cert_bytes)
-                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
-            tls_connector
-                .cert_store_mut()
-                .add_cert(x509_cert)
-                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
+    match &conn_settings.tls_server_auth {
+        TlsServerAuth::None => {
+            tls_connector.set_verify(SslVerifyMode::NONE);
         }
 
-        if let Some(cert_bytes) = &conn_settings.ca_cert {
+        TlsServerAuth::Default => {
+            tls_connector.set_verify(SslVerifyMode::PEER);
+        }
+
+        TlsServerAuth::TrustCertificate(cert_bytes) => {
+            tls_connector.set_verify(SslVerifyMode::PEER);
             let x509_cert = openssl::x509::X509::from_pem(cert_bytes)
+                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse server certificate: {}", err)))?;
+            tls_connector.cert_store_mut().add_cert(x509_cert).map_err(|err| {
+                NetError::ConfigurationError(format!(
+                    "Failed to add server certificate to certificate store: {}",
+                    err
+                ))
+            })?;
+        }
+
+        TlsServerAuth::TrustCertificateAuthority(ca_cert_bytes) => {
+            tls_connector.set_verify(SslVerifyMode::PEER);
+            let x509_cert = openssl::x509::X509::from_pem(ca_cert_bytes)
                 .map_err(|err| NetError::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
-            tls_connector
-                .cert_store_mut()
-                .add_cert(x509_cert)
-                .map_err(|err| NetError::ConfigurationError(format!("Failed to parse CA certificate: {}", err)))?;
+            tls_connector.cert_store_mut().add_cert(x509_cert).map_err(|err| {
+                NetError::ConfigurationError(format!("Failed to parse CA certificate to certificate store: {}", err))
+            })?;
         }
     }
 
-    if let Some(cert) = &conn_settings.client_cert {
-        match cert {
-            ClientCertificate::CombinedPkcs12 { .. } => {
-                return Err(NetError::ConfigurationError(
-                    "PKCS#12 client certificate format is not supported".to_string(),
-                ));
-            }
-            ClientCertificate::SeparatePem { cert_bytes, key_bytes } => {
-                let x509_cert = openssl::x509::X509::from_pem(cert_bytes).map_err(|err| {
-                    NetError::ConfigurationError(format!("Failed to parse PEM client certificate: {}", err))
-                })?;
-                tls_connector.set_certificate(&x509_cert).map_err(|err| {
-                    NetError::ConfigurationError(format!("Failed to parse PEM client certificate: {}", err))
-                })?;
+    if let Some(client_auth) = &conn_settings.tls_client_auth {
+        let x509_cert = openssl::x509::X509::from_pem(&client_auth.cert_bytes)
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to parse PEM client certificate: {}", err)))?;
+        tls_connector
+            .set_certificate(&x509_cert)
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to set client certificate to use: {}", err)))?;
 
-                // Quoting RFC-5246 Transport Layer Security (TLS) Protocol Version 1.2
-                // section 7.3 Handshake Protocol Overview:
-                //
-                // "The ClientKeyExchange message is now sent, and the content
-                //  of that message will depend on the public key algorithm selected
-                //  between the ClientHello and the ServerHello.  If the client has sent
-                //  a certificate with signing ability, a digitally-signed
-                //  CertificateVerify message is sent to explicitly verify possession of
-                //  the private key in the certificate."
-                //
-                // From: https://datatracker.ietf.org/doc/html/rfc5246#section-7.3
-                //
-                // So, the client certificate private key is used to sign the
-                // CertificateVerify message sent from client to server.
-                let pkey = openssl::pkey::PKey::private_key_from_pem(key_bytes).map_err(|err| {
-                    NetError::ConfigurationError(format!("Failed to parse PEM client certificate private key: {}", err))
-                })?;
-                tls_connector.set_private_key(&pkey).map_err(|err| {
-                    NetError::ConfigurationError(format!("Failed to parse PEM client certificate private key: {}", err))
-                })?;
-            }
-        }
+        // Quoting RFC-5246 Transport Layer Security (TLS) Protocol Version
+        // 1.2 section 7.3 Handshake Protocol Overview:
+        //
+        // "The ClientKeyExchange message is now sent, and the content of
+        //  that message will depend on the public key algorithm selected
+        //  between the ClientHello and the ServerHello.  If the client
+        //  has sent a certificate with signing ability, a digitally-signed
+        //  CertificateVerify message is sent to explicitly verify possession
+        //  of the private key in the certificate."
+        //
+        // From: https://datatracker.ietf.org/doc/html/rfc5246#section-7.3
+        //
+        // So, the client certificate private key is used to sign the
+        // CertificateVerify message sent from client to server.
+        let pkey = openssl::pkey::PKey::private_key_from_pem(&client_auth.private_key_bytes)
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to parse PEM client private key: {}", err)))?;
+        tls_connector
+            .set_private_key(&pkey)
+            .map_err(|err| NetError::ConfigurationError(format!("Failed to set client private key to use: {}", err)))?;
     }
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {

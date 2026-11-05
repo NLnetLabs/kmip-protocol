@@ -41,7 +41,6 @@
 //! | `openssl`          | `features = ["tls-with-openssl"]`                                    | None          | [view](https://crates.io/crates/openssl)          | Synchronous, uses host O/S OpenSSL         |
 //! | `openssl`          | `features = ["tls-with-openssl-vendored"]`                           | None          | [view](https://crates.io/crates/openssl)          | Synchronous, uses compiled in OpenSSL      |
 //! | `rustls`           | `features = ["tls-with-rustls"]`                                     | None          | [view](https://crates.io/crates/rustls)           | Pure Rust, strict                          |
-//! | `tokio_native_tls` | `default-features = false, features = ["tls-with-tokio-native-tls"]` | [Tokio]       | [view](https://crates.io/crates/tokio-native-tls) | Uses host O/S specific native TLS          |
 //! | `tokio_rustls`     | `default-features = false, features = ["tls-with-tokio-rustls"]`     | [Tokio]       | [view](https://crates.io/crates/tokio-rustls)     | Powered by Rustls                          |
 //!
 //! [Client]: crate::net::Client
@@ -86,9 +85,6 @@ pub mod openssl;
 
 #[cfg(feature = "tls-with-rustls")]
 pub mod rustls;
-
-#[cfg(feature = "tls-with-tokio-native-tls")]
-pub mod tokio_native_tls;
 
 #[cfg(feature = "tls-with-tokio-rustls")]
 pub mod tokio_rustls;

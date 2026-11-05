@@ -37,15 +37,15 @@ where
             "Failed to parse KMIP server address:port".to_string(),
         ))?;
 
-    let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
-
     let sni_name = ServerName::try_from(
         conn_settings
-            .server_name
+            .tls_server_name
             .as_ref()
             .map_or_else(|| conn_settings.host.clone(), |name| name.clone()),
     )
     .map_err(|err| NetError::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
+
+    let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
 
     let conn = rustls::ClientConnection::new(Arc::new(rustls_config), sni_name)
         .map_err(|err| NetError::ConfigurationError(format!("Unreachable host '{}': {err}", conn_settings.host)))?;

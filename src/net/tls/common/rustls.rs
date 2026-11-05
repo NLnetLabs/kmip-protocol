@@ -9,7 +9,7 @@ use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 
-use crate::net::{ClientCertificate, ConnectionSettings, NetError, NetResult, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
+use crate::net::{ConnectionSettings, NetError, NetResult, TlsServerAuth, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;
@@ -73,78 +73,73 @@ where
         roots: webpki_roots::TLS_SERVER_ROOTS.into(),
     };
 
-    if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
-        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
-            .next()
-            .ok_or(NetError::ConfigurationError(format!(
-                "Failed to parse PEM bytes for server certificate"
-            )))?
-            .map_err(|err| {
-                NetError::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
+    let rustls_config_builder = rustls::ClientConfig::builder();
+
+    let rustls_config_builder = match &conn_settings.tls_server_auth {
+        TlsServerAuth::None => rustls_config_builder
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(InsecureCertVerifier)),
+
+        TlsServerAuth::Default => rustls_config_builder.with_root_certificates(root_store),
+
+        TlsServerAuth::TrustCertificate(cert_bytes) => {
+            let cert_bytes = parse_pem_cert_bytes(cert_bytes)?;
+            root_store.add(cert_bytes).map_err(|err| {
+                NetError::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
             })?;
-        root_store.add(cert_bytes).map_err(|err| {
-            NetError::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
-        })?;
-    }
-
-    if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
-        let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
-            .next()
-            .ok_or(NetError::ConfigurationError(format!(
-                "Failed to parse PEM bytes for CA certificate"
-            )))?
-            .map_err(|err| {
-                NetError::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}"))
-            })?;
-        root_store.add(cert_bytes).map_err(|err| {
-            NetError::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
-        })?;
-    }
-
-    let rustls_config_builder = rustls::ClientConfig::builder().with_root_certificates(root_store);
-
-    let mut rustls_config = match &conn_settings.client_cert {
-        Some(ClientCertificate::SeparatePem { cert_bytes, key_bytes }) => {
-            let mut cert_chain = vec![];
-
-            for res in CertificateDer::pem_slice_iter(cert_bytes) {
-                let cert = res.map_err(|err| {
-                    NetError::ConfigurationError(format!("Failed to parse PEM section from client certificate: {err}"))
-                })?;
-                cert_chain.push(cert);
-            }
-
-            let key_der = PrivateKeyDer::from_pem_slice(key_bytes).map_err(|err| {
-                NetError::ConfigurationError(format!(
-                    "Cannot parse PEM client certificate private key bytes: {}",
-                    err
-                ))
-            })?;
-
-            rustls_config_builder
-                .with_client_auth_cert(cert_chain, key_der)
-                .map_err(|err| {
-                    NetError::ConfigurationError(format!("Unable to use client certficate and private key: {}", err))
-                })?
+            rustls_config_builder.with_root_certificates(root_store)
         }
 
-        Some(ClientCertificate::CombinedPkcs12 { .. }) => {
-            return Err(NetError::ConfigurationError(
-                "PKCS#12 format client certificate and key are not supported".to_string(),
-            ));
+        TlsServerAuth::TrustCertificateAuthority(ca_cert_bytes) => {
+            let ca_cert_bytes = parse_pem_cert_bytes(ca_cert_bytes)?;
+            root_store.add(ca_cert_bytes).map_err(|err| {
+                NetError::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
+            })?;
+            rustls_config_builder.with_root_certificates(root_store)
         }
-        None => rustls_config_builder.with_no_client_auth(),
     };
 
-    if conn_settings.insecure {
-        rustls_config
-            .dangerous()
-            .set_certificate_verifier(Arc::new(InsecureCertVerifier));
-    }
+    let mut rustls_config = if let Some(client_auth) = &conn_settings.tls_client_auth {
+        let mut cert_chain = vec![];
+
+        for res in CertificateDer::pem_slice_iter(&client_auth.cert_bytes) {
+            let cert = res.map_err(|err| {
+                NetError::ConfigurationError(format!("Failed to parse PEM section from client certificate: {err}"))
+            })?;
+            cert_chain.push(cert);
+        }
+
+        let key_der = PrivateKeyDer::from_pem_slice(&client_auth.private_key_bytes).map_err(|err| {
+            NetError::ConfigurationError(format!(
+                "Cannot parse PEM client certificate private key bytes: {}",
+                err
+            ))
+        })?;
+
+        rustls_config_builder
+            .with_client_auth_cert(cert_chain, key_der)
+            .map_err(|err| {
+                NetError::ConfigurationError(format!("Unable to use client certficate and private key: {}", err))
+            })?
+    } else {
+        rustls_config_builder.with_no_client_auth()
+    };
 
     if std::env::var(SSLKEYLOGFILE_ENV_VAR_NAME).is_ok() {
         rustls_config.key_log = Arc::new(KeyLogFile::new());
     }
 
     Ok(rustls_config.into())
+}
+
+fn parse_pem_cert_bytes(cert_bytes: &[u8]) -> Result<CertificateDer<'_>, NetError> {
+    let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
+        .next()
+        .ok_or(NetError::ConfigurationError(
+            "Failed to parse PEM bytes for server certificate".to_string(),
+        ))?
+        .map_err(|err| {
+            NetError::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
+        })?;
+    Ok(cert_bytes)
 }

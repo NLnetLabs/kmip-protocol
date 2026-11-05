@@ -19,8 +19,6 @@ use bb8::PooledConnection;
 cfg_if::cfg_if! {
     if #[cfg(feature = "tls-with-tokio-rustls")] {
         use crate::net::tls::tokio_rustls::{Client, connect};
-    } else if #[cfg(feature = "tls-with-tokio-native-tls")] {
-        use crate::net::tls::tokio_native_tls::{Client, connect};
     } else if #[cfg(feature = "async-with-tokio")] {
         pub type Client = crate::net::Client<tokio::net::TcpStream>;
     } else {

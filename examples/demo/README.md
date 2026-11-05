@@ -76,11 +76,6 @@ RustLS:
 cargo run --features tls-with-rustls --example demo -- --server-cert $CONFDIR/server.crt --ca-cert $CONFDIR/ca.crt --client-cert $CONFDIR/server.crt --client-key $CONFDIR/server.key
 ```
 
-Tokio (native TLS):
-```
-cargo run --no-default-features --features tls-with-tokio-native-tls --example demo -- --server-cert $CONFDIR/server.crt --ca-cert $CONFDIR/ca.crt --client-cert-and-key $CONFDIR/identity.p12
-```
-
 Tokio (RustLS):
 ```
 cargo run --no-default-features --features tls-with-tokio-rustls --example demo -- --server-cert $CONFDIR/server.crt --ca-cert $CONFDIR/ca.crt --client-cert $CONFDIR/server.crt --client-key $CONFDIR/server.key
