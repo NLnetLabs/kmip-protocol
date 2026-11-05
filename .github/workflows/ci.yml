@@ -232,3 +232,52 @@ jobs:
         run: cargo test --all-targets ${{ matrix.args }} --locked
 
   # TODO: Build a cache.
+
+  # Test with PyKMIP
+  # ----------------
+  pykmip-test:
+    name: PyKMIP Test
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        rust: ["${{ needs.determine-msrv.outputs.msrv }}"]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: hecrj/setup-rust-action@v2
+      with:
+        rust-version: ${{ matrix.rust }}
+
+    - uses: actions/setup-python@v4
+      with:
+        # Pin to Python 3.11 because 3.12 removes the ssl.wrap_socket()
+        # function which PyKMIP uses.
+        python-version: '3.11'
+
+    - name: Install PyKMIP
+      run: |
+        pip install pykmip --constraint test-resources/pykmip/constraints.txt
+
+    - name: Compile the demo example.
+      run: |
+        # Use OpenSSL because PyKMIP only supports legacy ciphers which are
+        # not supported by Rustls.
+        cargo build --example demo --no-default-features --features tls-with-openssl
+
+    - name: Run the tests against the PyKMIP server
+      run: |
+        cd test-resources/pykmip
+        python run-server.py &
+        sleep 5s
+        openssl s_client -connect 127.0.0.1:5696 || true
+        cd -
+        cargo run --example demo --no-default-features --features tls-with-openssl 2>&1
+
+    - name: Dump the PyKMIP log
+      if: always()
+      working-directory: test-resources/pykmip
+      run: |
+        ls -la
+        cat server.log
