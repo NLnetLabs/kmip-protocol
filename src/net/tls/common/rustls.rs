@@ -9,7 +9,11 @@ use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 
-use crate::client::{ClientCertificate, ConnectionSettings, Error, Result, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
+use crate::net::{
+    ClientCertificate, ConnectionSettings,
+    client::error::{NetError, NetResult},
+    tls::common::SSLKEYLOGFILE_ENV_VAR_NAME,
+};
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;
@@ -65,7 +69,7 @@ impl ServerCertVerifier for InsecureCertVerifier {
     }
 }
 
-pub(crate) fn create_rustls_config<T>(conn_settings: &ConnectionSettings) -> Result<T>
+pub(crate) fn create_rustls_config<T>(conn_settings: &ConnectionSettings) -> NetResult<T>
 where
     T: From<ClientConfig>,
 {
@@ -76,26 +80,28 @@ where
     if let Some(cert_bytes) = conn_settings.server_cert.as_ref() {
         let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
             .next()
-            .ok_or(Error::ConfigurationError(format!(
+            .ok_or(NetError::ConfigurationError(format!(
                 "Failed to parse PEM bytes for server certificate"
             )))?
             .map_err(|err| {
-                Error::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
+                NetError::ConfigurationError(format!("Failed to parse PEM bytes for server certificate: {err}"))
             })?;
         root_store.add(cert_bytes).map_err(|err| {
-            Error::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
+            NetError::ConfigurationError(format!("Failed to add server certificate to certificate store: {err}"))
         })?;
     }
 
     if let Some(cert_bytes) = conn_settings.ca_cert.as_ref() {
         let cert_bytes = CertificateDer::pem_slice_iter(cert_bytes)
             .next()
-            .ok_or(Error::ConfigurationError(format!(
+            .ok_or(NetError::ConfigurationError(format!(
                 "Failed to parse PEM bytes for CA certificate"
             )))?
-            .map_err(|err| Error::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}")))?;
+            .map_err(|err| {
+                NetError::ConfigurationError(format!("Failed to parse PEM bytes for CA certificate: {err}"))
+            })?;
         root_store.add(cert_bytes).map_err(|err| {
-            Error::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
+            NetError::ConfigurationError(format!("Failed to add CA certificate to certificate store: {err}"))
         })?;
     }
 
@@ -107,13 +113,13 @@ where
 
             for res in CertificateDer::pem_slice_iter(cert_bytes) {
                 let cert = res.map_err(|err| {
-                    Error::ConfigurationError(format!("Failed to parse PEM section from client certificate: {err}"))
+                    NetError::ConfigurationError(format!("Failed to parse PEM section from client certificate: {err}"))
                 })?;
                 cert_chain.push(cert);
             }
 
             let key_der = PrivateKeyDer::from_pem_slice(key_bytes).map_err(|err| {
-                Error::ConfigurationError(format!(
+                NetError::ConfigurationError(format!(
                     "Cannot parse PEM client certificate private key bytes: {}",
                     err
                 ))
@@ -122,12 +128,12 @@ where
             rustls_config_builder
                 .with_client_auth_cert(cert_chain, key_der)
                 .map_err(|err| {
-                    Error::ConfigurationError(format!("Unable to use client certficate and private key: {}", err))
+                    NetError::ConfigurationError(format!("Unable to use client certficate and private key: {}", err))
                 })?
         }
 
         Some(ClientCertificate::CombinedPkcs12 { .. }) => {
-            return Err(Error::ConfigurationError(
+            return Err(NetError::ConfigurationError(
                 "PKCS#12 format client certificate and key are not supported".to_string(),
             ));
         }

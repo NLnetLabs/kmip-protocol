@@ -1,9 +1,11 @@
 //! Rust type definitions for `kmip-ttlv` based (de)serializing of KMIP message objects.
 //!
-//! These types are used when constructing requests to be sent to, and processing responses received from, a KMIP
-//! server. The [Client](crate::client::Client) struct composes the request types into entire KMIP request message type
-//! trees for serialization into the binary TTLV format and uses the response types to deserialize the binary KMIP
-//! response format into rich Rust types.
+//! These types are used when constructing requests to be sent to, and
+//! processing responses received from, a KMIP server. The [Client](crate::net::Client)
+//! struct composes the request types into entire KMIP request message type
+//! trees for serialization into the binary TTLV format and uses the
+//! response types to deserialize the binary KMIP response format into rich
+//! Rust types.
 //!
 //! Rust types defined by this module are specially augmented to provide
 //! (de)serialization support.
@@ -15,14 +17,6 @@
 //! - `fast_scan()`/`format()` functions, mostly generated using the
 //!   `impl_ttlv_serde!` macro defined below, offer a new faster
 //!   (de)serialization implementation.
-//!
-//! Note: Support for the new fast (de)serializer is currently limited to
-//! request related KMIP types, (de)serializing response types must still be
-//! done using the "old" Serde based (de)serializer. Also not yet implemented is
-//! support for a new fallback "slow" (de)serializer capable of reporting useful
-//! information about (de)serialization errors. The "old" (de)serializer can be
-//! used as a fallback but may not encounter the same (de)serialization failures
-//! as the "new" fast (de)serializer.
 
 pub mod common;
 pub mod request;

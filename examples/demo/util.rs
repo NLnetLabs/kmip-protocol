@@ -1,3 +1,4 @@
+use kmip_protocol::net::NetResult;
 use log::error;
 
 use crate::config::Opt;
@@ -33,7 +34,7 @@ pub(crate) trait SelfLoggingError<U> {
     fn log_error(self) -> Self;
 }
 
-impl<U> SelfLoggingError<U> for kmip_protocol::client::Result<U> {
+impl<U> SelfLoggingError<U> for NetResult<U> {
     fn log_error(self) -> Self {
         if let Err(err) = &self {
             error!("{err}");

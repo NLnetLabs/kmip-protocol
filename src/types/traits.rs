@@ -1,9 +1,10 @@
 //! Dynamic traits for sync or async use depending on the Cargo features used.
 //!
-//! The `ReadWrite` trait is the set of traits used by the [Client](crate::client::Client) to read/write to a TLS
-//! stream.
+//! The `ReadWrite` trait is the set of traits used by the [Client](crate::net::Client)
+//! to read/write to a TLS stream.
 //!
-//! The exact composition of the set is dependent on the Cargo feature flags used to compile this crate.
+//! The exact composition of the set is dependent on the Cargo feature flags
+//! used to compile this crate.
 //!
 //! | Feature Flag           | Traits included in the `ReadWrite` trait |
 //! |------------------------|------------------------------------------|

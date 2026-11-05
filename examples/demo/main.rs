@@ -12,14 +12,16 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::client::{Client, ClientCertificate, ConnectionSettings};
+use kmip_protocol::net::{Client, ClientCertificate, ConnectionSettings, NetResult};
 use kmip_protocol::types::traits::ReadWrite;
 use log::info;
 use structopt::StructOpt;
 use util::init_logging;
 
-use crate::util::SelfLoggingError;
-use crate::{config::Opt, util::ToCsvString};
+use crate::{
+    config::Opt,
+    util::{SelfLoggingError, ToCsvString},
+};
 
 #[cfg(any(
     feature = "tls-with-openssl",
@@ -33,9 +35,9 @@ fn main() {
 
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
-            let client = kmip_protocol::client::tls::openssl::connect(&opt.into());
+            let client = kmip_protocol::net::tls::openssl::connect(&opt.into());
         } else if #[cfg(feature = "tls-with-rustls")] {
-            let client = kmip_protocol::client::tls::rustls::connect(&opt.into());
+            let client = kmip_protocol::net::tls::rustls::connect(&opt.into());
         }
     }
 
@@ -65,9 +67,9 @@ async fn main() {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
-            let client = kmip_protocol::client::tls::tokio_native_tls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
         } else if #[cfg(feature = "tls-with-tokio-rustls")] {
-            let client = kmip_protocol::client::tls::tokio_rustls::connect(&opt.into()).await;
+            let client = kmip_protocol::net::tls::tokio_rustls::connect(&opt.into()).await;
         }
     }
 
@@ -77,10 +79,7 @@ async fn main() {
 }
 
 #[maybe_async::maybe_async]
-async fn exec_test_requests<T: ReadWrite>(
-    mut client: Client<T>,
-    key_name_prefix: &str,
-) -> Result<(), kmip_protocol::client::Error> {
+async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix: &str) -> NetResult<()> {
     query_server_properties(&mut client).await?;
 
     // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
@@ -136,7 +135,7 @@ async fn exec_test_requests<T: ReadWrite>(
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> Result<(), kmip_protocol::client::Error> {
+async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> NetResult<()> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
