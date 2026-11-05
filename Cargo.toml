@@ -35,7 +35,6 @@ tokio-rustls = { version = "0.26.4", default-features = false, optional = true }
 tracing = "0.1.41"
 webpki = {version = "0.22.4", optional = true }
 webpki-roots = { version = "1", optional = true }
-async-trait = "0.1.92"
 
 [features]
 # By default use the aws-lc-rs crypto backend of rustls as it is more actively
