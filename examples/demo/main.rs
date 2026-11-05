@@ -11,7 +11,7 @@ mod util;
 
 use std::time::Duration;
 
-use kmip_protocol::net::{Client, ConnectionSettings, NetResult, TlsClientAuth, TlsServerAuth};
+use kmip_protocol::net::{Client, ConnectionSettings, NetError, NetResult, TlsClientAuth, TlsServerAuth};
 use kmip_protocol::types::traits::ReadWrite;
 use log::{error, info};
 use structopt::StructOpt;
@@ -47,8 +47,6 @@ fn main() {
     for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
-            use kmip_protocol::net::NetError;
-
             exec_test_requests(thread_client, &format!("test_{}", i))
                 .map_err(|err| {
                     if matches!(err, NetError::DeserializeError { .. }) {
@@ -85,7 +83,17 @@ async fn main() {
 
     let client = client.expect("Failed to establish TLS connection");
 
-    exec_test_requests(client, "test").await.unwrap();
+    exec_test_requests(client, "test")
+        .await
+        .map_err(|err| {
+            if matches!(err, NetError::DeserializeError { .. }) {
+                error!("Deserialization error: {err}");
+                Ok(())
+            } else {
+                Err(err)
+            }
+        })
+        .unwrap();
 }
 
 #[maybe_async::maybe_async]
