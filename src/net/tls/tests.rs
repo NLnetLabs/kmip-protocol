@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read};
+use crate::net::{ConnectionSettings, NetError, TlsClientAuth, TlsServerAuth};
 
 cfg_if::cfg_if! {
     if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
@@ -21,58 +21,43 @@ fn parse_pem_files_correctly() {
     // Client certificate was generated using command.
     //   rustls-cert-gen --country-name=NL --organization-name="NLnet Labs" --ed25519 --output=. --client-auth --cert-file-name client-cert
 
-    use crate::net::{ConnectionSettings, NetError, TlsClientAuth, TlsServerAuth};
+    static ERR_MSG: &str = "configured but will not connect due to being a test";
 
-    let mut server_cert = vec![];
-    File::open("test-data/cert.pem")
-        .unwrap()
-        .read_to_end(&mut server_cert)
-        .unwrap();
-
-    let mut ca_cert = vec![];
-    File::open("test-data/root-ca.pem")
-        .unwrap()
-        .read_to_end(&mut ca_cert)
-        .unwrap();
-
-    let mut client_cert = vec![];
-    File::open("test-data/client-cert.pem")
-        .unwrap()
-        .read_to_end(&mut client_cert)
-        .unwrap();
-
-    let mut client_key = vec![];
-    File::open("test-data/client-cert.key.pem")
-        .unwrap()
-        .read_to_end(&mut client_key)
-        .unwrap();
+    let server_cert = std::fs::read("test-data/cert.pem").unwrap();
+    let ca_cert = std::fs::read("test-data/root-ca.pem").unwrap();
+    let client_cert = std::fs::read("test-data/client-cert.pem").unwrap();
+    let client_key = std::fs::read("test-data/client-cert.key.pem").unwrap();
 
     let tls_client_auth = Some(TlsClientAuth {
         cert_bytes: client_cert,
         private_key_bytes: client_key,
     });
 
-    let conn_settings = ConnectionSettings {
-        host: "localhost".to_string(),
-        port: 12345,
-        username: None,
-        password: None,
-        connect_timeout: None,
-        read_timeout: None,
-        write_timeout: None,
-        max_response_bytes: None,
-        tls_client_auth,
-        tls_server_auth: TlsServerAuth::TrustCertificate(server_cert),
-        tls_server_name: None,
-    };
+    for tls_server_auth in [
+        TlsServerAuth::TrustCertificate(server_cert),
+        TlsServerAuth::TrustCertificate(ca_cert),
+    ] {
+        let conn_settings = ConnectionSettings {
+            host: "localhost".to_string(),
+            port: 12345,
+            username: None,
+            password: None,
+            connect_timeout: None,
+            read_timeout: None,
+            write_timeout: None,
+            max_response_bytes: None,
+            tls_client_auth: tls_client_auth.clone(),
+            tls_server_auth,
+            tls_server_name: None,
+        };
 
-    static ERR_MSG: &str = "configured but will not connect due to being a test";
-    let res = connect_with_tcpstream_factory(&conn_settings, |_addr, _settings| {
-        Err(NetError::InternalError(ERR_MSG.to_string()))
-    });
+        let res = connect_with_tcpstream_factory(&conn_settings, |_addr, _settings| {
+            Err(NetError::InternalError(ERR_MSG.to_string()))
+        });
 
-    // If the configuration settings including the provided PEM files
-    // were parsed successfully we should have proceeded to the connection
-    // attempt which should result in our custom error message.
-    assert!(matches!(res.unwrap_err(), NetError::InternalError(msg) if msg == ERR_MSG));
+        // If the configuration settings including the provided PEM files
+        // were parsed successfully we should have proceeded to the connection
+        // attempt which should result in our custom error message.
+        assert!(matches!(res.unwrap_err(), NetError::InternalError(msg) if msg == ERR_MSG));
+    }
 }
