@@ -203,11 +203,11 @@ jobs:
         args: [
           "--features tls-with-openssl",
           "--features tls-with-rustls",
-          "--no-default-features --features sync",
-          "--no-default-features --features async-with-tokio",
-          "--no-default-features --features tls-with-openssl",
-          "--no-default-features --features tls-with-rustls",
-          "--no-default-features --features tls-with-tokio-rustls",
+          "--no-default-features --features ring,sync",
+          "--no-default-features --features ring,async-with-tokio",
+          "--no-default-features --features ring,tls-with-openssl",
+          "--no-default-features --features ring,tls-with-rustls",
+          "--no-default-features --features ring,tls-with-tokio-rustls",
         ]
     runs-on: ubuntu-latest
     env:
