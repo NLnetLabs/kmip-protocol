@@ -1,9 +1,8 @@
-use crate::types::response::{BatchItem, MessageExtension, QueryResponsePayload, VendorExtension};
+use crate::types::response::{BatchItem, MessageExtension, QueryResponsePayload, ServerInformation, VendorExtension};
 
 /// The server information response field is vendor specific and thus could contain anything.
 /// We don't attempt to make sense of it, but we shouldn't fail to deserialize this kind of response either.
 #[test]
-#[ignore = "Failing at present, to be investigated"]
 fn test_deserialize_arbitrary_server_information() {
     let fragment_hex = concat!(
         "42007C 01 00000028", // (Query) Response Payload with only the Server Information (0x420088) optional structure
@@ -15,7 +14,7 @@ fn test_deserialize_arbitrary_server_information() {
     let ttlv_wire = hex::decode(fragment_hex).unwrap();
     let (res, rest) = crate::ttlv::from_slice(&ttlv_wire, QueryResponsePayload::fast_scan).unwrap();
     assert!(rest.is_empty());
-    assert_eq!(res.server_information, None);
+    assert_eq!(res.server_information, Some(ServerInformation));
 }
 
 /// Any KMIP Batch Item may include a vendor specific message extension which could contain anything. We don't attempt
