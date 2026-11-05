@@ -274,7 +274,8 @@ jobs:
         sleep 5s
         openssl s_client -connect 127.0.0.1:5696 || true
         cd -
-        cargo run --example demo --no-default-features --features tls-with-openssl -- --insecure 2>&1
+        D=test-data/pykmip
+        cargo run --example demo --no-default-features --features tls-with-openssl -- --insecure --client-cert $D/server.crt --client-key $D/server.key 2>&1
 
     - name: Dump the PyKMIP log
       if: always()
