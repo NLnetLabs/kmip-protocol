@@ -529,15 +529,16 @@ impl<T: ReadWrite> Client<T> {
             ResponseMessage::fast_scan,
             self.connection_error_count.clone(),
         )
-        .await?;
-        trace!("KMIP server response received");
-
-        Self::post_process_response(res).await.map_err(|mut err| {
+        .await
+        .map_err(|mut err| {
             if let Error::DeserializeError { req, .. } = &mut err {
                 *req = request_bytes.into();
             }
             err
-        })
+        })?;
+        trace!("KMIP server response received");
+
+        Self::post_process_response(res).await
     }
 
     /// Serialize the given request payload to the stream and deserialize
