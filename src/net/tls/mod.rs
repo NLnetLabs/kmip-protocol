@@ -88,3 +88,6 @@ pub mod rustls;
 
 #[cfg(feature = "tls-with-tokio-rustls")]
 pub mod tokio_rustls;
+
+#[cfg(test)]
+mod tests;
