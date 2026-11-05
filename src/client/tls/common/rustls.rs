@@ -4,12 +4,12 @@ use std::sync::Arc;
 use tokio_rustls::rustls;
 
 use rustls::{
-    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
-    pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
     ClientConfig, KeyLogFile, RootCertStore, SignatureScheme,
+    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
+    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 
-use crate::client::{tls::common::SSLKEYLOGFILE_ENV_VAR_NAME, ClientCertificate, ConnectionSettings, Error, Result};
+use crate::client::{ClientCertificate, ConnectionSettings, Error, Result, tls::common::SSLKEYLOGFILE_ENV_VAR_NAME};
 
 #[derive(Debug)]
 pub(crate) struct InsecureCertVerifier;

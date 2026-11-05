@@ -3,10 +3,8 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::ser::to_vec;
-
 use crate::{
-    response::from_slice,
+    tests::util::assert_req_ser_de,
     types::{
         common::{
             CryptographicAlgorithm, CryptographicUsageMask, LinkType, LinkedObjectIdentifier, ObjectType, Operation,
@@ -17,7 +15,7 @@ use crate::{
             PrivateKeyTemplateAttribute, ProtocolVersionMajor, ProtocolVersionMinor, PublicKeyTemplateAttribute,
             RequestHeader, RequestMessage, RequestPayload,
         },
-        response::{ResponseMessage, ResponsePayload, ResultStatus},
+        response::{ResponsePayload, ResultStatus},
     },
 };
 
@@ -38,15 +36,15 @@ fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_request() {
             Operation::CreateKeyPair,
             Option::<UniqueBatchItemID>::None,
             RequestPayload::CreateKeyPair(
-                Some(CommonTemplateAttribute::unnamed(vec![
+                Some(CommonTemplateAttribute::new(vec![
                     Attribute::CryptographicAlgorithm(CryptographicAlgorithm::RSA),
                     Attribute::CryptographicLength(1024),
                 ])),
-                Some(PrivateKeyTemplateAttribute::unnamed(vec![
+                Some(PrivateKeyTemplateAttribute::new(vec![
                     Attribute::Name("PrivateKey1".into()),
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Sign),
                 ])),
-                Some(PublicKeyTemplateAttribute::unnamed(vec![
+                Some(PublicKeyTemplateAttribute::new(vec![
                     Attribute::Name("PublicKey1".into()),
                     Attribute::CryptographicUsageMask(CryptographicUsageMask::Verify),
                 ])),
@@ -67,12 +65,8 @@ fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_request() {
         "0000000420008010000003042000A070000001843727970746F67726170686963205573616765204D61736B42000B0200",
         "0000040000000200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -85,7 +79,7 @@ fn kmip_1_0_usecase_8_1_step_1_create_rsa_1024_key_pair_response() {
         "3432666361342D656266302D343339382D616336352D38373962616234393032353900000000"
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
@@ -142,12 +136,8 @@ fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_request
         "01030000000042004C070000002461323432666361342D656266302D343339382D616336352D383739626162343930323",
         "53900000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -159,7 +149,7 @@ fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_respons
         "93566373263322D623230612D343964382D393530342D36646332313135636330343200000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
@@ -174,9 +164,7 @@ fn kmip_1_0_usecase_8_1_step_2_locate_public_key_with_linked_private_key_respons
 
     if let Some(ResponsePayload::Locate(payload)) = item.payload.as_ref() {
         assert_eq!(payload.unique_identifiers.len(), 1);
-
-        let identifier = &payload.unique_identifiers[0];
-        assert_eq!(identifier, "895f72c2-b20a-49d8-9504-6dc2115cc042");
+        assert_eq!(&payload.unique_identifiers[0], "895f72c2-b20a-49d8-9504-6dc2115cc042");
     } else {
         panic!("Wrong payload");
     }
@@ -212,12 +200,8 @@ fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_request
         "01020000000042004C070000002438393566373263322D623230612D343964382D393530342D366463323131356363303",
         "43200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -229,7 +213,7 @@ fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_respons
         "23432666361342D656266302D343339382D616336352D38373962616234393032353900000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
@@ -244,9 +228,7 @@ fn kmip_1_0_usecase_8_1_step_3_locate_private_key_with_linked_public_key_respons
 
     if let Some(ResponsePayload::Locate(payload)) = item.payload.as_ref() {
         assert_eq!(payload.unique_identifiers.len(), 1);
-
-        let identifier = &payload.unique_identifiers[0];
-        assert_eq!(identifier, "a242fca4-ebf0-4398-ac65-879bab490259");
+        assert_eq!(&payload.unique_identifiers[0], "a242fca4-ebf0-4398-ac65-879bab490259");
     } else {
         panic!("Wrong payload");
     }
@@ -274,12 +256,8 @@ fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_request() {
         "00790100000030420094070000002461323432666361342D656266302D343339382D616336352D3837396261623439303",
         "2353900000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -291,7 +269,7 @@ fn kmip_1_0_usecase_8_1_step_4_destroy_private_key_response() {
         "23432666361342D656266302D343339382D616336352D38373962616234393032353900000000"
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);
@@ -333,12 +311,8 @@ fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_request() {
         "00790100000030420094070000002438393566373263322D623230612D343964382D393530342D3664633231313563633",
         "0343200000000"
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -350,7 +324,7 @@ fn kmip_1_0_usecase_8_1_step_5_destroy_public_key_response() {
         "93566373263322D623230612D343964382D393530342D36646332313135636330343200000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 0);

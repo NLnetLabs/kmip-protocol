@@ -3,15 +3,16 @@
 #[allow(unused_imports)]
 use pretty_assertions::{assert_eq, assert_ne};
 
-use kmip_ttlv::{de::from_slice, ser::to_vec};
-
-use crate::types::{
-    common::{Operation, UniqueBatchItemID},
-    request::{
-        self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor, ProtocolVersionMinor,
-        RequestHeader, RequestMessage, RequestPayload,
+use crate::{
+    tests::util::assert_req_ser_de,
+    types::{
+        common::{Operation, UniqueBatchItemID},
+        request::{
+            self, Authentication, BatchCount, BatchItem, MaximumResponseSize, ProtocolVersionMajor,
+            ProtocolVersionMinor, RequestHeader, RequestMessage, RequestPayload,
+        },
+        response::{ProtocolVersion, ResponsePayload, ResultStatus},
     },
-    response::{ProtocolVersion, ResponseMessage, ResponsePayload, ResultStatus},
 };
 
 /// -------------------------------------------------------------------------------------------------------------------
@@ -39,12 +40,8 @@ fn kmip_1_1_testcase_16_1_time_0_discover_versions_no_versions_provided_request(
         "00000010000000042000D0200000004000000010000000042000F010000001842005C05000000040000001E0000000042",
         "00790100000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -57,7 +54,7 @@ fn kmip_1_1_testcase_16_1_time_0_discover_versions_v11_v10_response() {
         "00010000000042006B02000000040000000000000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -107,12 +104,8 @@ fn kmip_1_1_testcase_16_1_time_1_discover_versionswith_v10_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000010000000042006B02000000040000000000000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -124,7 +117,7 @@ fn kmip_1_1_testcase_16_1_time_1_discover_versions_v10_response() {
         "06A0200000004000000010000000042006B02000000040000000000000000"
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -173,12 +166,8 @@ fn kmip_1_1_testcase_16_1_time_2_discover_versions_with_v11_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000010000000042006B02000000040000000100000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -190,7 +179,7 @@ fn kmip_1_1_testcase_16_1_time_2_discover_versions_v11_response() {
         "06A0200000004000000010000000042006B02000000040000000100000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);
@@ -239,12 +228,8 @@ fn kmip_1_1_testcase_16_1_time_3_discover_versions_with_v931_request() {
         "00000010000000042000D0200000004000000010000000042000F010000004042005C05000000040000001E0000000042",
         "00790100000028420069010000002042006A0200000004000000090000000042006B02000000040000001F00000000",
     );
-    let actual_request_hex = hex::encode_upper(to_vec(&use_case_request).unwrap());
 
-    assert_eq!(
-        use_case_request_hex, actual_request_hex,
-        "expected hex (left) differs to the generated hex (right)"
-    );
+    assert_req_ser_de(use_case_request, use_case_request_hex);
 }
 
 #[test]
@@ -255,7 +240,7 @@ fn kmip_1_1_testcase_16_1_time_3_discover_versions_no_versions_response() {
         "005C05000000040000001E0000000042007F0500000004000000000000000042007C0100000000",
     );
     let ttlv_wire = hex::decode(use_case_response_hex).unwrap();
-    let res: ResponseMessage = from_slice(ttlv_wire.as_ref()).unwrap();
+    let res = crate::types::response::from_slice(&ttlv_wire).unwrap();
 
     assert_eq!(res.header.protocol_version.major, 1);
     assert_eq!(res.header.protocol_version.minor, 1);

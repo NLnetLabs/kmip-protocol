@@ -5,13 +5,13 @@ use std::{
 };
 
 use crate::client::{
-    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
     Error,
+    tls::common::{rustls::create_rustls_config, util::create_kmip_client},
 };
 
 use crate::client::{ConnectionSettings, Result};
 
-use rustls::{pki_types::ServerName, ClientConfig, ClientConnection, StreamOwned};
+use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
 
 pub type Client = crate::client::Client<StreamOwned<ClientConnection, TcpStream>>;
 
