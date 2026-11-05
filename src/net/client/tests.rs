@@ -572,6 +572,10 @@ fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> NetResult<R
             protocol_version,
             timestamp,
             batch_count: batch_items.len().try_into().unwrap(),
+            nonce: None,
+            attestation_type: None,
+            client_correlation_value: None,
+            server_correlation_value: None,
         },
         batch_items,
     })
