@@ -10,15 +10,25 @@ pub struct TlsClientAuth {
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
-pub struct TlsServerAuth {
-    /// Server certificate bytes in PEM format.
-    pub cert_bytes: Vec<u8>,
+pub enum TlsServerAuth {
+    /// Do not verify the identify of the server.
+    None,
 
-    /// Server name for TLS SNI certificate matching.
-    pub server_name: Option<String>,
+    /// Use only certificates provided in the default trust store.
+    #[default]
+    Default,
 
-    /// Server CA certificate bytes in PEM format.
-    pub ca_cert_bytes: Option<Vec<u8>>,
+    /// The PEM encoded bytes of a certificate to trurst directly, e.g. a
+    /// self-signed certificate.
+    ///
+    /// TODO: Add support for verifying certificates by their fingerprint.
+    TrustCertificate(Vec<u8>),
+
+    /// The PEM encoded bytes of the certificate of a Certificate Authority
+    /// to add to the certificate trust store in order to be able to verify
+    /// certificates issued by this authority, e.g. an in-house custom CA
+    /// not present in the default trust store.
+    TrustCertificateAuthority(Vec<u8>),
 }
 
 /// TCP and TLS settings for connecting to a KMIP server.
@@ -36,13 +46,17 @@ pub struct ConnectionSettings {
     /// HSM password
     pub password: Option<String>,
 
-    /// TLS client authentication.
+    /// Details needed to enable the TLS client to respond to a challenge from
+    /// the server for the client to prove its identity.
     pub tls_client_auth: Option<TlsClientAuth>,
 
-    /// TLS server authentication.
-    ///
-    /// If None, the server certificate will not be verified.
-    pub tls_server_auth: Option<TlsServerAuth>,
+    /// Details used to verify the identify of the TLS server.
+    pub tls_server_auth: TlsServerAuth,
+
+    /// Server name for use with TLS SNI to direct the server to identify
+    /// itself using a particular certificate, for servers that have more
+    /// than one.
+    pub tls_server_name: Option<String>,
 
     /// TCP connect timeout
     pub connect_timeout: Option<Duration>,

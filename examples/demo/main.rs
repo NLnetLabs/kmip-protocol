@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use kmip_protocol::net::{Client, ConnectionSettings, NetResult, TlsClientAuth, TlsServerAuth};
 use kmip_protocol::types::traits::ReadWrite;
-use log::info;
+use log::{error, info};
 use structopt::StructOpt;
 use util::init_logging;
 
@@ -47,7 +47,18 @@ fn main() {
     for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
-            exec_test_requests(thread_client, &format!("test_{}", i)).unwrap();
+            use kmip_protocol::net::NetError;
+
+            exec_test_requests(thread_client, &format!("test_{}", i))
+                .map_err(|err| {
+                    if matches!(err, NetError::DeserializeError { .. }) {
+                        error!("Deserialization error: {err}");
+                        Ok(())
+                    } else {
+                        Err(err)
+                    }
+                })
+                .unwrap();
         });
         thread_handles.push(handle);
     }
@@ -172,16 +183,15 @@ impl From<Opt> for ConnectionSettings {
         };
 
         let tls_server_auth = if opt.insecure {
-            None
+            TlsServerAuth::None
+        } else if let Some(cert_path) = &opt.server_cert_path {
+            assert!(opt.ca_cert_path.is_none());
+            TlsServerAuth::TrustCertificate(load_binary_file(cert_path))
+        } else if let Some(cert_path) = &opt.ca_cert_path {
+            assert!(opt.server_cert_path.is_none());
+            TlsServerAuth::TrustCertificateAuthority(load_binary_file(cert_path))
         } else {
-            let server_name = opt.server_name;
-            let cert_bytes = opt.server_cert_path.map(|path| load_binary_file(&path)).unwrap();
-            let ca_cert_bytes = opt.ca_cert_path.map(|path| load_binary_file(&path));
-            Some(TlsServerAuth {
-                cert_bytes,
-                server_name,
-                ca_cert_bytes,
-            })
+            TlsServerAuth::Default
         };
 
         let connect_timeout = Some(Duration::from_secs(opt.connect_timeout));
@@ -195,6 +205,7 @@ impl From<Opt> for ConnectionSettings {
             password,
             tls_client_auth,
             tls_server_auth,
+            tls_server_name: opt.server_name,
             connect_timeout,
             read_timeout,
             write_timeout,

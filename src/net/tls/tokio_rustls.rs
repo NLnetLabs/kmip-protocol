@@ -36,19 +36,13 @@ where
         ))?;
 
     let sni_name = conn_settings
-        .tls_server_auth
+        .tls_server_name
         .as_ref()
-        .and_then(|auth| auth.server_name.as_ref())
         .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
     let sni_name = sni_name.try_into().map_err(|err| {
         NetError::ConfigurationError(format!(
             "Failed to parse hostname '{}' or SNI name '{:?}': {}",
-            conn_settings.host,
-            conn_settings
-                .tls_server_auth
-                .as_ref()
-                .map(|auth| auth.server_name.clone()),
-            err
+            conn_settings.host, conn_settings.tls_server_name, err
         ))
     })?;
 

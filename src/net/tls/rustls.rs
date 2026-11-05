@@ -39,9 +39,8 @@ where
 
     let sni_name = ServerName::try_from(
         conn_settings
-            .tls_server_auth
+            .tls_server_name
             .as_ref()
-            .and_then(|auth| auth.server_name.as_ref())
             .map_or_else(|| conn_settings.host.clone(), |name| name.clone()),
     )
     .map_err(|err| NetError::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
