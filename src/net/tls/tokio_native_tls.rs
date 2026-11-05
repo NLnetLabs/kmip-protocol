@@ -49,8 +49,13 @@ where
 
     let tls_client = tokio_native_tls::TlsConnector::from(tls_connector);
 
+    let sni_name = conn_settings
+        .server_name
+        .as_ref()
+        .map_or_else(|| conn_settings.host.clone(), |name| name.clone());
+
     let tls_stream = tls_client
-        .connect(&conn_settings.host, tcp_stream)
+        .connect(&sni_name, tcp_stream)
         .await
         .map_err(|err| NetError::ConfigurationError(format!("Failed to establish TLS connection: {}", err)))?;
 

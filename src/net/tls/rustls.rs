@@ -38,9 +38,16 @@ where
         ))?;
 
     let rustls_config: ClientConfig = create_rustls_config(conn_settings)?;
-    let name = ServerName::try_from(conn_settings.host.clone())
-        .map_err(|err| NetError::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
-    let conn = rustls::ClientConnection::new(Arc::new(rustls_config), name)
+
+    let sni_name = ServerName::try_from(
+        conn_settings
+            .server_name
+            .as_ref()
+            .map_or_else(|| conn_settings.host.clone(), |name| name.clone()),
+    )
+    .map_err(|err| NetError::ConfigurationError(format!("Invalid host '{}': {err}", conn_settings.host)))?;
+
+    let conn = rustls::ClientConnection::new(Arc::new(rustls_config), sni_name)
         .map_err(|err| NetError::ConfigurationError(format!("Unreachable host '{}': {err}", conn_settings.host)))?;
     let sock = (tcpstream_factory)(&addr, conn_settings)?;
     let tls_stream = rustls::StreamOwned::new(conn, sock);

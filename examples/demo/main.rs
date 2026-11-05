@@ -18,10 +18,7 @@ use log::info;
 use structopt::StructOpt;
 use util::init_logging;
 
-use crate::{
-    config::Opt,
-    util::{SelfLoggingError, ToCsvString},
-};
+use crate::{config::Opt, util::ToCsvString};
 
 #[cfg(any(
     feature = "tls-with-openssl",
@@ -30,8 +27,11 @@ use crate::{
 ))]
 fn main() {
     let opt = Opt::from_args();
+    let num_threads = opt.num_threads;
 
     init_logging(&opt);
+
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
 
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "tls-with-openssl", feature = "tls-with-openssl-vendored"))] {
@@ -45,7 +45,7 @@ fn main() {
 
     let mut thread_handles = vec![];
 
-    for i in 0..=1 {
+    for i in 0..num_threads {
         let thread_client = client.clone();
         let handle = std::thread::spawn(move || {
             exec_test_requests(thread_client, &format!("test_{}", i)).unwrap();
@@ -64,6 +64,9 @@ async fn main() {
     let opt = Opt::from_args();
 
     init_logging(&opt);
+
+    info!("Connecting to KMIP server at {}:{}", opt.host, opt.port);
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "tls-with-tokio-native-tls")] {
             let client = kmip_protocol::net::tls::tokio_native_tls::connect(&opt.into()).await;
@@ -91,7 +94,6 @@ async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix
             format!("{}_public_key", key_name_prefix),
         )
         .await
-        .log_error()
     {
         info!("Created key pair:");
         info!("  Private key ID: {}", private_key_id);
@@ -99,33 +101,29 @@ async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix
         let mut key_needs_revoking = false;
 
         info!("Activating private key {}..", private_key_id);
-        if client.activate_key(&private_key_id).await.log_error().is_ok() {
+        if client.activate_key(&private_key_id).await.is_ok() {
             key_needs_revoking = true;
 
             info!("Signing with private key {}..", private_key_id);
-            if let Ok(signature_data) = client
-                .sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8])
-                .await
-                .log_error()
-            {
+            if let Ok(signature_data) = client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]).await {
                 info!("{}", hex::encode_upper(signature_data));
             }
         }
 
         info!("Deleting public key {}..", public_key_id);
-        client.destroy_key(&public_key_id).await.log_error().ok();
+        client.destroy_key(&public_key_id).await.ok();
 
         if key_needs_revoking {
             info!("Revoking private key {}..", private_key_id);
-            client.revoke_key(&private_key_id).await.log_error().ok();
+            client.revoke_key(&private_key_id).await.ok();
         }
 
         info!("Deleting private key {}..", private_key_id);
-        client.destroy_key(&private_key_id).await.log_error().ok();
+        client.destroy_key(&private_key_id).await.ok();
     }
 
     info!("Requesting 32 random bytes..");
-    if let Ok(random_bytes) = client.rng_retrieve(32).await.log_error() {
+    if let Ok(random_bytes) = client.rng_retrieve(32).await {
         info!("{}", hex::encode_upper(random_bytes));
     }
 
@@ -184,6 +182,7 @@ impl From<Opt> for ConnectionSettings {
             }
         };
 
+        let server_name = opt.server_name;
         let server_cert = opt.server_cert_path.map(|path| load_binary_file(&path));
         let ca_cert = opt.ca_cert_path.map(|path| load_binary_file(&path));
 
@@ -199,6 +198,7 @@ impl From<Opt> for ConnectionSettings {
             insecure: opt.insecure,
             client_cert,
             server_cert,
+            server_name,
             ca_cert,
             connect_timeout,
             read_timeout,

@@ -1,16 +1,15 @@
-use kmip_protocol::net::NetResult;
-use log::error;
+use tracing::Level;
 
 use crate::config::Opt;
 
 pub(crate) fn init_logging(opt: &Opt) {
     let level = match (opt.quiet, opt.verbose) {
-        (true, _) => log::LevelFilter::Error,
-        (false, 1) => log::LevelFilter::Debug,
-        (false, n) if n >= 2 => log::LevelFilter::Trace,
-        _ => log::LevelFilter::Info,
+        (true, _) => Level::ERROR,
+        (false, 1) => Level::DEBUG,
+        (false, n) if n >= 2 => Level::TRACE,
+        _ => Level::INFO,
     };
-    simple_logging::log_to_stderr(level);
+    tracing_subscriber::fmt().with_max_level(level).init();
 }
 
 pub(crate) trait ToCsvString {
@@ -27,18 +26,5 @@ where
             .map(|op| op.to_string())
             .collect::<Vec<String>>()
             .join(", ")
-    }
-}
-
-pub(crate) trait SelfLoggingError<U> {
-    fn log_error(self) -> Self;
-}
-
-impl<U> SelfLoggingError<U> for NetResult<U> {
-    fn log_error(self) -> Self {
-        if let Err(err) = &self {
-            error!("{err}");
-        }
-        self
     }
 }
