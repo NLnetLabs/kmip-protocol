@@ -539,6 +539,16 @@ impl<T: ReadWrite> Clone for Client<T> {
 }
 
 impl<T: ReadWrite> Client<T> {
+    /// Get the authentication settings used by this client.
+    pub fn auth(&self) -> Option<&Authentication> {
+        self.auth.as_ref()
+    }
+
+    /// Get the maximum message size in bytes permitted by this client.
+    pub fn max_message_size(&self) -> i32 {
+        self.max_message_size
+    }
+
     /// Get the count of connection errors experienced by this Client.
     pub fn connection_error_count(&self) -> usize {
         self.connection_error_count.load(Ordering::SeqCst)
