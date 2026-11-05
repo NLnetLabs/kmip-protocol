@@ -251,8 +251,8 @@ impl PrettyPrinter {
     /// See section [9.1.3.2 Enumerations](https://docs.oasis-open.org/kmip/spec/v1.2/kmip-spec-v1.2.html#_Toc240610034)
     /// of the KMIP 1.2 specification.
     fn bit_mask_values() -> impl std::iter::Iterator<Item = u32> {
-        (0u32..)
+        (0..31)
             .map(|p| 1u32 << p)
-            .take_while(|&p| p < 0x80000000 && p > 0x8FFFFFFF)
+            .filter(|p| !(0x80000000..=0x8FFFFFFF).contains(p))
     }
 }
