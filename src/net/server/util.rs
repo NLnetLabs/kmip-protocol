@@ -2,7 +2,10 @@ use std::time::SystemTime;
 
 use crate::{
     net::{NetError, NetResult},
-    types::response::{self, ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
+    types::{
+        common::Operation,
+        response::{self, ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus},
+    },
 };
 
 pub fn batch_items_to_response(batch_items: Vec<response::BatchItem>) -> NetResult<ResponseMessage> {
@@ -51,6 +54,24 @@ pub fn payload_to_response(
         result_reason,
         result_message,
         payload,
+        message_extension: None,
+    }];
+    batch_items_to_response(batch_items)
+}
+
+pub fn error_response(
+    operation: Operation,
+    result_status: ResultStatus,
+    result_reason: Option<ResultReason>,
+    result_message: Option<String>,
+) -> crate::net::NetResult<ResponseMessage> {
+    let batch_items = vec![response::BatchItem {
+        operation: Some(operation),
+        unique_batch_item_id: None,
+        result_status,
+        result_reason,
+        result_message,
+        payload: None,
         message_extension: None,
     }];
     batch_items_to_response(batch_items)

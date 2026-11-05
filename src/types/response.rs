@@ -433,6 +433,7 @@ pub struct QueryResponsePayload {
     pub object_types: Option<Vec<ObjectType>>,
     pub vendor_identification: Option<String>,
     pub server_information: Option<ServerInformation>,
+    pub extension_information: Option<Vec<ExtensionInformation>>,
 }
 
 impl QueryResponsePayload {
@@ -466,6 +467,9 @@ impl QueryResponsePayload {
         if let Some(server_information) = &self.server_information {
             server_information.format(&mut formatter)?;
         }
+        for extension_information in self.extension_information.iter().flatten() {
+            extension_information.format(&mut formatter)?;
+        }
         Ok(formatter.finish())
     }
 
@@ -480,12 +484,17 @@ impl QueryResponsePayload {
             .scan_opt_text(Self::VENDOR_IDENTIFICATION_TAG)?
             .map(ToString::to_string);
         let server_information = ServerInformation::fast_scan_opt(&mut scanner)?;
+        let extension_information =
+            std::iter::from_fn(|| ExtensionInformation::fast_scan_opt(&mut scanner).transpose())
+                .collect::<Result<Vec<_>, _>>()?;
+        let extension_information = Some(extension_information).filter(|a| !a.is_empty());
         scanner.finish()?;
         let this = Self {
             operations,
             object_types,
             vendor_identification,
             server_information,
+            extension_information,
         };
         Ok(this)
     }
@@ -1087,3 +1096,112 @@ impl_ttlv_serde!(struct Attribute as 0x420008 {
         self.value.format(&mut formatter)?;
     };
 });
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExtensionInformation {
+    pub extension_name: String,
+    pub extension_tag: Option<i32>,
+    pub extension_type: Option<ItemType>,
+}
+
+impl ExtensionInformation {
+    pub const TAG: Tag = Tag::new(0x4200A4);
+    pub const EXTENSION_NAME_TAG: Tag = Tag::new(0x4200A5);
+    pub const EXTENSION_TAG_TAG: Tag = Tag::new(0x4200A6);
+    pub const EXTENSION_TYPE_TAG: Tag = Tag::new(0x4200A7);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        let scanner = scanner.scan_struct(Self::TAG)?;
+        Self::fast_scan_inner(scanner)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        if let Some(scanner) = scanner.scan_opt_struct(Self::TAG)? {
+            Ok(Some(Self::fast_scan_inner(scanner)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn fast_scan_inner(mut scanner: FastScanner<'_>) -> Result<Self, FastScanError> {
+        let extension_name = scanner.scan_text(Self::EXTENSION_NAME_TAG)?.to_string();
+        let extension_tag = scanner.scan_opt_int(Self::EXTENSION_TAG_TAG)?;
+        let extension_type = ItemType::fast_scan_opt(&mut scanner)?;
+        scanner.finish()?;
+        Ok(Self {
+            extension_name,
+            extension_tag,
+            extension_type,
+        })
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let mut formatter = formatter.format_struct(Self::TAG)?;
+        formatter.format_text(Self::EXTENSION_NAME_TAG, &self.extension_name)?;
+        if let Some(v) = self.extension_tag {
+            formatter.format_int(Self::EXTENSION_TAG_TAG, v)?;
+        }
+        if let Some(v) = self.extension_type {
+            v.format(&mut formatter)?;
+        }
+        Ok(formatter.finish())
+    }
+}
+
+/// Item Type as a KMIP Integer (u32).
+///
+/// Note: We don't encode it as a u8 which is how Item Type is defined in
+/// [KMIP 1.1 section 9.1.1.2](https://docs.oasis-open.org/kmip/spec/v1.1/os/kmip-spec-v1.1-os.html#_toc8562)
+/// because this is for use with
+/// [KMIP 1.1 section 2.1.9 Extension Information](https://docs.oasis-open.org/kmip/spec/v1.1/os/kmip-spec-v1.1-os.html#_Toc333494476)
+/// which defines it as a KMIP Integer (i32).
+//
+// Note: We cannot use impl_ttlv_serde!(int ItemType as 0x4200A7) as that
+// expects the TTLV to have initial Type of Enum rather than Integer and thus
+// parsing fails.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
+#[non_exhaustive]
+#[repr(i32)]
+pub enum ItemType {
+    Structure,
+    Integer,
+    LongInteger,
+    BigInteger,
+    Enumeration,
+    Boolean,
+    TextString,
+    ByteString,
+    DateTime,
+    Interval,
+}
+
+impl ItemType {
+    pub const TAG: Tag = Tag::new(0x4200A7);
+
+    pub fn fast_scan(scanner: &mut FastScanner<'_>) -> Result<Self, FastScanError> {
+        Self::fast_scan_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Self, FastScanError> {
+        Self::from_ordinal(scanner.scan_int(tag)?).ok_or_else(FastScanError::assert)
+    }
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        Self::fast_scan_opt_with(scanner, Self::TAG)
+    }
+
+    pub fn fast_scan_opt_with(scanner: &mut FastScanner<'_>, tag: Tag) -> Result<Option<Self>, FastScanError> {
+        scanner
+            .scan_opt_int(tag)?
+            .map(|d| Self::from_ordinal(d).ok_or_else(FastScanError::assert))
+            .transpose()
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        self.format_with(formatter, Self::TAG)
+    }
+
+    pub fn format_with(&self, formatter: &mut Formatter<'_>, tag: Tag) -> FormatResult {
+        formatter.format_int(tag, self.ordinal())
+    }
+}

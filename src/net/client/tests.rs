@@ -9,10 +9,10 @@ use std::{
 use openssl::ssl::{SslConnector, SslFiletype, SslMethod, SslVerifyMode};
 
 use crate::{
-    net::{ClientBuilder, NetError, NetResult},
+    net::{ClientBuilder, NetError, NetResult, error_response},
     ttlv::to_vec,
     types::{
-        common::{ObjectType, Operation},
+        common::{ObjectType, Operation, UniqueIdentifier},
         request::{QueryFunction, RequestPayload},
         response::{
             self, ProtocolVersion, ResponseHeader, ResponseMessage, ResponsePayload, ResultReason, ResultStatus,
@@ -194,11 +194,14 @@ fn test_create_rsa_key_pair() {
 #[test]
 fn test_multiple_requests() {
     // Define mock KMIP responses
-    let payload = ResponsePayload::Query(response::QueryResponsePayload::default());
+    let payload = ResponsePayload::Sign(response::SignResponsePayload {
+        unique_identifier: UniqueIdentifier("some-id".to_string()),
+        signature_data: vec![],
+    });
     let good_response_bytes =
         response::to_vec(payload_to_response(ResultStatus::Success, None, None, Some(payload)).unwrap()).unwrap();
     let bad_response_bytes =
-        response::to_vec(payload_to_response(ResultStatus::OperationFailed, None, None, None).unwrap()).unwrap();
+        response::to_vec(error_response(Operation::Sign, ResultStatus::OperationFailed, None, None).unwrap()).unwrap();
 
     // Define a sequence of mock responses to serve and whether the query
     // that receives the response should succeed or not.
@@ -224,7 +227,7 @@ fn test_multiple_requests() {
     // Query for each mock response and assert that the query succeeds or
     // fails as expected.
     for (_, expect_ok) in test_entries {
-        assert_eq!(client.query().is_ok(), expect_ok);
+        assert_eq!(client.sign("some-key-id", &[]).is_ok(), expect_ok);
     }
 
     assert_eq!(client.connection_error_count(), 0);

@@ -57,6 +57,7 @@ pub struct Client<T: ReadWrite> {
     read_buf: Vec<u8>,
     write_buf: Vec<MaybeUninit<u8>>,
     connection_error_count: Arc<AtomicUsize>,
+    cached_query_response_payload: Option<QueryResponsePayload>,
 }
 
 //--- High level client interface
@@ -68,11 +69,19 @@ impl<T: ReadWrite> Client<T> {
     /// See also: [do_request()](Self::do_request())
     #[maybe_async::maybe_async]
     pub async fn query(&mut self) -> NetResult<QueryResponsePayload> {
+        // Don't repeatedly query the server as the result should be the same
+        // every time for the same client connection. Instead cache the result
+        // and return it on subsequent requests.
+        if let Some(payload) = &self.cached_query_response_payload {
+            return Ok(payload.clone());
+        }
+
         // Setup the request
         let wanted_info = vec![
             QueryFunction::QueryOperations,
             QueryFunction::QueryObjects,
             QueryFunction::QueryServerInformation,
+            QueryFunction::QueryExtensionList,
         ];
         let request = RequestPayload::Query(wanted_info);
 
@@ -84,6 +93,8 @@ impl<T: ReadWrite> Client<T> {
                 "Expected Query payload but response has {res}"
             )));
         };
+
+        self.cached_query_response_payload = Some(payload.clone());
 
         Ok(payload)
     }
@@ -464,12 +475,18 @@ impl<T: ReadWrite> Client<T> {
                 .drain(..)
                 .map(|item| match item.result_status {
                     ResultStatus::OperationFailed => {
-                        let reason = item.result_message.unwrap_or_else(|| "Reason unknown".to_string());
+                        let message = item
+                            .result_message
+                            .unwrap_or_else(|| "No further information available".to_string());
+                        let reason = item
+                            .result_reason
+                            .map(|v| v.to_string())
+                            .unwrap_or_else(|| "Reason unknown".to_string());
                         let operation = item
                             .operation
                             .map(|op| op.to_string())
                             .unwrap_or_else(|| "unknown".to_string());
-                        let err = format!("Operation {operation} failed: {reason}");
+                        let err = format!("Operation {operation} failed: {reason}: {message}");
                         if matches!(item.result_reason, Some(ResultReason::ItemNotFound)) {
                             Err(NetError::ItemNotFound(err))
                         } else {
@@ -516,6 +533,7 @@ impl<T: ReadWrite> Clone for Client<T> {
             connection_error_count: self.connection_error_count.clone(),
             read_buf: vec![0u8; 8192],
             write_buf: vec![MaybeUninit::uninit(); 8192],
+            cached_query_response_payload: self.cached_query_response_payload.clone(),
         }
     }
 }

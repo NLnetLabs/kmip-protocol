@@ -24,7 +24,7 @@ pub mod async_pool;
 pub use server::{
     Server,
     builder::ServerBuilder,
-    util::{batch_items_to_response, payload_to_response},
+    util::{batch_items_to_response, error_response, payload_to_response},
 };
 
 mod config;
