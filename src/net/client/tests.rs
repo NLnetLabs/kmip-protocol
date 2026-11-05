@@ -1,6 +1,6 @@
 #![cfg(all(test, feature = "sync"))]
 use std::{
-    io::{Cursor, Read, Write},
+    io::{Cursor, ErrorKind, Read, Write},
     net::TcpStream,
     time::SystemTime,
 };
@@ -244,7 +244,7 @@ fn test_connection_dropped() {
     // of response.
     assert!(matches!(
         client.query(),
-        Err(crate::net::NetError::ResponseReadError(_))
+        Err(crate::net::NetError::IoError(err)) if err.kind() == ErrorKind::ConnectionAborted
     ));
 
     // The client closing the connection is NOT considered an error.
@@ -266,14 +266,11 @@ fn test_connection_dropped_after_one_response() {
 
     // The first query should get the operation failed error response from
     // the mock server.
-    assert!(matches!(client.query(), Err(crate::net::NetError::ServerError(_))));
+    assert!(matches!(client.query(), Err(NetError::ServerError(_))));
 
     // The second query should fail with a network error as there are no
     // more bytes to read from the mock network stream.
-    assert!(matches!(
-        client.query(),
-        Err(crate::net::NetError::ResponseReadError(_))
-    ));
+    assert!(matches!(client.query(), Err(NetError::IoError(_))));
 
     // The client closing the connection is NOT considered an error.
     assert_eq!(client.connection_error_count(), 0);
@@ -296,10 +293,7 @@ fn test_partial_response() {
 
     // The first query should fail with a network error as there are no
     // more bytes to read from the mock network stream.
-    assert!(matches!(
-        client.query(),
-        Err(crate::net::NetError::ResponseReadError(_))
-    ));
+    assert!(matches!(client.query(), Err(NetError::IoError(_))));
 
     // The client closing the connection is NOT considered an error.
     assert_eq!(client.connection_error_count(), 0);
@@ -322,7 +316,7 @@ fn test_unsupported_valid_ttlv() {
     // The query should fail with a deserializer error as the Protocol
     // Version TTLV cannot be deserialized as a Response Message TTLV.
     let res = client.query();
-    let Err(crate::net::NetError::DeserializeError { res, .. }) = res else {
+    let Err(NetError::DeserializeError { res, .. }) = res else {
         panic!("Expected deserialize error but got: {res:?}");
     };
 

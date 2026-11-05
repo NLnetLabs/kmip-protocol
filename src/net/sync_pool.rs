@@ -12,7 +12,7 @@ use std::string::String;
 use std::{sync::Arc, time::Duration};
 
 use crate::net::ConnectionSettings;
-use crate::net::client::error::{NetError, NetResult};
+use crate::net::common::error::{NetError, NetResult};
 
 use log::error;
 use r2d2::PooledConnection;

@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::net::{
-    client::error::{NetError, NetResult},
+    common::error::{NetError, NetResult},
     tls::common::{rustls::create_rustls_config, util::create_kmip_client},
 };
 
