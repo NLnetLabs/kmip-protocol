@@ -250,6 +250,17 @@ impl PrettyPrinter {
     ///
     /// See section [9.1.3.2 Enumerations](https://docs.oasis-open.org/kmip/spec/v1.2/kmip-spec-v1.2.html#_Toc240610034)
     /// of the KMIP 1.2 specification.
+    ///
+    /// See https://docs.oasis-open.org/kmip/testcases/v1.1/cn01/kmip-testcases-v1.1-cn01.html#_Toc333488792
+    /// for an example KMIP request whose hex bytes when fed into hex_to_txt
+    /// produce '|' separated named bit flags in the output by using this
+    /// function, e.g.:
+    ///
+    /// ```
+    ///     Tag: Attribute (0x420008), Type: Structure (0x01), Data:
+    ///         Tag: Attribute Name (0x42000A), Type: TextString (0x07), Data: "Cryptographic Usage Mask"
+    ///         Tag: Attribute Value (0x42000B), Type: Integer (0x02), Data: 0x00000C (12 = Encrypt|Decrypt)
+    /// ```
     fn bit_mask_values() -> impl std::iter::Iterator<Item = u32> {
         (0..31)
             .map(|p| 1u32 << p)
