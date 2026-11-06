@@ -507,10 +507,26 @@ pub struct RNGRetrieveResponsePayload(pub Data);
 impl_ttlv_serde!(struct RNGRetrieveResponsePayload(data: Data) as 0x42007C);
 
 ///  See KMIP 1.0 section 4.24 [Server Information](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581232).
+///  The Server Information field in the response is a structure containing vendor-specific fields and/or substructures.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ServerInformation;
 
-impl_ttlv_serde!(struct ServerInformation {} as 0x420088);
+impl ServerInformation {
+    pub const TAG: Tag = Tag::new(0x420088);
+
+    pub fn fast_scan_opt(scanner: &mut FastScanner<'_>) -> Result<Option<Self>, FastScanError> {
+        if scanner.skip_opt_struct(Self::TAG)? {
+            Ok(Some(ServerInformation))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn format(&self, formatter: &mut Formatter<'_>) -> FormatResult {
+        let formatter = formatter.format_struct(Self::TAG)?;
+        Ok(formatter.finish())
+    }
+}
 
 ///  See KMIP 1.1 section 4.26 [Discover Versions](https://docs.oasis-open.org/kmip/spec/v1.1/cs01/kmip-spec-v1.1-cs01.html#_Toc332787652).
 #[derive(Clone, Debug, PartialEq, Eq)]
