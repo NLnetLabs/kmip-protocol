@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "kmip-protocol"
-version = "0.5.1"
+version = "0.5.2-dev"
 dependencies = [
  "bb8",
  "bitflags 2.13.2",
