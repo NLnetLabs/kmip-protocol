@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "kmip-protocol"
-version = "0.5.1-dev"
+version = "0.5.1"
 dependencies = [
  "bb8",
  "bitflags 2.13.2",
@@ -458,6 +458,7 @@ dependencies = [
  "rcgen",
  "rustls",
  "rustls-pemfile",
+ "scheduled-thread-pool",
  "structopt",
  "tokio",
  "tokio-rustls",
