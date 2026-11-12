@@ -652,7 +652,7 @@ impl fmt::Display for ResultStatus {
 #[non_exhaustive]
 #[repr(u32)]
 pub enum ResultReason {
-    ItemNotFound = 1,
+    ItemNotFound = 0x00000001,
     ResponseTooLarge,
     AuthenticationNotSuccessful,
     InvalidMessage,
@@ -669,7 +669,17 @@ pub enum ResultReason {
     ApplicationNamespaceNotSupported,
     KeyFormatTypeNotSupported,
     KeyCompressionTypeNotSupported,
-    GeneralFailure,
+
+    // KMIP 1.1
+    EncodingOptionError,
+
+    // KMIP 1.2
+    KeyValueNotPresent,
+    AttestationRequired,
+    AttestationFailed,
+
+    // KMIP 1.0
+    GeneralFailure = 0x00000100,
 }
 
 impl_ttlv_serde!(enum ResultReason as 0x42007E);
@@ -694,6 +704,10 @@ impl fmt::Display for ResultReason {
             Self::ApplicationNamespaceNotSupported => "ApplicationNamespaceNotSupported",
             Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
             Self::KeyCompressionTypeNotSupported => "KeyCompressionTypeNotSupported",
+            Self::EncodingOptionError => "EncodingOptionError",
+            Self::KeyValueNotPresent => "KeyValueNotPresent",
+            Self::AttestationRequired => "AttestationRequired",
+            Self::AttestationFailed => "AttestationFailed",
             Self::GeneralFailure => "GeneralFailure",
         })
     }
