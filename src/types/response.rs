@@ -591,6 +591,12 @@ impl Default for ProtocolVersion {
     }
 }
 
+impl std::fmt::Display for ProtocolVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}", self.major, self.minor)
+    }
+}
+
 impl ProtocolVersion {
     pub const TAG: Tag = Tag::new(0x420069);
     pub const MAJOR_TAG: Tag = Tag::new(0x42006A);
