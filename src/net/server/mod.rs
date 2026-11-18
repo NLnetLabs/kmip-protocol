@@ -92,7 +92,11 @@ impl<T: ReadWrite> Server<T> {
             if response.format(&mut formatter).is_ok() {
                 let response_bytes = formatter.filled().as_flattened();
                 let mut stream = Self::get_mut_stream(&self.stream).await?;
-                trace!("Writing {} response bytes to the server", response_bytes.len());
+                trace!(
+                    "Writing {} response bytes to the client: {}",
+                    response_bytes.len(),
+                    hex::encode_upper(response_bytes)
+                );
                 stream.write_all(response_bytes).await?;
                 return Ok(());
             } else if len >= self.max_message_size {
