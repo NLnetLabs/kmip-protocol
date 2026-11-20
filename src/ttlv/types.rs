@@ -57,7 +57,7 @@ impl fmt::Debug for Tag {
 //----------- Type -----------------------------------------------------------
 
 /// A TTLV type.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Ordinalize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Ordinalize)]
 #[repr(u8)]
 pub enum Type {
     /// A TTLV structure.
@@ -121,26 +121,9 @@ impl From<TagType> for Type {
     }
 }
 
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Type::Structure => "Structure",
-            Type::Integer => "Integer",
-            Type::LongInteger => "LongInteger",
-            Type::BigInteger => "BigInteger",
-            Type::Enumeration => "Enumeration",
-            Type::Boolean => "Boolean",
-            Type::TextString => "TextString",
-            Type::ByteString => "ByteString",
-            Type::DateTime => "DateTime",
-            Type::Interval => "Interval",
-        })
-    }
-}
-
-impl fmt::Debug for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self, f)
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
