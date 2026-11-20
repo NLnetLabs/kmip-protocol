@@ -12,6 +12,7 @@ mod util;
 use std::time::Duration;
 
 use kmip_protocol::net::{Client, ConnectionSettings, NetError, NetResult, TlsClientAuth, TlsServerAuth};
+use kmip_protocol::types::common::Operation;
 use kmip_protocol::types::traits::ReadWrite;
 use log::{error, info};
 use structopt::StructOpt;
@@ -98,49 +99,70 @@ async fn main() {
 
 #[maybe_async::maybe_async]
 async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix: &str) -> NetResult<()> {
-    query_server_properties(&mut client).await?;
+    let supported_ops = query_server_properties(&mut client).await?;
+    let mut key_needs_revoking = false;
 
-    // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
-    // sign, etc, instead of following the KMIP functional model?
-    info!("Creating RSA key pair");
-    if let Ok((private_key_id, public_key_id)) = client
-        .create_rsa_key_pair(
-            2048,
-            format!("{}_private_key", key_name_prefix),
-            format!("{}_public_key", key_name_prefix),
-        )
-        .await
-    {
-        info!("Created key pair:");
-        info!("  Private key ID: {}", private_key_id);
-        info!("  Public key ID : {}", public_key_id);
-        let mut key_needs_revoking = false;
+    if supports(&supported_ops, Operation::CreateKeyPair) {
+        // TODO: Maybe key creation should return a key object with further operations on it such as revoke, delete,
+        // sign, etc, instead of following the KMIP functional model?
+        info!("Creating RSA key pair");
+        if let Ok((private_key_id, public_key_id)) = client
+            .create_rsa_key_pair(
+                2048,
+                format!("{}_private_key", key_name_prefix),
+                format!("{}_public_key", key_name_prefix),
+            )
+            .await
+        {
+            info!("Created key pair:");
+            info!("  Private key ID: {}", private_key_id);
+            info!("  Public key ID : {}", public_key_id);
 
-        info!("Activating private key {}..", private_key_id);
-        if client.activate_key(&private_key_id).await.is_ok() {
-            key_needs_revoking = true;
+            if supports(&supported_ops, Operation::Activate) {
+                info!("Activating private key {}..", private_key_id);
+                if client.activate_key(&private_key_id).await.is_ok() {
+                    key_needs_revoking = true;
+                }
+            }
 
-            info!("Signing with private key {}..", private_key_id);
-            if let Ok(signature_data) = client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]).await {
-                info!("{}", hex::encode_upper(signature_data));
+            if supports(&supported_ops, Operation::Sign) {
+                info!("Signing with private key {}..", private_key_id);
+                if let Ok(signature_data) = client.sign(&private_key_id, &[1u8, 2u8, 3u8, 4u8, 5u8]).await {
+                    info!("{}", hex::encode_upper(signature_data));
+                }
+            }
+
+            if supports(&supported_ops, Operation::Revoke) {
+                if key_needs_revoking {
+                    info!("Revoking private key {}..", private_key_id);
+                    client.revoke_key(&private_key_id).await.ok();
+                }
+            }
+
+            if supports(&supported_ops, Operation::Destroy) {
+                info!("Deleting public key {}..", public_key_id);
+                client.destroy_key(&public_key_id).await.ok();
+            }
+
+            if supports(&supported_ops, Operation::Revoke) {
+                if key_needs_revoking {
+                    info!("Revoking private key {}..", private_key_id);
+                    client.revoke_key(&private_key_id).await.ok();
+                }
+            }
+
+            if supports(&supported_ops, Operation::Destroy) {
+                info!("Deleting private key {}..", private_key_id);
+                client.destroy_key(&private_key_id).await.ok();
             }
         }
-
-        info!("Deleting public key {}..", public_key_id);
-        client.destroy_key(&public_key_id).await.ok();
-
-        if key_needs_revoking {
-            info!("Revoking private key {}..", private_key_id);
-            client.revoke_key(&private_key_id).await.ok();
-        }
-
-        info!("Deleting private key {}..", private_key_id);
-        client.destroy_key(&private_key_id).await.ok();
     }
 
-    info!("Requesting 32 random bytes..");
-    if let Ok(random_bytes) = client.rng_retrieve(32).await {
-        info!("{}", hex::encode_upper(random_bytes));
+    if supports(&supported_ops, Operation::RNGRetrieve) {
+        info!("Requesting 32 random bytes..");
+        if let Ok(random_bytes) = client.rng_retrieve(32).await {
+            info!("{}", hex::encode_upper(random_bytes));
+        }
     }
 
     Ok(())
@@ -148,15 +170,15 @@ async fn exec_test_requests<T: ReadWrite>(mut client: Client<T>, key_name_prefix
 
 #[maybe_async::maybe_async]
 #[rustfmt::skip]
-async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> NetResult<()> {
+async fn query_server_properties<T: ReadWrite>(client: &mut Client<T>) -> NetResult<Option<Vec<Operation>>> {
     info!("Querying server properties..");
     let server_props = client.query().await?;
 
     info!("Server identification: {}", server_props.vendor_identification.unwrap_or("Not available".into()));
-    info!("Server supported operations: {}", server_props.operations.to_csv_string());
+    info!("Server supported operations: {}", server_props.operations.clone().to_csv_string());
     info!("Server supported object types: {}", server_props.object_types.to_csv_string());
 
-    Ok(())
+    Ok(server_props.operations)
 }
 
 fn load_binary_file(path: &std::path::Path) -> Vec<u8> {
@@ -220,4 +242,12 @@ impl From<Opt> for ConnectionSettings {
             max_response_bytes: Some(4096),
         }
     }
+}
+
+fn supports(supported_ops: &Option<Vec<Operation>>, op: Operation) -> bool {
+    let res = supported_ops.as_ref().map(|v| v.contains(&op)).unwrap_or_default();
+
+    info!("KMIP server supports {op}? {res}");
+
+    res
 }
