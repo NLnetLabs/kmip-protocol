@@ -591,6 +591,12 @@ impl Default for ProtocolVersion {
     }
 }
 
+impl std::fmt::Display for ProtocolVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}", self.major, self.minor)
+    }
+}
+
 impl ProtocolVersion {
     pub const TAG: Tag = Tag::new(0x420069);
     pub const MAJOR_TAG: Tag = Tag::new(0x42006A);
@@ -638,12 +644,7 @@ impl_ttlv_serde!(enum ResultStatus as 0x42007F);
 
 impl fmt::Display for ResultStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(match self {
-            Self::Success => "Success",
-            Self::OperationFailed => "OperationFailed",
-            Self::OperationPending => "OperationPending",
-            Self::OperationUndone => "OperationUndone",
-        })
+        write!(f, "{self:?}")
     }
 }
 
@@ -652,7 +653,7 @@ impl fmt::Display for ResultStatus {
 #[non_exhaustive]
 #[repr(u32)]
 pub enum ResultReason {
-    ItemNotFound = 1,
+    ItemNotFound = 0x00000001,
     ResponseTooLarge,
     AuthenticationNotSuccessful,
     InvalidMessage,
@@ -669,33 +670,24 @@ pub enum ResultReason {
     ApplicationNamespaceNotSupported,
     KeyFormatTypeNotSupported,
     KeyCompressionTypeNotSupported,
-    GeneralFailure,
+
+    // KMIP 1.1
+    EncodingOptionError,
+
+    // KMIP 1.2
+    KeyValueNotPresent,
+    AttestationRequired,
+    AttestationFailed,
+
+    // KMIP 1.0
+    GeneralFailure = 0x00000100,
 }
 
 impl_ttlv_serde!(enum ResultReason as 0x42007E);
 
 impl fmt::Display for ResultReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(match self {
-            Self::ItemNotFound => "ItemNotFound",
-            Self::ResponseTooLarge => "ResponseTooLarge",
-            Self::AuthenticationNotSuccessful => "AuthenticationNotSuccessful",
-            Self::InvalidMessage => "InvalidMessage",
-            Self::OperationNotSupported => "OperationNotSupported",
-            Self::MissingData => "MissingData",
-            Self::InvalidField => "InvalidField",
-            Self::FeatureNotSupported => "FeatureNotSupported",
-            Self::OperationCanceledByRequester => "OperationCanceledByRequester",
-            Self::CryptographicFailure => "CryptographicFailure",
-            Self::IllegalOperation => "IllegalOperation",
-            Self::PermissionDenied => "PermissionDenied",
-            Self::ObjectArchived => "ObjectArchived",
-            Self::IndexOutOfBounds => "IndexOutOfBounds",
-            Self::ApplicationNamespaceNotSupported => "ApplicationNamespaceNotSupported",
-            Self::KeyFormatTypeNotSupported => "KeyFormatTypeNotSupported",
-            Self::KeyCompressionTypeNotSupported => "KeyCompressionTypeNotSupported",
-            Self::GeneralFailure => "GeneralFailure",
-        })
+        write!(f, "{self:?}")
     }
 }
 
@@ -883,11 +875,7 @@ impl_ttlv_serde!(enum AttestationType as 0x4200C7);
 
 impl fmt::Display for AttestationType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(match self {
-            AttestationType::TpmQuote => "TpmQuote",
-            AttestationType::TcgIntegrityReport => "TcgIntegrityReport",
-            AttestationType::SamlAssertion => "SamlAssertion",
-        })
+        write!(f, "{self:?}")
     }
 }
 
