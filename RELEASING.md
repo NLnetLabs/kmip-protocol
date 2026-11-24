@@ -1,6 +1,6 @@
 # Prepare
-- think of a release &lt;NAME&gt;
-- update `Changelog.md` with the release date, version X.Y.Z[-NNN], &lt;NAME&gt; and release summary
+- determine the next version number, obey SEMVER.
+- update `Changelog.md` with the release date, version X.Y.Z[-NNN] and release summary
 
 # Make a release branch and test packaging
 - `git checkout main`
