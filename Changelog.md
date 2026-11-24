@@ -14,6 +14,26 @@ Released yyyy-mm-dd.
 ### Acknowledgements
 -->
 
+## Unreleasd version
+
+### Bug fixes
+
+- Fix incorrect log message. ([#113] by @ximon18)
+- FIX: Result Reason 'General Failure' causes parsing failure. ([#114] by
+  @ximon18)
+
+### Other changes
+
+- `hex_to_txt` example: Pretty print attribute values too. ([#102] by
+  @ximon18)
+- Add a test with PyKMIP in CI with the demo example. ([#110] by @ximon18)
+
+[#102]: https://github.com/NLnetLabs/kmip-protocol/pull/102
+[#110]: https://github.com/NLnetLabs/kmip-protocol/pull/110
+[#113]: https://github.com/NLnetLabs/kmip-protocol/pull/113
+[#114]: https://github.com/NLnetLabs/kmip-protocol/pull/114
+
+
 # 0.5.1
 
 Released 206-11-06.
