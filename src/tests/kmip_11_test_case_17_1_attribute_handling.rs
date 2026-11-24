@@ -24,7 +24,6 @@ const KEY_ID: &str = "28c7bad1-bc9b-41df-b439-1ba04a6fd982";
 /// -------------------------------------------------------------------------------------------------------------------
 /// 17.1 Test Case: Handling of Attributes and Attribute Index Values
 /// -------------------------------------------------------------------------------------------------------------------
-
 #[test]
 fn kmip_1_1_testcase_17_1_time_0_create_symmetric_key_request() {
     let use_case_request = RequestMessage(
