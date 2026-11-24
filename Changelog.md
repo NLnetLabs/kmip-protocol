@@ -14,7 +14,9 @@ Released yyyy-mm-dd.
 ### Acknowledgements
 -->
 
-## Unreleasd version
+## 0.5.2
+
+Released 2026-11-24.
 
 ### New
 
@@ -41,7 +43,7 @@ Released yyyy-mm-dd.
 
 # 0.5.1
 
-Released 206-11-06.
+Released 2026-11-06.
 
 Note: There are too many additions, fixes and breaking changes to the API to
 list here, this is just a high level summary.
