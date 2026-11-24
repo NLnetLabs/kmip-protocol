@@ -16,6 +16,10 @@ Released yyyy-mm-dd.
 
 ## Unreleasd version
 
+### New
+
+- Impl `Display` for `ProtocolVersion`. ([#115] by @ximon18)
+
 ### Bug fixes
 
 - Fix incorrect log message. ([#113] by @ximon18)
@@ -32,6 +36,7 @@ Released yyyy-mm-dd.
 [#110]: https://github.com/NLnetLabs/kmip-protocol/pull/110
 [#113]: https://github.com/NLnetLabs/kmip-protocol/pull/113
 [#114]: https://github.com/NLnetLabs/kmip-protocol/pull/114
+[#115]: https://github.com/NLnetLabs/kmip-protocol/pull/115
 
 
 # 0.5.1
