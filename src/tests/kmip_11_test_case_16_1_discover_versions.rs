@@ -18,7 +18,6 @@ use crate::{
 /// -------------------------------------------------------------------------------------------------------------------
 /// 16.1 Test Case: Discover Versions
 /// -------------------------------------------------------------------------------------------------------------------
-
 #[test]
 fn kmip_1_1_testcase_16_1_time_0_discover_versions_no_versions_provided_request() {
     let use_case_request = RequestMessage(
