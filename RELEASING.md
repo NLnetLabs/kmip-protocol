@@ -19,7 +19,7 @@
 
 # Release
 - `git checkout main`
-- `git tag -a -m "Release vX.Y.Z[-xxx] '<NAME>'" vX.Y.Z[-xxx]`
+- `git tag -a -m "vX.Y.Z[-xxx]" vX.Y.Z[-xxx]`
 - Verify that the release tag version is the same as the Cargo.toml version but with a `v` prefix
 - `git push --tags`
 - create a GH release with tag vX.Y.Z[-NNN] and title 'X.Y.Z[-NNN] <NAME>"
