@@ -99,9 +99,9 @@ pub enum AttributeValue {
 
     // See KMIP 1.0 section 3.20 Process Start Date.
     // Not implemented
-    /// See KMIP 1.0 section 3.21 Protect Stop Date.
-    // Not implemented
 
+    // See KMIP 1.0 section 3.21 Protect Stop Date.
+    // Not implemented
     /// See KMIP 1.0 section 3.22 Deactivation Date.
     DeactivationDate(i64),
 
@@ -635,6 +635,30 @@ impl TransparentDHPublicKey {
         Ok(formatter.finish())
     }
 }
+
+/// See KMIP 1.0 section 2.2.8 [Opaque Object](https://docs.oasis-open.org/kmip/spec/v1.0/os/kmip-spec-1.0-os.html#_Toc262581171)
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OpaqueObject(pub OpaqueDataType, pub OpaqueDataValue);
+
+impl_ttlv_serde!(struct OpaqueObject(a: OpaqueDataType, b: OpaqueDataValue) as 0x42005B);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ordinalize)]
+#[non_exhaustive]
+#[repr(u32)]
+pub enum OpaqueDataType {
+    // This doesn't actually have any values
+    // Values starting at 0x80000000 are considered extentions.
+    // This matches the assumption in PyKMIP
+    //#[serde(rename = "0x80000000")]
+    None,
+}
+
+impl_ttlv_serde!(enum OpaqueDataType as 0x420059);
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OpaqueDataValue(pub Vec<u8>);
+
+impl_ttlv_serde!(bytes OpaqueDataValue as 0x42005A);
 
 /// See KMIP 1.2 section 2.1.10 [Data](https://docs.oasis-open.org/kmip/spec/v1.2/os/kmip-spec-v1.2-os.html#_Toc395776391).
 #[derive(Clone, Debug, PartialEq, Eq)]

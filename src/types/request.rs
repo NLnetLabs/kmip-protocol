@@ -12,7 +12,7 @@ use super::common::{
     ApplicationData, ApplicationNamespace, AttributeIndex, AttributeName, AttributeValue, CompromiseOccurrenceDate,
     CryptographicAlgorithm, CryptographicLength, CryptographicParameters, CryptographicUsageMask, Data, DataLength,
     KeyCompressionType, KeyFormatType, KeyMaterial, LinkType, LinkedObjectIdentifier, NameType, NameValue, ObjectType,
-    Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
+    OpaqueObject, Operation, RevocationMessage, RevocationReasonCode, UniqueBatchItemID, UniqueIdentifier,
 };
 
 use super::impl_ttlv_serde;
@@ -740,9 +740,7 @@ pub enum ManagedObject {
     Template(Template),
     // SecretData(SecretData),
     // Not implemented
-
-    // OpaqueObject(OpaqueObject),
-    // Not implemented
+    OpaqueObject(OpaqueObject),
 }
 
 impl ManagedObject {
@@ -752,12 +750,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan(scanner).map(Self::PublicKey),
             ObjectType::PrivateKey => PrivateKey::fast_scan(scanner).map(Self::PrivateKey),
             ObjectType::Template => Template::fast_scan(scanner).map(Self::Template),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan(scanner).map(Self::OpaqueObject),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -767,12 +764,11 @@ impl ManagedObject {
             ObjectType::PublicKey => PublicKey::fast_scan_opt(scanner).map(|s| s.map(Self::PublicKey)),
             ObjectType::PrivateKey => PrivateKey::fast_scan_opt(scanner).map(|s| s.map(Self::PrivateKey)),
             ObjectType::Template => Template::fast_scan_opt(scanner).map(|s| s.map(Self::Template)),
+            ObjectType::OpaqueObject => OpaqueObject::fast_scan_opt(scanner).map(|s| s.map(Self::OpaqueObject)),
 
-            ObjectType::Certificate
-            | ObjectType::SplitKey
-            | ObjectType::SecretData
-            | ObjectType::OpaqueObject
-            | ObjectType::PGPKey => unimplemented!(),
+            ObjectType::Certificate | ObjectType::SplitKey | ObjectType::SecretData | ObjectType::PGPKey => {
+                unimplemented!()
+            }
         }
     }
 
@@ -782,6 +778,7 @@ impl ManagedObject {
             ManagedObject::PublicKey(this) => this.format(formatter),
             ManagedObject::PrivateKey(this) => this.format(formatter),
             ManagedObject::Template(this) => this.format(formatter),
+            ManagedObject::OpaqueObject(this) => this.format(formatter),
         }
     }
 }
